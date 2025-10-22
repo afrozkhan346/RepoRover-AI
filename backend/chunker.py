@@ -1,8 +1,9 @@
 import os
+import streamlit as st
 
 # Read chunking settings from environment variables
-DEFAULT_CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", 3000))
-DEFAULT_OVERLAP = int(os.environ.get("CHUNK_OVERLAP", 200))
+DEFAULT_CHUNK_SIZE = int(st.secrets.get("CHUNK_SIZE", 3000))
+DEFAULT_OVERLAP = int(st.secrets.get("CHUNK_OVERLAP", 200))
 
 def chunk_text(text: str, chunk_size=DEFAULT_CHUNK_SIZE, overlap=DEFAULT_OVERLAP):
     """

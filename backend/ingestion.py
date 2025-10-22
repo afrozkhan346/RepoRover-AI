@@ -3,12 +3,13 @@ from . import gh_fetch
 from . import chunker
 import os
 import re
+import streamlit as st
 
 # --- Read settings from environment ---
-MAX_FILE_SIZE = int(os.environ.get("MAX_FILE_SIZE_BYTES", 200000))
+MAX_FILE_SIZE = int(st.secrets.get("MAX_FILE_SIZE_BYTES", 200000))
 CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", 3000))
 CHUNK_OVERLAP = int(os.environ.get("CHUNK_OVERLAP", 200))
-MAX_FILES_TO_PROCESS = int(os.environ.get("MAX_FILES_TO_PROCESS", 100)) # <-- Add this
+MAX_FILES_TO_PROCESS = int(st.secrets.get("MAX_FILES_TO_PROCESS", 100))
 
 # --- 3. File Selection Heuristics ---
 

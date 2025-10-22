@@ -2,10 +2,10 @@ import requests
 import streamlit as st
 import base64
 import os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
-load_dotenv()
-GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+# load_dotenv()
+# GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
 
 # --- GitHub API Helpers ---
 
@@ -15,8 +15,11 @@ def _get_github_headers():
         "Accept": "application/vnd.github.v3+json",
         "X-GitHub-Api-Version": "2022-11-28"
     }
-    if GITHUB_TOKEN:
-        headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
+    # --- 5. NEW: Get token from st.secrets ---
+    github_token = st.secrets.get("GITHUB_TOKEN")
+    
+    if github_token:
+        headers["Authorization"] = f"Bearer {github_token}"
     return headers
 
 @st.cache_data(ttl=600)

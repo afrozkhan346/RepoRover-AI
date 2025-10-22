@@ -1,7 +1,6 @@
 import streamlit as st
 from google.cloud import firestore
 from google.oauth2 import service_account
-import json
 
 # --- Firestore Connection ---
 
@@ -11,7 +10,6 @@ def get_firestore_client():
     Connects to Firestore using Streamlit's secrets.
     Uses @st.cache_resource to only run this connection once.
     """
-    # Get the credentials from st.secrets
     creds_json = st.secrets["firestore"]
     creds = service_account.Credentials.from_service_account_info(creds_json)
     db = firestore.Client(credentials=creds)
@@ -19,28 +17,30 @@ def get_firestore_client():
 
 def get_repo_data_from_db(repo_name):
     """
-    Fetches ingested data for a specific repo from Firestore.
-    'repo_name' should be in 'owner/repo' format.
+    Fetches all ingested chunks for a repo from its 'chunks' subcollection.
     """
     db = get_firestore_client()
-    
-    # We'll use the repo_name as the document ID
-    # We replace '/' with '_' to create a valid Firestore doc ID
     doc_id = repo_name.replace("/", "_")
-    doc_ref = db.collection("repo_contexts").document(doc_id)
     
-    doc = doc_ref.get()
-    if doc.exists:
-        print(f"Found cached data for {repo_name} in Firestore.")
-        return doc.to_dict().get("chunks", [])
+    # Reference the 'chunks' subcollection
+    chunks_ref = db.collection("repo_contexts").document(doc_id).collection("chunks")
+    
+    # Get all documents from the subcollection
+    docs = chunks_ref.stream()
+    
+    chunks_list = [doc.to_dict() for doc in docs]
+    
+    if chunks_list:
+        print(f"Found {len(chunks_list)} cached chunks for {repo_name} in Firestore.")
+        return chunks_list
     else:
         print(f"No cached data for {repo_name} in Firestore.")
         return None
 
 def save_repo_data_to_db(repo_name, chunks):
     """
-    Saves a list of ingested chunks to Firestore.
-    'repo_name' is the doc ID, 'chunks' is the data.
+    Saves a list of ingested chunks to Firestore using batched writes.
+    Each chunk becomes a separate document in a 'chunks' subcollection.
     """
     if not chunks:
         print("No chunks to save.")
@@ -48,16 +48,45 @@ def save_repo_data_to_db(repo_name, chunks):
 
     db = get_firestore_client()
     doc_id = repo_name.replace("/", "_")
-    doc_ref = db.collection("repo_contexts").document(doc_id)
     
-    # Firestore has a 1MB limit per document.
-    # For a hackathon, we'll save it all in one go.
-    # A safer production app would split this, but this is fine.
-    data = {"chunks": chunks}
+    # Get a reference to the main repo document
+    repo_doc_ref = db.collection("repo_contexts").document(doc_id)
     
+    # Get a reference to the 'chunks' subcollection
+    chunks_collection_ref = repo_doc_ref.collection("chunks")
+    
+    # Initialize a batch
+    batch = db.batch()
+    
+    # Set a small metadata document just to show the repo exists
+    batch.set(repo_doc_ref, {"repo_name": repo_name, "chunk_count": len(chunks)})
+    
+    # Firestore batches can hold up to 500 operations.
+    # We will loop through our chunks and add them to batches.
+    for i, chunk in enumerate(chunks):
+        # Create a unique ID for each chunk document (e.g., 'chunk_001', 'chunk_002')
+        chunk_doc_id = f"chunk_{i:04d}" 
+        
+        # Get a reference for the new chunk document
+        chunk_doc_ref = chunks_collection_ref.document(chunk_doc_id)
+        
+        # Add the set operation to the batch
+        batch.set(chunk_doc_ref, chunk)
+        
+        # If the batch is full (500 ops), commit it and start a new one.
+        if (i + 1) % 499 == 0: # 499 chunks + 1 repo doc = 500
+            print(f"Committing batch of {i+1} chunks...")
+            batch.commit()
+            batch = db.batch() # Start a new batch
+            
+            # Re-add the repo doc set to the new batch (it's safe to set multiple times)
+            batch.set(repo_doc_ref, {"repo_name": repo_name, "chunk_count": len(chunks)})
+
+
+    # Commit any remaining chunks in the last batch
     try:
-        doc_ref.set(data)
+        batch.commit()
         print(f"Successfully saved {len(chunks)} chunks for {repo_name} to Firestore.")
     except Exception as e:
-        print(f"Error saving to Firestore: {e}")
-        st.error(f"Error saving to database. The repo might be too large: {e}")
+        print(f"Error committing final batch to Firestore: {e}")
+        st.error(f"Error saving to database: {e}")
