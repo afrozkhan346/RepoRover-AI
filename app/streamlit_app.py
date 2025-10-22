@@ -1,21 +1,12 @@
 import streamlit as st
 import sys
 import os
-import re
 
 # Add the project root to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 # Import your backend modules
 from backend import gh_fetch, llm_client, lesson_generator, quiz_generator, ingestion
-
-def parse_github_url(url):
-    # ... (existing function) ...
-    pattern = r"https:\/\/github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_-]+)"
-    match = re.search(pattern, url)
-    if match:
-        return match.group(1), match.group(2)
-    return None, None
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="RepoRoverAI", layout="wide")

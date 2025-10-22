@@ -1,7 +1,8 @@
 import base64
 from . import gh_fetch
+from . import chunker
 import os
-import re # <-- Add this import
+import re
 
 # --- Read settings from environment ---
 MAX_FILE_SIZE = int(os.environ.get("MAX_FILE_SIZE_BYTES", 200000))
