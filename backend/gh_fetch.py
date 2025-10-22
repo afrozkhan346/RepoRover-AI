@@ -34,17 +34,17 @@ def get_repo_details(owner, repo):
 def get_repo_tree(owner, repo):
     """
     Fetches the full, recursive file tree for the default branch.
-    This is much more efficient than walking the 'contents' endpoint.
+    Returns the file tree AND the commit SHA of that tree.
     """
     # 1. Get default branch name
     try:
         repo_details = get_repo_details(owner, repo)
         default_branch = repo_details.get('default_branch')
         if not default_branch:
-            return None
+            return None, None
     except Exception as e:
         print(f"Error getting repo details: {e}")
-        return None
+        return None, None
 
     # 2. Get the tree
     api_url = f"https://api.github.com/repos/{owner}/{repo}/git/trees/{default_branch}?recursive=true"
@@ -57,11 +57,12 @@ def get_repo_tree(owner, repo):
         if tree_data.get('truncated'):
             st.warning("Repository is too large! File list is truncated.")
             
-        return tree_data.get('tree', []) # Return the list of file objects
+        # --- MODIFICATION: Return the tree AND the SHA ---
+        return tree_data.get('tree', []), tree_data.get('sha')
     except Exception as e:
         print(f"Error getting repo tree: {e}")
         st.error(f"Failed to fetch repository tree. Rate limit exceeded? Error: {e}")
-        return None
+        return None, None
 
 @st.cache_data(ttl=600)
 def get_file_blob(owner, repo, file_sha):
