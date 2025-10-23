@@ -11,3 +11,5 @@ from . import db
 from . import python_extractor
 from . import js_extractor
 from . import md_extractor
+from . import embeddings
+from . import retrieval

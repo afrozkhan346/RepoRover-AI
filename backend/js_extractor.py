@@ -5,7 +5,7 @@ import hashlib
 FUNC_PATTERN = re.compile(r'(?:function\s+([a-zA-Z0-9_$]+)\s*\(|([a-zA-Z0-9_$]+)\s*=\s*function\s*\(|([a-zA-Z0-9_$]+)\s*:\s*function\s*\()')
 EXPORT_FN = re.compile(r'export\s+(?:default\s+)?function\s+([a-zA-Z0-9_$]+)\s*\(')
 
-def extract_js_contexts(text, file_path, repo_id, commit_sha=None):
+def extract_js_contexts(text, file_path, repo_id, priority, commit_sha=None):
     contexts = []
     lines = text.splitlines()
     
@@ -37,7 +37,8 @@ def extract_js_contexts(text, file_path, repo_id, commit_sha=None):
                 "content": block,
                 "commit_sha": commit_sha,
                 "checksum": hashlib.sha256(block.encode('utf-8')).hexdigest(),
-                "embedding": None  # <-- Added to match schema
+                "embedding": None,
+                "priority": priority
             }
             contexts.append(ctx)
             
@@ -56,6 +57,7 @@ def extract_js_contexts(text, file_path, repo_id, commit_sha=None):
             "content": block,
             "commit_sha": commit_sha,
             "checksum": hashlib.sha256(block.encode('utf-8')).hexdigest(),
-            "embedding": None  # <-- Added to match schema
+            "embedding": None,
+            "priority": priority
         })
     return contexts
