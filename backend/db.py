@@ -61,20 +61,19 @@ def save_repo_data_to_db(repo_name, chunks):
     # Set a small metadata document just to show the repo exists
     batch.set(repo_doc_ref, {"repo_name": repo_name, "chunk_count": len(chunks)})
     
-    # Firestore batches can hold up to 500 operations.
-    # We will loop through our chunks and add them to batches.
+    # Firestore batches are limited by size (10MB) and ops (500).
+    # We use a smaller op limit (250) to stay safely under the 10MB size limit.
     for i, chunk in enumerate(chunks):
-        # Create a unique ID for each chunk document (e.g., 'chunk_001', 'chunk_002')
+        # Create a unique ID for each chunk document
         chunk_doc_id = f"chunk_{i:04d}" 
-        
-        # Get a reference for the new chunk document
         chunk_doc_ref = chunks_collection_ref.document(chunk_doc_id)
         
         # Add the set operation to the batch
         batch.set(chunk_doc_ref, chunk)
         
-        # If the batch is full (500 ops), commit it and start a new one.
-        if (i + 1) % 499 == 0: # 499 chunks + 1 repo doc = 500
+        # --- THIS IS THE FIX ---
+        # Commit every 100 chunks and start a new batch.
+        if (i + 1) % 100 == 0:
             print(f"Committing batch of {i+1} chunks...")
             batch.commit()
             batch = db.batch() # Start a new batch

@@ -8,14 +8,14 @@ PROSE_CHUNK_SIZE = int(st.secrets.get("CHUNK_SIZE", 3000))
 PROSE_CHUNK_OVERLAP = int(st.secrets.get("CHUNK_OVERLAP", 200))
 
 
-def extract_markdown_sections(text, file_path, repo_id, commit_sha=None):
+def extract_markdown_sections(text, file_path, repo_id, priority, commit_sha=None):
     # ... (The regex logic to split 'parts' and 'sections' is unchanged) ...
     parts = re.split(r'(^#{1,6}\s.*?$)', text, flags=re.MULTILINE)
     sections = []
 
     title = "Introduction"
     buf = parts[0]
-    
+
     for i in range(1, len(parts), 2):
         if buf.strip():
             sections.append((title.strip(), buf.strip()))
@@ -41,7 +41,8 @@ def extract_markdown_sections(text, file_path, repo_id, commit_sha=None):
                     "start_line": None, "end_line": None,
                     "chunk_index": j, "excerpt": chunk[:400].strip() + "...", "content": chunk,
                     "commit_sha": commit_sha, "checksum": hashlib.sha256(chunk.encode('utf-8')).hexdigest(),
-                    "embedding": None
+                    "embedding": None,
+                    "priority": priority
                 })
         else:
             # Keep it as one context
@@ -51,6 +52,7 @@ def extract_markdown_sections(text, file_path, repo_id, commit_sha=None):
                 "start_line": None, "end_line": None,
                 "chunk_index": 0, "excerpt": ctx_text[:400].strip() + "...", "content": ctx_text,
                 "commit_sha": commit_sha, "checksum": hashlib.sha256(ctx_text.encode('utf-8')).hexdigest(),
-                "embedding": None
+                "embedding": None,
+                "priority": priority
             })
     return contexts

@@ -10,7 +10,7 @@ CODE_CHUNK_SIZE = int(st.secrets.get("CODE_CHUNK_SIZE", 1200))
 CODE_CHUNK_OVERLAP = int(st.secrets.get("CODE_CHUNK_OVERLAP", 100))
 
 
-def extract_python_contexts(text, file_path, repo_id, commit_sha=None):
+def extract_python_contexts(text, file_path, repo_id, priority, commit_sha=None):
     """
     Extracts module docstring, functions, and classes from Python code
     using an Abstract Syntax Tree (AST).
@@ -37,7 +37,8 @@ def extract_python_contexts(text, file_path, repo_id, commit_sha=None):
                     "start_line": 1, "end_line": module_doc.count("\n")+1, # Line numbers are approximate
                     "chunk_index": i, "excerpt": chunk[:400].strip(), "content": chunk,
                     "commit_sha": commit_sha, "checksum": hashlib.sha256(chunk.encode('utf-8')).hexdigest(),
-                    "embedding": None
+                    "embedding": None,
+                    "priority": priority
                 })
         else:
             # Keep it as one context
@@ -47,7 +48,8 @@ def extract_python_contexts(text, file_path, repo_id, commit_sha=None):
                 "start_line": 1, "end_line": module_doc.count("\n")+1,
                 "chunk_index": 0, "excerpt": module_doc[:400].strip(), "content": module_doc,
                 "commit_sha": commit_sha, "checksum": hashlib.sha256(module_doc.encode('utf-8')).hexdigest(),
-                "embedding": None
+                "embedding": None,
+                "priority": priority
             })
 
     # function and class nodes
@@ -69,7 +71,8 @@ def extract_python_contexts(text, file_path, repo_id, commit_sha=None):
                         "start_line": start, "end_line": end, # Line numbers for whole block
                         "chunk_index": i, "excerpt": chunk[:400].strip(), "content": chunk,
                         "commit_sha": commit_sha, "checksum": hashlib.sha256(chunk.encode('utf-8')).hexdigest(),
-                        "embedding": None
+                        "embedding": None,
+                        "priority": priority
                     })
             else:
                 # Keep it as one context
@@ -79,6 +82,7 @@ def extract_python_contexts(text, file_path, repo_id, commit_sha=None):
                     "start_line": start, "end_line": end,
                     "chunk_index": 0, "excerpt": block[:400].strip(), "content": block,
                     "commit_sha": commit_sha, "checksum": hashlib.sha256(block.encode('utf-8')).hexdigest(),
-                    "embedding": None
+                    "embedding": None,
+                    "priority": priority
                 })
     return contexts

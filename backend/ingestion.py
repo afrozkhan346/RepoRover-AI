@@ -4,19 +4,20 @@ from . import chunker
 from . import python_extractor
 from . import js_extractor
 from . import md_extractor
+from . import embeddings # Import for embedding generation
 import os
 import re
 import streamlit as st
 import hashlib
 
-# --- Read settings from environment ---
+# --- Read settings from Streamlit secrets ---
 MAX_FILE_SIZE = int(st.secrets.get("MAX_FILE_SIZE_BYTES", 200000))
-# --- FIX: Read all from st.secrets for consistency ---
+# Corrected: Read all chunk settings from st.secrets
 CHUNK_SIZE = int(st.secrets.get("CHUNK_SIZE", 3000))
 CHUNK_OVERLAP = int(st.secrets.get("CHUNK_OVERLAP", 200))
 MAX_FILES_TO_PROCESS = int(st.secrets.get("MAX_FILES_TO_PROCESS", 100))
 
-# --- 3. File Selection Heuristics (Unchanged) ---
+# --- File Selection Heuristics (Unchanged) ---
 BLACKLIST_EXTENSIONS = (
     '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp', # Images
     '.pdf', '.epub', '.zip', '.gz', '.tar', '.rar', '.7z',   # Archives/Docs
@@ -24,8 +25,6 @@ BLACKLIST_EXTENSIONS = (
     '.lock', '.log', '.sqlite', '.db',                       # Logs/DBs
     '.exe', '.dll', '.so', '.a', '.o',                       # Binaries
 )
-
-# blacklist paths
 BLACKLIST_PATHS = (
     '.git/',
     'node_modules/',
@@ -43,7 +42,7 @@ PRIO_4_SRC = ('src/', 'lib/', 'app/', r'packages\/[^\/]+\/src\/')
 PRIO_5_TESTS = ('tests/', 'test/', 'spec/')
 PRIO_6_CONTRIB = ('CONTRIBUTING.md', 'CHANGELOG.md', 'LICENSE')
 
-# --- FIX: Moved Secret Detection to top level ---
+# --- Secret Detection Logic ---
 SECRET_PATTERNS_COMPILED = [
     re.compile(r'AKIA[0-9A-Z]{16}'),                      # AWS Key
     re.compile(r'AIza[0-9A-Za-z-_]{35}'),                 # Google API Key
@@ -54,179 +53,137 @@ SECRET_PATTERNS_COMPILED = [
 ]
 
 def contains_secrets(content):
-    """
-    Checks if a string contains common secret patterns.
-    Returns True if a secret is found, False otherwise.
-    """
+    """Checks if a string contains common secret patterns."""
     for pattern in SECRET_PATTERNS_COMPILED:
         if pattern.search(content):
             return True
     return False
 
 def get_file_priority(path):
-    # (This function is unchanged)
+    """Assigns a priority score to a file path."""
     path_lower = path.lower()
-
-    #CRITICAL: Highest priority check is to 'exclude' sec
-    if re.search(r'\.env(\.|$)', path_lower):
-        return -1 
+    if re.search(r'\.env(\.|$)', path_lower): return -1
     for pattern in PRIO_1_README_DOCS:
-        if re.search(pattern, path_lower):
-            return 1
-        
-    if any(path_lower.endswith(f) for f in PRIO_2_MANIFESTS):
-        return 2
-    
+        if re.search(pattern, path_lower): return 1
+    if any(path_lower.endswith(f) for f in PRIO_2_MANIFESTS): return 2
     for pattern in PRIO_3_CI_DOCKER:
-        if re.search(pattern, path_lower):
-            return 3
-        
+        if re.search(pattern, path_lower): return 3
     for pattern in PRIO_4_SRC:
-        if path_lower.startswith(pattern):
-            return 4
-        
+        if path_lower.startswith(pattern): return 4
     for pattern in PRIO_5_TESTS:
-        if path_lower.startswith(pattern):
-            return 5
-        
-    if any(path_lower.endswith(f.lower()) for f in PRIO_6_CONTRIB):
-        return 6
-    
+        if path_lower.startswith(pattern): return 5
+    if any(path_lower.endswith(f.lower()) for f in PRIO_6_CONTRIB): return 6
     return 99
 
-# --- FIX: Removed old chunk_text function (we import it from chunker.py) ---
-
-# --- 6. Context Object Creation (HEAVILY UPDATED) ---
-
+# --- Main Ingestion Function ---
 def process_repository(owner, repo):
     """
-    Main ingestion flow:
-    1. Get repo tree
-    2. Filter, prioritize, and sort files
-    3. Fetch content and use file-type extractors
-    4. Create context objects
+    Main ingestion flow: fetch, filter, extract, create contexts, generate embeddings.
     """
     print(f"Starting ingestion for {owner}/{repo}")
-    
-    # 1. Get full repo tree AND the commit SHA
+
+    # 1. Get repo tree and commit SHA
     tree, commit_sha = gh_fetch.get_repo_tree(owner, repo)
     if not tree:
         print("Could not fetch repo tree.")
         return []
 
-    # 2. Filter, prioritize, and sort files (Unchanged)
+    # 2. Filter, prioritize, and sort files
     files_to_process = []
     for item in tree:
-        if item['type'] != 'blob':
-            continue
-
+        if item['type'] != 'blob': continue
         path = item['path']
-
         if item.get('size', 0) > MAX_FILE_SIZE:
             print(f"Skipping {path} (file size > {MAX_FILE_SIZE})")
             continue
-
         if path.lower().endswith(BLACKLIST_EXTENSIONS) or any(path.lower().startswith(p) for p in BLACKLIST_PATHS):
             continue
-
         priority = get_file_priority(path)
-
         if priority == -1:
             print(f"Skipping {path} (blacklisted by priority rule)")
             continue
-        
-        # Add valid file to the list
         files_to_process.append({'item': item, 'priority': priority})
-            
+
     files_to_process.sort(key=lambda x: (x['priority'], -x['item'].get('size', 0)))
-    
     print(f"Found {len(files_to_process)} valid files. Processing top {MAX_FILES_TO_PROCESS}...")
-    
-    # --- Truncate to MAX_FILES_TO_PROCESS ---
     if len(files_to_process) > MAX_FILES_TO_PROCESS:
         files_to_process = files_to_process[:MAX_FILES_TO_PROCESS]
-        
+
     all_context_objects = []
     repo_id = f"{owner}/{repo}"
-    
-    # 3. Fetch content for each file in the sorted list
+
+    # 3. Fetch content and extract contexts for each file
     for file_info in files_to_process:
         item = file_info['item']
-        priority = file_info['priority']
+        priority = file_info['priority'] # Get priority for passing to extractors
         path = item['path']
         sha = item['sha']
-        
+
         file_content_base64 = gh_fetch.get_file_blob(owner, repo, sha)
         if not file_content_base64:
             print(f"Skipping {path} (could not fetch content)")
             continue
-          
         try:
             file_content = base64.b64decode(file_content_base64).decode('utf-8')
         except UnicodeDecodeError:
             print(f"Skipping {path} (not valid utf-8 text)")
             continue
-            
         if contains_secrets(file_content):
             print(f"Skipping {path} (contains potential secrets)")
             continue
-            
-        # --- 4. NEW: FILE-TYPE ROUTER ---
-        
-        file_contexts = []
-        
-        if path.endswith('.py'):
-            # --- Use the new Python extractor ---
-            file_contexts = python_extractor.extract_python_contexts(
-                file_content, path, repo_id, commit_sha
-            )
 
-            #-- Use the new JS/TS extractor ---
+        # --- File-Type Router ---
+        file_contexts = []
+        if path.endswith('.py'):
+            file_contexts = python_extractor.extract_python_contexts(
+                file_content, path, repo_id, priority, commit_sha # Pass priority
+            )
         elif path.endswith(('.js', '.ts')):
             file_contexts = js_extractor.extract_js_contexts(
-                file_content, path, repo_id, commit_sha
+                file_content, path, repo_id, priority, commit_sha # Pass priority
             )
-
-            #--- Use the new Markdown extractor ---
         elif path.lower().endswith(('.md', '.rst')):
             file_contexts = md_extractor.extract_markdown_sections(
-                file_content, path, repo_id, commit_sha
+                file_content, path, repo_id, priority, commit_sha # Pass priority
             )
-        
-        else:
-            # --- Use the old chunker as a FALLBACK ---
-            chunks = chunker.chunk_text(file_content)
-            
-            # Determine language for highlighting
+        else: # Fallback chunker for other text files
+            chunks = chunker.chunk_text(file_content) # Uses prose settings from secrets via chunker.py
             language = "text"
-            if path.lower().endswith(('.md', '.rst')): language = "markdown"
-            elif path.lower().endswith('.js'): language = "javascript"
-            elif path.lower().endswith('.ts'): language = "typescript"
-            elif path.lower().endswith('.json'): language = "json"
+            if path.lower().endswith('.json'): language = "json"
             elif path.lower().endswith(('.yml', '.yaml')): language = "yaml"
             elif path.lower().endswith('.dockerfile') or 'dockerfile' in path.lower(): language = "dockerfile"
+            # Add more language mappings as needed
 
             for i, content_chunk in enumerate(chunks):
-                # --- NEW: Create context object using the new schema ---
                 checksum = hashlib.sha256(content_chunk.encode('utf-8')).hexdigest()
                 ctx = {
                     "id": f"{repo_id}:{path}:chunk:{i}",
                     "repo_id": repo_id,
-                    "file_path": path, # Standardize on file_path
+                    "file_path": path,
                     "language": language,
-                    "start_line": None, # We don't know line numbers for simple chunks
+                    "start_line": None,
                     "end_line": None,
                     "chunk_index": i,
                     "excerpt": content_chunk[:400].strip() + "...",
                     "content": content_chunk,
                     "commit_sha": commit_sha,
                     "checksum": checksum,
-                    "embedding": None
+                    "embedding": None,
+                    "priority": priority # Add priority to fallback contexts
                 }
                 file_contexts.append(ctx)
-        
-        # 6. Add all contexts from this file to the main list
+
         all_context_objects.extend(file_contexts)
-            
-    print(f"Ingestion complete. Created {len(all_context_objects)} context objects from {len(files_to_process)} files.")
+    # --- End of file processing loop ---
+
+    # 4. Generate Embeddings (Correctly placed AFTER the loop)
+    if all_context_objects:
+        print(f"\nGenerating embeddings for {len(all_context_objects)} contexts...")
+        texts_to_embed = [ctx['content'] for ctx in all_context_objects]
+        all_embeddings = embeddings.generate_embeddings_batch(texts_to_embed)
+        # Attach embeddings, handling potential None values if batches failed
+        for i, ctx in enumerate(all_context_objects):
+            ctx['embedding'] = all_embeddings[i] if i < len(all_embeddings) else None
+
+    print(f"\nIngestion complete. Created {len(all_context_objects)} context objects from {len(files_to_process)} files.")
     return all_context_objects
