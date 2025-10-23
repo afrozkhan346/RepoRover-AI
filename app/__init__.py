@@ -13,3 +13,4 @@ from . import js_extractor
 from . import md_extractor
 from . import embeddings
 from . import retrieval
+from . import quiz_eval

@@ -1,4 +1,5 @@
 import streamlit as st
+import time  # Add this import
 import sys
 import os
 import json
@@ -8,6 +9,7 @@ import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from backend import ingestion, db, lesson_generator, quiz_generator, llm_client, retrieval
+from backend import quiz_eval  # Add this import at the top with other imports
 from backend.utils import parse_github_url
 
 def calculate_lesson_metrics(lesson_data):
@@ -63,6 +65,8 @@ if 'repo_name' not in st.session_state:
     st.session_state['repo_name'] = None
 if 'generated_lessons' not in st.session_state:
     st.session_state['generated_lessons'] = None
+if 'current_quiz' not in st.session_state:
+    st.session_state['current_quiz'] = None
 
 repo_url = st.text_input(
     "Paste a public GitHub repository URL:",
@@ -233,6 +237,141 @@ if st.session_state.get('repo_data'):
                     st.markdown("---")
                     st.markdown(f"**Summary:** {lesson.get('summary', 'Not specified.')}")
 
+        # --- Quiz Section ---
+        st.subheader("🧪 Pop Quiz")
+        generate_quiz_disabled = not st.session_state.get('generated_lessons')
+        
+        if st.button("Generate Quiz for Lesson 1", disabled=generate_quiz_disabled):
+            if not st.session_state.get('generated_lessons'):
+                st.warning("Please generate a lesson plan first!")
+            else:
+                with st.spinner("AI is generating quiz questions..."):
+                    first_lesson = st.session_state['generated_lessons']['lessons'][0]
+                    lesson_sources = first_lesson.get("sources_full", [])
+
+                    if not lesson_sources:
+                        st.warning("Lesson 1 has no source material to generate questions from.")
+                    else:
+                        try:
+                            quiz_data, quiz_sources = quiz_generator.generate_quiz_for_lesson(
+                                first_lesson,
+                                lesson_sources,
+                                st.session_state['repo_name']
+                            )
+
+                            if quiz_data and quiz_data.get("questions"):
+                                st.success("Generated Quiz!")
+                                st.session_state['current_quiz'] = quiz_data
+                        except Exception as e:
+                            st.error(f"Failed to generate quiz: {str(e)}")
+
+        # --- Render Quiz Form ---
+        if st.session_state.get('current_quiz'):
+            quiz_data_object = st.session_state['current_quiz']
+            quiz_questions = quiz_data_object.get("questions", [])
+
+            # Check if this is a practice quiz
+            if quiz_data_object.get("is_practice_quiz"):
+                st.info("📝 This is a practice question. Please review the repository and think about your answer.")
+                practice_q = quiz_questions[0]
+                st.markdown(f"**{practice_q['question']}**")
+                user_answer = st.text_area("Your Answer:", key="practice_answer")
+                if st.button("Save Answer"):
+                    st.success("Answer saved! Review the repository's README.md for the correct information.")
+            else:
+                # Regular quiz display logic
+                with st.form(key="quiz_form"):
+                    user_answers = {}
+                    st.subheader("Quiz Questions:")
+                    
+                    for i, q in enumerate(quiz_questions):
+                        st.markdown(f"**{q.get('qid', f'Q{i+1}')}. {q.get('question', 'N/A')}**")
+                        
+                        # Create radio buttons for choices
+                        options = []
+                        choice_map = {}
+                        for choice in q.get("choices", []):
+                            label = choice.get("label", "")
+                            text = choice.get("text", "N/A").strip()  # Strip whitespace from choices
+                            choice_map[label] = text
+                            options.append(f"{label}. {text}")  # Format consistently
+                        
+                        answer = st.radio(
+                            f"Select your answer for Q{i+1}:",
+                            options,
+                            key=f"quiz_q_{i}",
+                            label_visibility="collapsed",
+                            index=None
+                        )
+                        if answer:  # Only store if an answer was selected
+                            user_answers[q.get('qid')] = answer.strip()  # Strip whitespace from answer
+                        st.markdown("---")
+
+                    # Submit button for the form
+                    submitted = st.form_submit_button("Submit Answers")
+                    
+                    if submitted:
+                        # Validate all questions are answered
+                        if not all(q.get('qid') in user_answers for q in quiz_questions):
+                            st.warning("Please answer all questions before submitting.")
+                        else:
+                            # Grade the responses
+                            grading_results = quiz_eval.grade_mcq_responses(quiz_data_object, user_answers)
+                            
+                            # Display overall score
+                            st.markdown("### Quiz Results")
+                            st.metric(
+                                "Score", 
+                                f"{grading_results['score']}/{grading_results['total']}", 
+                                f"{grading_results['percent']:.1f}%"
+                            )
+                            
+                            # Display detailed results
+                            incorrect_count = 0
+                            for result in grading_results["results"]:
+                                st.markdown(f"**{result['qid']}. {result['question']}**")
+                                
+                                if result['correct']:
+                                    st.success(f"✅ Correct! Your answer: {result['user_choice']}")
+                                else:
+                                    incorrect_count += 1
+                                    st.error(f"❌ Incorrect. Your answer: {result['user_choice']}")
+                                    
+                                    # Generate hint for incorrect answers with rate limit delay
+                                    original_q = next(
+                                        (q for q in quiz_questions 
+                                         if q.get('qid') == result['qid']),
+                                        None
+                                    )
+                                    if original_q and original_q.get("evidence_full"):
+                                        # Add delay if this isn't the first incorrect answer
+                                        if incorrect_count > 1:
+                                            time.sleep(1.5)  # 1.5 second delay between API calls
+                                        
+                                        with st.spinner("Generating hint..."):
+                                            hint_data = quiz_eval.generate_hint_feedback(
+                                                original_q,
+                                                original_q["evidence_full"]
+                                            )
+                                            if hint_data:
+                                                st.info(f"💡 Hint: {hint_data['hint']}")
+                                                with st.expander("Detailed Explanation"):
+                                                    st.write(hint_data["explanation"])
+                                                    if hint_data.get("sources"):
+                                                        st.caption(f"Evidence from: {', '.join(hint_data['sources'])}")
+                                    
+                                    st.info(f"Correct answer: {result['correct_choice']}")
+                                st.caption(f"Explanation: {result.get('explanation', 'N/A')}")
+                                st.markdown("---")
+
+                            # Final feedback
+                            if grading_results['percent'] >= 70:
+                                st.balloons()
+                                st.success("🎉 Great job! You've mastered this lesson!")
+                            elif grading_results['percent'] >= 50:
+                                st.info("👍 Good effort! Review the explanations above to improve.")
+                            else:
+                                st.warning("📚 Keep studying! Consider reviewing the lesson again.")
     with col2:
         # --- Code Explainer / Q&A Section (Updated) ---
         st.subheader("🧑‍💻 Code Explainer / Q&A")
