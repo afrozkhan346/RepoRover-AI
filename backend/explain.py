@@ -4,6 +4,7 @@ import hashlib
 import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
+import streamlit as st  # Add streamlit import
 
 from . import llm_client
 from . import retrieval
@@ -56,7 +57,10 @@ Return only the JSON object.
 """
 
 def _call_llm_json(prompt: str, max_tokens: int = 700, temperature: float = 0.1) -> Dict:
-    """Calls the LLM, attempts to parse JSON, retries once on parse error."""
+    """
+    Calls the LLM, attempts to parse JSON, retries once on parse error.
+    Raises ValueError with detailed message on failure.
+    """
     MAX_JSON_RETRIES = 1
     last_error = None
     final_raw_response = ""
@@ -67,7 +71,9 @@ def _call_llm_json(prompt: str, max_tokens: int = 700, temperature: float = 0.1)
         final_raw_response = raw_response
 
         try:
-            if not raw_response or raw_response.startswith("Error:"):
+            if not raw_response:
+                raise ValueError("Empty response from LLM")
+            if raw_response.startswith("Error:"):
                 raise ValueError(f"LLM client error: {raw_response}")
 
             cleaned_response = raw_response.strip()
@@ -87,12 +93,12 @@ def _call_llm_json(prompt: str, max_tokens: int = 700, temperature: float = 0.1)
             print(f"❌ Failed to parse JSON (Attempt {attempt + 1}): {e}")
             if attempt < MAX_JSON_RETRIES:
                 print("⏳ Retrying with stricter JSON instruction...")
-                prompt += "\nIMPORTANT: Return ONLY valid JSON."
+                prompt += "\nIMPORTANT: Return ONLY valid JSON starting with { and ending with }."
                 time.sleep(1)
             else:
-                raise ValueError(f"Failed to get valid JSON. Error: {last_error}") from last_error
+                raise ValueError(f"Failed to get valid JSON after {MAX_JSON_RETRIES + 1} attempts. Error: {last_error}")
 
-    raise Exception("Exited LLM call loop unexpectedly.")
+    raise Exception("Exited LLM call loop unexpectedly.")  # Should never reach here
 
 def build_explain_prompt(repo_id: str, file_path: str, object_name: str, contexts: List[Dict]) -> Tuple[str, List[str]]:
     """Builds the prompt string for the explanation LLM call."""
@@ -123,28 +129,40 @@ EXCERPT:
     )
     return prompt, included_context_ids
 
+@st.cache_data(show_spinner=False)
 def explain_target(repo_id: str, file_path: str, object_name: str | None, 
                   all_contexts: List[Dict], top_k: int = 6) -> Tuple[Dict, List[Dict]]:
     """
     Retrieves contexts and generates a structured explanation.
-    Returns the explanation data and the full context objects used.
+    Results are cached based on input arguments.
     """
     target_object = object_name or "file"
     explain_id_base = f"{repo_id}:{file_path}:{target_object}"
 
-    # Filter and retrieve contexts
-    file_contexts = [ctx for ctx in all_contexts if ctx['file_path'] == file_path]
-    if not file_contexts:
+    # Enhanced error response helper
+    def create_error_response(error_type: str, message: str, contexts_to_return: List[Dict] = None) -> Tuple[Dict, List[Dict]]:
         return {
-            "explain_id": f"{explain_id_base}:error",
-            "summary": "Error: No context found for this file.",
-            "warnings": ["No context found"],
+            "explain_id": f"{explain_id_base}:{error_type}",
+            "repo_id": repo_id,
+            "file_path": file_path,
+            "object": target_object,
+            "summary": "Explanation temporarily unavailable.",
             "key_points": [],
             "unit_test": {"title": "N/A", "code": "", "language": "python"},
-            "example": "",
+            "example": "No example available due to error.",
             "sources": [],
-            "confidence": "low"
-        }, []
+            "confidence": "low",
+            "warnings": [f"{error_type}: {message}"]
+        }, contexts_to_return or []
+
+    # Input validation
+    if not all_contexts:
+        return create_error_response("input_error", "No repository data available.")
+
+    # File context filtering
+    file_contexts = [ctx for ctx in all_contexts if ctx['file_path'] == file_path]
+    if not file_contexts:
+        return create_error_response("no_content", f"No processed content found for file: {file_path}")
 
     # Find relevant contexts
     query = f"explain {target_object} in {file_path}"
@@ -160,16 +178,10 @@ def explain_target(repo_id: str, file_path: str, object_name: str | None,
         )[:max(1, top_k//2)]
 
     if not contexts_to_use:
-        return {
-            "explain_id": f"{explain_id_base}:no_context",
-            "summary": "Insufficient context to explain this code.",
-            "warnings": ["No relevant context found"],
-            "key_points": [],
-            "unit_test": {"title": "N/A", "code": "", "language": "python"},
-            "example": "",
-            "sources": [],
-            "confidence": "low"
-        }, []
+        return create_error_response("no_context", "Could not find relevant context within the file.")
+
+    # Initialize warnings list
+    validation_warnings = []
 
     try:
         # Generate explanation
@@ -178,53 +190,86 @@ def explain_target(repo_id: str, file_path: str, object_name: str | None,
         )
         llm_data = _call_llm_json(prompt)
 
-        # Validate sources and set confidence
-        validation_warnings = []
+        # Validate sources and calculate confidence
         llm_sources = llm_data.get("sources", [])
-        valid_sources = [src for src in llm_sources if src in context_ids_used]
-        
-        if not valid_sources:
-            validation_warnings.append("No valid sources cited")
-        
+        if not isinstance(llm_sources, list):
+            validation_warnings.append("LLM 'sources' field is not a list")
+            llm_sources = []
+
+        # Validate cited sources
+        valid_sources_cited_ids = []
+        invalid_sources_cited = []
+        for src_id in llm_sources:
+            if src_id in context_ids_used:
+                valid_sources_cited_ids.append(src_id)
+            else:
+                invalid_sources_cited.append(src_id)
+
+        if invalid_sources_cited:
+            validation_warnings.append(f"LLM cited invalid sources: {invalid_sources_cited}")
+        if not valid_sources_cited_ids:
+            validation_warnings.append("No valid sources cited from prompt context")
+
+        # Map valid IDs back to full context objects
+        valid_sources_full = [ctx for ctx in contexts_to_use if ctx.get('id') in valid_sources_cited_ids]
+
+        # Calculate refined confidence
         confidence = "low"
-        if len(valid_sources) >= 3:
-            confidence = "high"
-        elif len(valid_sources) == 2:
+        num_valid_sources = len(valid_sources_cited_ids)
+
+        if num_valid_sources >= 3:
+            # Check for mix of code and documentation
+            has_code = any(ctx.get('language') in ['python', 'javascript', 'typescript'] 
+                         for ctx in valid_sources_full)
+            has_docs = any(ctx.get('language') == 'markdown' or 
+                         'readme' in ctx.get('file_path', '').lower() 
+                         for ctx in valid_sources_full)
+            
+            if has_code and has_docs:
+                confidence = "high"
+            elif has_code or has_docs:
+                confidence = "medium"
+            else:
+                confidence = "medium"
+        elif num_valid_sources == 2:
             confidence = "medium"
 
+        if confidence == "low":
+            validation_warnings.append("Confidence is low due to limited source material cited")
+
         # Build final explanation
-        explanation = {
+        final_explanation = {
             "explain_id": f"{explain_id_base}:{context_ids_used[0] if context_ids_used else 'NA'}",
             "repo_id": repo_id,
             "file_path": file_path,
             "object": target_object,
             "summary": llm_data["summary"],
-            "key_points": llm_data["key_points"],
-            "unit_test": llm_data["unit_test"],
-            "example": llm_data["example"],
-            "sources": valid_sources,
+            "key_points": llm_data.get("key_points", []),
+            "unit_test": llm_data.get("unit_test", {"title": "N/A", "code": "", "language": "python"}),
+            "example": llm_data.get("example", ""),
+            "sources": valid_sources_cited_ids,
             "confidence": confidence,
             "warnings": validation_warnings + llm_data.get("warnings", [])
         }
 
-        # Get full context objects for cited sources
-        sources_full = [ctx for ctx in contexts_to_use if ctx.get('id') in valid_sources]
+        # Log the explanation (outside cache)
+        try:
+            log_data = {
+                "timestamp": datetime.datetime.now().isoformat(),
+                "repo_id": repo_id,
+                "file_path": file_path,
+                "object": target_object,
+                "context_ids_used": context_ids_used,
+                "explanation": final_explanation
+            }
+            
+            log_file = LOG_DIR / f"explain_{repo_id.replace('/', '_')}_{datetime.datetime.now():%Y%m%d_%H%M%S}.json"
+            with open(log_file, 'w', encoding='utf-8') as f:
+                json.dump(log_data, f, indent=2, ensure_ascii=False)
+        except Exception as log_e:
+            print(f"Warning: Failed to save explanation log: {log_e}")
 
-        # Log the explanation
-        log_data = {
-            "timestamp": datetime.datetime.now().isoformat(),
-            "repo_id": repo_id,
-            "file_path": file_path,
-            "object": target_object,
-            "context_ids_used": context_ids_used,
-            "explanation": explanation
-        }
-        
-        log_file = LOG_DIR / f"explain_{repo_id.replace('/', '_')}_{datetime.datetime.now():%Y%m%d_%H%M%S}.json"
-        with open(log_file, 'w', encoding='utf-8') as f:
-            json.dump(log_data, f, indent=2, ensure_ascii=False)
-
-        return explanation, sources_full
+        return final_explanation, valid_sources_full
 
     except Exception as e:
         print(f"❌ Error generating explanation: {e}")

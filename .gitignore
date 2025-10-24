@@ -18,3 +18,5 @@ bin/
 .git
 
 gen-lang-client-0753746276-f31ca33fa93d.json
+
+delete_firestore_doc.py
