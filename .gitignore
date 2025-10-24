@@ -2,21 +2,78 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Environment
-.env
-.venv
-.env.local
-venv/
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
 lib/
-include/
-bin/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Streamlit
-.streamlit/
+# Virtual Environment
+env/
+venv/
+ENV/
+.env
+.env.*
+env.bak/
+venv.bak/
 
-.git
+# IDE and Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.vs/
 
-gen-lang-client-0753746276-f31ca33fa93d.json
-
+# RepoRover-AI specific
+data/
+logs/
+*.log
+.streamlit/secrets.toml
+gen-lang-client-*.json
 delete_firestore_doc.py
+
+# Testing and Coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# MyPy cache
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
