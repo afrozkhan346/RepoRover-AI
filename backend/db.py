@@ -39,7 +39,7 @@ def get_repo_data_from_db(repo_name):
 
 def save_repo_data_to_db(repo_name, chunks):
     """
-    Saves a list of ingested chunks to Firestore using batched writes.
+    Saves a list of ingested chunks to Firestore using smaller batched writes.
     Each chunk becomes a separate document in a 'chunks' subcollection.
     """
     if not chunks:
@@ -55,37 +55,61 @@ def save_repo_data_to_db(repo_name, chunks):
     # Get a reference to the 'chunks' subcollection
     chunks_collection_ref = repo_doc_ref.collection("chunks")
     
-    # Initialize a batch
-    batch = db.batch()
+    # Use a smaller batch size (50 instead of 100) to stay well under limits
+    BATCH_SIZE = 50
+    total_saved = 0
+    current_batch = db.batch()
     
-    # Set a small metadata document just to show the repo exists
-    batch.set(repo_doc_ref, {"repo_name": repo_name, "chunk_count": len(chunks)})
-    
-    # Firestore batches are limited by size (10MB) and ops (500).
-    # We use a smaller op limit (250) to stay safely under the 10MB size limit.
-    for i, chunk in enumerate(chunks):
-        # Create a unique ID for each chunk document
-        chunk_doc_id = f"chunk_{i:04d}" 
-        chunk_doc_ref = chunks_collection_ref.document(chunk_doc_id)
-        
-        # Add the set operation to the batch
-        batch.set(chunk_doc_ref, chunk)
-        
-        # --- THIS IS THE FIX ---
-        # Commit every 100 chunks and start a new batch.
-        if (i + 1) % 100 == 0:
-            print(f"Committing batch of {i+1} chunks...")
-            batch.commit()
-            batch = db.batch() # Start a new batch
-            
-            # Re-add the repo doc set to the new batch (it's safe to set multiple times)
-            batch.set(repo_doc_ref, {"repo_name": repo_name, "chunk_count": len(chunks)})
-
-
-    # Commit any remaining chunks in the last batch
     try:
-        batch.commit()
-        print(f"Successfully saved {len(chunks)} chunks for {repo_name} to Firestore.")
+        # Set repo metadata first
+        current_batch.set(repo_doc_ref, {
+            "repo_name": repo_name, 
+            "chunk_count": len(chunks),
+            "last_updated": firestore.SERVER_TIMESTAMP
+        })
+
+        for i, chunk in enumerate(chunks):
+            # Create a unique ID for each chunk document
+            chunk_doc_id = f"chunk_{i:04d}" 
+            chunk_doc_ref = chunks_collection_ref.document(chunk_doc_id)
+            
+            # Add the set operation to the batch
+            current_batch.set(chunk_doc_ref, chunk)
+            
+            # Commit when batch reaches size limit or on last chunk
+            if (i + 1) % BATCH_SIZE == 0 or i == len(chunks) - 1:
+                print(f"Committing batch {total_saved//BATCH_SIZE + 1} ({total_saved + 1}-{i + 1} of {len(chunks)} chunks)...")
+                current_batch.commit()
+                total_saved = i + 1
+                
+                # Start a new batch if there are more chunks
+                if i < len(chunks) - 1:
+                    current_batch = db.batch()
+                    # Re-add repo metadata to ensure consistency
+                    current_batch.set(repo_doc_ref, {
+                        "repo_name": repo_name, 
+                        "chunk_count": len(chunks),
+                        "last_updated": firestore.SERVER_TIMESTAMP
+                    })
+
+        print(f"✅ Successfully saved all {len(chunks)} chunks for {repo_name} to Firestore.")
+        return True
+
     except Exception as e:
-        print(f"Error committing final batch to Firestore: {e}")
-        st.error(f"Error saving to database: {e}")
+        print(f"❌ Error saving to Firestore: {e}")
+        st.error(f"Database error: {str(e)}")
+        # Attempt to save what we can
+        if total_saved > 0:
+            print(f"Partial save: {total_saved} of {len(chunks)} chunks were saved.")
+            # Update metadata to reflect partial save
+            try:
+                repo_doc_ref.set({
+                    "repo_name": repo_name,
+                    "chunk_count": total_saved,
+                    "last_updated": firestore.SERVER_TIMESTAMP,
+                    "partial_save": True,
+                    "total_chunks": len(chunks)
+                })
+            except Exception as metadata_e:
+                print(f"Failed to update metadata after partial save: {metadata_e}")
+        return False

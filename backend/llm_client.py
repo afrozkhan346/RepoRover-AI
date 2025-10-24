@@ -1,7 +1,8 @@
 import os
 import google.generativeai as genai
 import streamlit as st
-import time # Ensure time is imported for sleep
+import time
+import re  # Add re import for parsing retry delays
 
 # --- API Key Setup ---
 API_KEY = st.secrets.get("GEMINI_API_KEY")
@@ -71,88 +72,127 @@ print(f"Initialized Gemini client with model: {_MODEL_NAME}")
 def get_gemini_response(prompt_text: str, temperature: float = 0.1) -> str:
     """
     Sends a prompt to the Gemini API (non-streaming) and returns the text response.
-    Includes retry logic and safety checks.
+    Includes retry logic with dynamic delays for rate limits.
     """
     MAX_RETRIES = 2
+    
     for attempt in range(MAX_RETRIES):
         try:
-            # Override temperature for this specific call
             current_generation_config = {
-                 **generation_config, # Start with defaults
-                 "temperature": temperature # Override temperature
+                **generation_config,
+                "temperature": temperature
             }
 
             response = model.generate_content(
-                [prompt_text], # Content needs to be in a list
+                [prompt_text],
                 generation_config=current_generation_config,
-                safety_settings=safety_settings # Pass safety settings here too
+                safety_settings=safety_settings
             )
 
-            # Deeper check for valid response and text
+            # Response validation
             if not response:
                 raise ValueError("API returned an empty response object.")
             if response.prompt_feedback and response.prompt_feedback.block_reason:
                 print(f"Response blocked due to: {response.prompt_feedback.block_reason}")
                 return f"Error: Response blocked by safety filters ({response.prompt_feedback.block_reason})."
-            # Access text safely using parts
             if not response.parts:
-                 raise ValueError("Response object has no 'parts'.")
+                raise ValueError("Response object has no 'parts'.")
+            
             text = response.parts[0].text
-            if text is None: # Check for None explicitly
-                 raise ValueError("Response part contains 'None' instead of text.")
+            if text is None:
+                raise ValueError("Response part contains 'None' instead of text.")
 
             return text.strip()
 
         except Exception as e:
-            error_details = f"{type(e).__name__}: {str(e)}"
-            print(f"Gemini API call attempt {attempt + 1} failed: {error_details}")
+            error_details = str(e)
             if attempt < MAX_RETRIES - 1:
-                print("Retrying in 2 seconds...")
-                time.sleep(2) # Short delay before retry
-            else:
-                final_error_msg = f"Error: Could not get a response from the AI (model: {_MODEL_NAME}) after {MAX_RETRIES} attempts. Details: {error_details}"
-                print(final_error_msg)
-                return final_error_msg # Return the error message to the UI
+                # --- Dynamic Retry Delay Logic ---
+                retry_delay = 5  # Default fallback delay
+                
+                if "ResourceExhausted" in error_details:
+                    print(f"🚫 Rate limit hit. Parsing retry delay...")
+                    # Try to find specific retry time in seconds
+                    match = re.search(r'Please retry in ([\d\.]+)s\.', error_details)
+                    if match:
+                        retry_delay = float(match.group(1)) + 1  # Add 1s buffer
+                    else:
+                        # Try to find general seconds value
+                        match_delay = re.search(r'seconds:\s*(\d+)', error_details)
+                        if match_delay:
+                            retry_delay = int(match_delay.group(1)) + 1
+                        else:
+                            # Conservative fallback for rate limits
+                            retry_delay = 40
+                    
+                    print(f"⏳ Waiting {retry_delay:.1f}s before retry...")
+                else:
+                    print(f"⚠️ Non-rate-limit error: {error_details[:100]}...")
+                
+                time.sleep(retry_delay)
+                continue
+            
+            final_error = f"Error: Could not get response from Gemini API (model: {_MODEL_NAME}) after {MAX_RETRIES} attempts. Details: {error_details}"
+            print(f"❌ {final_error}")
+            return final_error
 
-    # Should not be reached, but added for safety
-    return f"Error: Unexpected issue in get_gemini_response after retries."
-
+    return "Error: Unexpected exit from retry loop."
 
 def stream_gemini_response(prompt_text: str, temperature: float = 0.1):
     """
     Sends a prompt to the Gemini API and yields response chunks for streaming.
-    Includes safety checks.
+    Includes same rate limit handling for initial call.
     """
-    try:
-        # Override temperature for this specific call
-        current_generation_config = {
-            **generation_config,
-            "temperature": temperature
-        }
+    MAX_RETRIES = 2
+    
+    for attempt in range(MAX_RETRIES):
+        try:
+            current_generation_config = {
+                **generation_config,
+                "temperature": temperature
+            }
 
-        response_stream = model.generate_content(
-            [prompt_text],
-            stream=True,
-            generation_config=current_generation_config,
-            safety_settings=safety_settings
-        )
+            response_stream = model.generate_content(
+                [prompt_text],
+                stream=True,
+                generation_config=current_generation_config,
+                safety_settings=safety_settings
+            )
 
-        if not response_stream:
-            yield "Error: Received empty stream from Gemini API."
+            if not response_stream:
+                yield "Error: Received empty stream from Gemini API."
+                return
+
+            for chunk in response_stream:
+                if chunk.prompt_feedback and chunk.prompt_feedback.block_reason:
+                    yield f"\nError: Response blocked by safety filters ({chunk.prompt_feedback.block_reason})."
+                    break
+                if chunk.parts:
+                    yield chunk.parts[0].text
+
+            return  # Successful completion
+
+        except Exception as e:
+            error_details = str(e)
+            if attempt < MAX_RETRIES - 1:
+                # Use same dynamic delay logic for streaming
+                retry_delay = 5
+                if "ResourceExhausted" in error_details:
+                    match = re.search(r'Please retry in ([\d\.]+)s\.', error_details)
+                    if match:
+                        retry_delay = float(match.group(1)) + 1
+                    else:
+                        match_delay = re.search(r'seconds:\s*(\d+)', error_details)
+                        if match_delay:
+                            retry_delay = int(match_delay.group(1)) + 1
+                        else:
+                            retry_delay = 40
+                    
+                    yield f"\n⏳ Rate limit hit. Waiting {retry_delay:.1f}s before retry...\n"
+                    time.sleep(retry_delay)
+                    continue
+            
+            error_msg = f"\nError: Stream failed after {MAX_RETRIES} attempts. Details: {error_details}"
+            print(f"❌ {error_msg}")
+            yield error_msg
             return
-
-        for chunk in response_stream:
-            # Check for blocks in each chunk
-            if chunk.prompt_feedback and chunk.prompt_feedback.block_reason:
-                yield f"\nError: Response stream blocked by safety filters ({chunk.prompt_feedback.block_reason})."
-                break # Stop streaming if blocked
-            # Yield text safely using parts
-            if chunk.parts:
-                yield chunk.parts[0].text
-            # It's normal for some chunks not to have text (e.g., metadata chunks)
-
-    except Exception as e:
-        error_details = f"{type(e).__name__}: {str(e)}"
-        error_msg = f"\nError: Could not stream response from AI (model: {_MODEL_NAME}). Details: {error_details}"
-        print(error_msg)
-        yield error_msg
