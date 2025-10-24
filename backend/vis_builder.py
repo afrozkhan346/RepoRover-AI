@@ -37,12 +37,16 @@ def vis_payload(nodes: List[Dict], edges: List[Dict], lessons_data: Dict | None 
             lesson_node_id = f"lesson_{lesson.get('lesson_id', f'L{i+1}')}"
             lesson_node_ids.append(lesson_node_id)  # Store the ID for sequential edges
             
+            # Group by lesson level for color coding
+            lesson_level = lesson.get('level', 'Beginner').lower()
+            lesson_group = f"lesson_{lesson_level}"
+            
             vis_nodes.append({
                 "id": lesson_node_id,
                 # Enhanced label with duration
                 "label": f"{lesson.get('lesson_id', f'L{i+1}')}: {lesson.get('title', 'Untitled')} ({lesson.get('duration_minutes', '?')}m)",
                 "title": lesson.get('summary', lesson.get('objective', '')), # Tooltip
-                "group": "lesson",
+                "group": lesson_group,  # Group by level: lesson_beginner, lesson_intermediate, lesson_advanced
                 "shape": "ellipse",
                 # Add level info for potential styling
                 "level": lesson.get('level', 'Beginner')
@@ -60,7 +64,8 @@ def vis_payload(nodes: List[Dict], edges: List[Dict], lessons_data: Dict | None 
                                 "to": file_path,
                                 "arrows": "to",
                                 "color": {"color": "#a0a0a0", "highlight": "#808080"},
-                                "dashes": True
+                                "dashes": True,
+                                "label": "source"  # Add edge label for clarity
                             })
 
         # --- ADD SEQUENTIAL LESSON EDGES ---
@@ -72,7 +77,8 @@ def vis_payload(nodes: List[Dict], edges: List[Dict], lessons_data: Dict | None 
                     "arrows": "to",
                     "color": {"color": "#ffcc00", "highlight": "#ffa500"}, # Golden path edges
                     "dashes": False, # Solid line for lesson sequence
-                    "width": 3 # Make path edge thicker to stand out
+                    "width": 3, # Make path edge thicker to stand out
+                    "label": "next"  # Add edge label
                 })
         # --- END SEQUENTIAL EDGES ---
 

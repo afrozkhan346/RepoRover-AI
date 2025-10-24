@@ -81,18 +81,22 @@ def render_vis(payload: dict, height: int = 700):
     nodes_json = json.dumps(payload.get('nodes', []), ensure_ascii=False)
     edges_json = json.dumps(payload.get('edges', []), ensure_ascii=False)
 
-    # Define groups for styling
+    # Define groups for styling (Updated with lesson levels)
     groups_config = {
-        "lesson": {"color": {"background": '#97C2FC', "border": '#2B7CE9'}, "shape": 'ellipse', "font": {"color": '#343434'}},
-        "python": {"color": {"background": '#FFF0AD', "border": '#FF9900'}},
-        "javascript": {"color": {"background": '#C2FABC', "border": '#399605'}},
-        "typescript": {"color": {"background": '#C2FABC', "border": '#399605'}},
-        "markdown": {"color": {"background": '#E1E1E1', "border": '#808080'}},
-        "json": {"color": {"background": '#FADADD', "border": '#D32F2F'}},
-        "yaml": {"color": {"background": '#D6CEDE', "border": '#6A1B9A'}},
-        "dockerfile": {"color": {"background": '#ADD8E6', "border": '#0277BD'}},
-        "text": {"color": {"background": '#FFFFFF', "border": '#BDBDBD'}},
-        "file": {"color": {"background": '#FFFFFF', "border": '#BDBDBD'}}
+        # Lessons by Level
+        "lesson_beginner":     {"color": {"background": '#ADD8E6', "border": '#6495ED'}, "shape": 'ellipse', "font": {"color": '#343434', "size": 15}}, # Light Blue
+        "lesson_intermediate": {"color": {"background": '#FFD700', "border": '#FFA500'}, "shape": 'ellipse', "font": {"color": '#343434', "size": 15}}, # Gold/Amber
+        "lesson_advanced":     {"color": {"background": '#D8BFD8', "border": '#8A2BE2'}, "shape": 'ellipse', "font": {"color": '#343434', "size": 15}}, # Thistle/Purple
+        # Files by Language
+        "python":       {"color": {"background": '#FFF0AD', "border": '#FF9900'}, "shape": 'box'},
+        "javascript":   {"color": {"background": '#C2FABC', "border": '#399605'}, "shape": 'box'},
+        "typescript":   {"color": {"background": '#C2FABC', "border": '#399605'}, "shape": 'box'},
+        "markdown":     {"color": {"background": '#E1E1E1', "border": '#808080'}, "shape": 'box'},
+        "json":         {"color": {"background": '#FADADD', "border": '#D32F2F'}, "shape": 'box'},
+        "yaml":         {"color": {"background": '#D6CEDE', "border": '#6A1B9A'}, "shape": 'box'},
+        "dockerfile":   {"color": {"background": '#ADD8E6', "border": '#0277BD'}, "shape": 'box'},
+        "text":         {"color": {"background": '#FFFFFF', "border": '#BDBDBD'}, "shape": 'box'},
+        "file":         {"color": {"background": '#FFFFFF', "border": '#BDBDBD'}, "shape": 'box'} # Default
     }
     groups_json = json.dumps(groups_config, ensure_ascii=False)
 
@@ -152,6 +156,10 @@ def render_vis(payload: dict, height: int = 700):
               color: {{
                 color: '#848484',
                 highlight: '#343434'
+              }},
+              font: {{
+                size: 10,
+                color: '#666666'
               }}
             }},
             groups: {groups_json},
@@ -180,7 +188,7 @@ def render_vis(payload: dict, height: int = 700):
             if (params.nodes.length > 0) {{
               const nodeId = params.nodes[0];
               const nodeData = nodes.get(nodeId);
-              if (nodeData && nodeData.group !== 'lesson') {{
+              if (nodeData && !nodeData.group.startsWith('lesson_')) {{
                 const currentUrl = new URL(window.location.href);
                 currentUrl.searchParams.set('node', nodeId);
                 window.location.href = currentUrl.toString();
@@ -672,6 +680,18 @@ if st.session_state.get('repo_data'):
         st.subheader("🗺️ Interactive Repository Map")
         st.caption("Visualizing key files, lessons, and their relationships. Click on a file node to explore it!")
 
+        # --- ADD ENHANCED LEGEND ---
+        st.markdown("""
+        **Legend:**
+        * **Nodes:** 📦 Files (colored by type), 🎓 Lessons (colored by level)
+        * **Edges:** → Import/Dependency (heuristic), ⇢ Lesson Source, ⇒ Lesson Path
+        * **Colors (Files):** 🟨 Python, 🟩 JS/TS, ⬜ Markdown, 🟥 JSON, 🟪 YAML, 🟦 Dockerfile, ○ Other
+        * **Colors (Lessons):** 🟦 Beginner, 🟨 Intermediate, 🟪 Advanced
+        * **Interactions:** Hover for details, Click file to explain, Drag to reorganize
+        """)
+        st.markdown("---")  # Separator
+        # --- END LEGEND ---
+
         try:
             # Build graph data for files
             nodes, edges = graph_builder.build_graph_from_contexts(
@@ -686,35 +706,32 @@ if st.session_state.get('repo_data'):
                 # Create payload including lessons
                 payload = vis_builder.vis_payload(nodes, edges, lessons_data)
 
-                # Show some stats
-                st.info(f"📊 Generated graph with {len(payload['nodes'])} nodes and {len(payload['edges'])} relationships")
+                # Show some stats with enhanced info
+                lesson_count = 0
+                if lessons_data and lessons_data.get("lessons"):
+                    lesson_count = len(lessons_data["lessons"])
+                
+                st.info(f"📊 Generated graph with {len(payload['nodes'])} nodes ({len(nodes)} files + {lesson_count} lessons) and {len(payload['edges'])} relationships")
                 
                 # Render the interactive Vis Network graph
                 render_vis(payload, height=700)
                 
-                # Show legend
-                st.markdown("### 🏷️ Legend")
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.markdown("**File Types:**")
-                    st.markdown("🟨 Python • 🟩 JavaScript/TypeScript")
-                    st.markdown("⬜ Markdown • 🟥 JSON • 🟪 YAML")
-                with col2:
-                    st.markdown("**Nodes:**")
-                    st.markdown("📦 Files (clickable)")
-                    st.markdown("🎓 Lessons (blue ovals)")
-                with col3:
-                    st.markdown("**Edges:**")
-                    st.markdown("→ Import relationships")
-                    st.markdown("⚡ Lesson connections")
-                
-                # Additional controls
+                # Show enhanced controls info
                 st.markdown("---")
-                st.markdown("### 🎮 Controls")
-                st.markdown("- **Click & Drag**: Move nodes around")
-                st.markdown("- **Mouse Wheel**: Zoom in/out")
-                st.markdown("- **Click File Node**: Jump to Code Explainer")
-                st.markdown("- **Hover**: View file excerpts")
+                st.markdown("### 🎮 Controls & Features")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown("**Navigation:**")
+                    st.markdown("- **Click & Drag**: Move nodes around")
+                    st.markdown("- **Mouse Wheel**: Zoom in/out")
+                    st.markdown("- **Click File Node**: Jump to Code Explainer")
+                    st.markdown("- **Hover**: View file excerpts")
+                with col2:
+                    st.markdown("**Visual Elements:**")
+                    st.markdown("- **Solid Golden Lines**: Learning path between lessons")
+                    st.markdown("- **Dashed Gray Lines**: Lesson sources")
+                    st.markdown("- **Regular Arrows**: Import relationships")
+                    st.markdown("- **Node Colors**: File types and lesson levels")
                 
             else:
                 st.warning("⚠️ Not enough file data to generate a meaningful map.")
