@@ -398,6 +398,7 @@ if st.session_state.get('repo_data'):
 
                         # --- If the user asked a specific question: do RAG Q&A ---
                         if query:
+                            # --- RAG Q&A Flow (Using Excerpts) ---
                             search_term = query
                             relevant_contexts = retrieval.find_relevant_contexts(
                                 search_term, file_contexts, top_k=6
@@ -405,18 +406,32 @@ if st.session_state.get('repo_data'):
                             if not relevant_contexts:
                                 st.warning("Could not find relevant sections for your query.")
                             else:
-                                context_str = "\n\n---\n\n".join([ctx['content'] for ctx in relevant_contexts])
-                                prompt = (
-                                    "SYSTEM:\n"
-                                    "You are RepoRoverAI, an expert code assistant. "
-                                    "Answer the user's question using only the CONTEXT below. "
-                                    "Be concise and cite file paths and line ranges when relevant.\n\n"
-                                    f"QUESTION: {search_term}\n\n"
-                                    "CONTEXT:\n---\n"
-                                    f"{context_str}\n"
-                                    "---\n\nAnswer:"
-                                )
-                                st.markdown(f"### 🤖 Answer:")
+                                # Build context string using excerpts
+                                context_str = ""
+                                for ctx in relevant_contexts:
+                                    context_id = ctx.get('id', 'N/A')
+                                    file_path = ctx.get('file_path', 'N/A')
+                                    # Use excerpt or limited content
+                                    excerpt = ctx.get('excerpt', ctx.get('content', '')[:400])
+                                    context_str += f"""--- CONTEXT_ID: {context_id}
+FILE: {file_path}
+EXCERPT:
+{excerpt}
+---
+
+"""
+                                # Updated prompt to emphasize excerpt usage
+                                prompt = f"""SYSTEM:
+You are RepoRoverAI, an expert code assistant. Answer the user's question concisely using only the provided CONTEXT excerpts below. Cite CONTEXT_IDs when referencing specific code or documentation.
+
+QUESTION: {search_term}
+
+CONTEXT:
+{context_str.strip()}
+
+Answer:"""
+                                
+                                st.markdown("### 🤖 Answer:")
                                 response_generator = llm_client.stream_gemini_response(prompt)
                                 st.write_stream(response_generator)
 
@@ -433,50 +448,35 @@ if st.session_state.get('repo_data'):
                                     )
 
                         else:
-                            # --- NEW RAG Explainer Flow (No specific question) ---
-                            # Choose the highest-priority context (lower number = higher priority),
-                            # breaking ties by longer content to be more representative
+                            # --- RAG Explainer Flow (Updated Rendering) ---
                             representative_context = sorted(
                                 file_contexts,
                                 key=lambda c: (c.get('priority', 99), -len(c.get('content', '')))
                             )[0]
+                            context_str = representative_context.get('content', '')
+                            prompt = (
+                                "SYSTEM:\n"
+                                "You are RepoRoverAI, an expert code assistant. "
+                                "Provide a detailed explanation of the repository, its structure, and usage, based on the CONTEXT below.\n\n"
+                                "CONTEXT:\n---\n"
+                                f"{context_str}\n"
+                                "---\n\nExplanation:"
+                            )
+                            st.markdown("### 🤖 Explanation:")
+                            response_generator = llm_client.stream_gemini_response(prompt)
+                            st.write_stream(response_generator)
 
-                            explanation_data, sources_used = lesson_generator.generate_explanation_rag(
-                                representative_context,
-                                st.session_state['repo_name']
+                            # Show sources for explanation
+                            st.subheader("Sources Used:")
+                            st.caption(
+                                f"- `{representative_context['file_path']}` - Context ID: `{representative_context.get('id', 'N/A')}`"
                             )
 
-                            if explanation_data:
-                                st.success("Generated Explanation!")
-                                st.markdown("### Summary:")
-                                st.write(explanation_data.get("summary", "N/A"))
-
-                                st.markdown("### Potential Edge Cases / Gotchas:")
-                                edge_cases = explanation_data.get("edge_cases", [])
-                                if edge_cases:
-                                    for case in edge_cases:
-                                        st.markdown(f"- {case}")
-                                else:
-                                    st.write("None identified.")
-
-                                st.markdown("### Test Suggestion:")
-                                test_sugg = explanation_data.get("test_suggestion", {})
-                                st.write(f"**Title:** `{test_sugg.get('title', 'N/A')}`")
-                                st.code(test_sugg.get('assert', '# No assertion provided'), language='python')
-
-                                # Show explainer sources (should be just the one context)
-                                st.subheader("Source Used:")
-                                for ctx in sources_used:
-                                    line_info = (
-                                        f"Lines: {ctx.get('start_line', '?')}-{ctx.get('end_line', '?')}"
-                                        if ctx.get('start_line') else "Section/Chunk"
-                                    )
-                                    st.caption(
-                                        f"- `{ctx['file_path']}` ({line_info}) - Context ID: `{ctx.get('id', 'N/A')}`"
-                                    )
-                            else:
-                                st.error("Failed to generate the explanation. The AI might have returned an invalid format or encountered an error.")
-                                if sources_used:
-                                    st.subheader("Context Sent to AI (for debugging):")
-                                    for ctx in sources_used:
-                                        st.caption(f"- `{ctx['file_path']}` - Context ID: `{ctx.get('id', 'N/A')}`")
+        # --- Debugging Info (hidden by default) ---
+        if st.checkbox("Show Debug Info", False):
+            st.subheader("🔍 Debugging Info")
+            st.write("Raw repo data:", st.session_state['repo_data'])
+            if st.session_state.get('generated_lessons'):
+                st.write("Last generated lesson:", st.session_state['generated_lessons'])
+            if st.session_state.get('current_quiz'):
+                st.write("Last generated quiz:", st.session_state['current_quiz'])
