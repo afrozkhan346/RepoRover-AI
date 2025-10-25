@@ -39,10 +39,7 @@ venv.bak/
 .vs/
 
 # RepoRover-AI specific
-data/quiz_logs/
-data/explain_logs/
-logs/
-*.log
+data/cache/
 .streamlit/secrets.toml
 gen-lang-client-*.json
 delete_firestore_doc.py
