@@ -39,7 +39,8 @@ venv.bak/
 .vs/
 
 # RepoRover-AI specific
-data/
+data/quiz_logs/
+data/explain_logs/
 logs/
 *.log
 .streamlit/secrets.toml
