@@ -1,35 +1,117 @@
-# RepoRoverAI 🤖
+RepoRoverAI 🤖
 
 An AI web app that converts any GitHub repository into an interactive learning experience, featuring guided lessons, code explainers, visualizations, and quizzes.
 
 This is an entry for the Halothon 2025 hackathon.
 
-## Features
+Features
 
-* **Guided Lessons:** Generates structured lessons based on repository context (READMEs, manifests).
-* **Explain-on-Click / Q&A:**
-    * Select any processed file.
-    * Leave the question blank to get an AI-generated summary, key points, test suggestion, and example usage based on relevant code chunks (using top-8 contexts).
-    * Ask a specific question about the file to get a targeted answer based on the most relevant code chunks (using top-6 contexts).
-    * All explanations and answers include **source provenance** (file paths, line numbers/sections, context IDs).
-    * **Smart Caching:** Explanation results are cached based on input arguments for instant retrieval on repeat queries.
-    * **Confidence Scoring:** Explanations include confidence levels based on:
-        * Number of valid sources cited (3+ = high, 2 = medium, 1 = low)
-        * Mix of code and documentation sources (both = higher confidence)
-    * Explanation logs saved to `data/explain_logs/` for reproducibility.
-* **Auto-Graded Quizzes:** Generates multiple-choice quizzes based on lesson content, provides instant feedback, hints for incorrect answers, and explanations.
+GitHub OAuth Sign-in: Secure user authentication via GitHub.
 
-## Tech Stack
+Persistent Caching: Analyzed repos (contexts & embeddings) are cached in Firestore for instant re-loads.
 
--   **UI:** Streamlit
--   **LLM:** Gemini API
--   **Code Fetching:** GitHub REST API
+Interactive Repo Map: A vis-network graph showing key files, generated lessons, and their relationships.
 
-## Key Design Choices
+RAG-Powered Lessons: Generates structured, multi-step guided lessons from repository context.
 
-* **Reproducibility:** All LLM interactions are logged with full context and timestamps
-* **Source Validation:** Strict validation of cited sources against provided context
-* **Smart Caching:** Uses Streamlit's `@st.cache_data` for efficient response times
-* **Confidence Metrics:** Clear indication of explanation reliability based on sources
+RAG-Powered Code Explainer: Provides detailed JSON explanations (summary, key points, test cases, examples) for any selected file.
 
-(Note: Understandability and distractor plausibility are primarily driven by the LLM based on the prompt constraints.)
+RAG-Powered Quizzes: Generates interactive, auto-graded multiple-choice quizzes based on lesson content, complete with AI-generated hints.
+
+Tech Stack
+
+UI: Streamlit (with Streamlit Components V1)
+
+LLM: Google Gemini API (for embeddings and generation)
+
+Database: Google Firestore (for caching ingested repo data)
+
+Code Fetching: GitHub REST API
+
+Visualization: vis-network (via HTML component)
+
+Key Design Choices
+
+GitHub REST API over git clone: We use the GitHub API directly to stay serverless, lightweight, and fast, avoiding disk I/O and git dependency.
+
+Semantic Chunking: Instead of naive splitting, we use language-specific extractors (e.g., Python ast, Markdown regex) to create meaningful contexts (functions, classes, sections) for the LLM.
+
+Firestore as Cache: Using Firestore to store the heavy-lifting (contexts + embeddings) means the first analysis of a repo is slow, but every subsequent load by any user is instantaneous.
+
+RAG for All Content: All educational content (lessons, explanations, quizzes, hints) is generated using a Retrieval-Augmented Generation (RAG) pipeline. We retrieve the most relevant contexts via embedding similarity and feed them to the LLM with a structured prompt, ensuring answers are grounded in the repo's actual code.
+
+🛑 Hackathon Disclosures
+
+Authentication
+
+Method: We use a direct GitHub OAuth App flow.
+
+Purpose: This securely verifies the user's GitHub identity. The app requests read:user and user:email scopes.
+
+Role-Gating: Upon login, the user's GitHub username is checked against the local data/roles.json file to assign a "mentor" or "student" role, which can conditionally show/hide UI elements (like mentor-only buttons). User access tokens are stored only in the temporary session state and are not logged or saved.
+
+AI Usage & Provenance
+
+This project relies heavily on the Google Gemini API for its core functionality. Here is the breakdown:
+
+Hand-Coded by Developer (with AI assistance):
+
+The entire application framework and architecture (all Python files in backend/ and app/).
+
+The Streamlit UI layout and state management logic.
+
+The complete data pipeline (fetching, priority filtering, AST/regex extractors, chunking).
+
+The RAG retrieval logic (embedding generation, cosine similarity, context ranking).
+
+All prompt templates (for lessons, explanations, quizzes, hints) that instruct the AI.
+
+All data validation and logging logic.
+
+Generated by the Gemini LLM:
+
+The educational content (summaries, lesson steps, key points, quiz questions, explanations, hints).
+
+The embeddings for each code/text chunk.
+
+The LLM's output is constrained by our prompts to return structured JSON, which our hand-coded UI then parses and renders.
+
+Reproducibility:
+
+To ensure transparency and auditability for judges, the app saves logs for key AI generation steps (explanations and quizzes) to the data/explain_logs/ and data/quiz_logs/ directories (when run locally). These logs contain the contexts used and the final JSON response from the AI.
+
+Local Setup
+
+Clone the repo.
+
+Create a virtual environment:
+
+python -m venv venv
+source venv/Scripts/activate  # Or venv/bin/activate
+
+
+Install requirements:
+
+pip install -r requirements.txt
+
+
+Create your secrets file at .streamlit/secrets.toml and add your credentials:
+
+# .streamlit/secrets.toml
+GEMINI_API_KEY = "YOUR_GEMINI_KEY"
+GITHUB_TOKEN = "ghp_...YOUR_API_TOKEN_FOR_INGESTION..."
+
+# GitHub OAuth App credentials
+GITHUB_CLIENT_ID = "YOUR_OAUTH_CLIENT_ID"
+GITHUB_CLIENT_SECRET = "YOUR_OAUTH_CLIENT_SECRET"
+
+# Firestore service account key
+[firestore]
+type = "service_account"
+project_id = "..."
+# ... (paste your full JSON key here)
+
+
+Run the app:
+
+streamlit run app/streamlit_app.py
