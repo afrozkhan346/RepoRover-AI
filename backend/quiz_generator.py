@@ -186,6 +186,7 @@ def validate_quiz_question(question: Dict[str, Any], source_map: Dict[str, Any])
 
     return errors
 
+@st.cache_data(ttl=3600, show_spinner=False)
 def generate_quiz_for_lesson(lesson: Dict[str, Any], contexts: List[Dict[str, Any]], repo_id: str) -> Tuple[Dict | None, List]:
     """Generates a structured quiz with enhanced quality checks and logging."""
     if not lesson or not contexts:

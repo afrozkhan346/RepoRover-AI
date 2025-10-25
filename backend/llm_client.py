@@ -16,7 +16,7 @@ generation_config = {
     "temperature": 0.2, # Default, can be overridden
     "top_p": 1,
     "top_k": 1,
-    "max_output_tokens": 8192, # Kept high, adjust if needed
+    "max_output_tokens": 4096, # Kept high, adjust if needed
 }
 
 # --- Default Safety Settings ---
