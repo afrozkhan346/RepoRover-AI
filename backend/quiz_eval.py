@@ -127,8 +127,12 @@ EXCERPT:
 
     return None
 
+# --- CORRECTED Grading Function ---
 def grade_mcq_responses(quiz_data: Dict[str, Any], responses: Dict[str, str]) -> Dict[str, Any]:
-    """Grades user responses against the generated MCQ quiz."""
+    """
+    Grades user responses (full option strings like "A. Text") against the generated MCQ quiz.
+    Compares only the text part of the user's selection to the correct answer text.
+    """
     questions = quiz_data.get("questions", [])
     total = len(questions)
     correct_count = 0
@@ -139,31 +143,41 @@ def grade_mcq_responses(quiz_data: Dict[str, Any], responses: Dict[str, str]) ->
 
     for q in questions:
         qid = q.get('qid', 'Unknown')
-        user_choice_text = responses.get(qid, "").strip() if responses.get(qid) else None
-        
-        # Find correct choice
-        correct_choice = next(
-            (c for c in q.get("choices", []) if c.get("correct")),
-            None
-        )
-        correct_choice_text = correct_choice.get("text", "").strip() if correct_choice else None
-        
-        # Compare stripped versions
+        # User response is the full option string like "A. Some text" or None
+        user_selected_option_string = responses.get(qid)
+        user_selected_text = None
+        if user_selected_option_string and '. ' in user_selected_option_string:
+             # Extract text after "A. "
+             user_selected_text = user_selected_option_string.split('. ', 1)[1].strip()
+        elif user_selected_option_string: # Handle case where maybe label wasn't included?
+             user_selected_text = user_selected_option_string.strip()
+
+        correct_choice_label = None
+        correct_choice_text = None
         is_correct = False
-        if user_choice_text and correct_choice_text:
-            # Extract just the answer text after the label (e.g., "A. Some text" -> "Some text")
-            user_answer = user_choice_text.split(".", 1)[-1].strip() if "." in user_choice_text else user_choice_text
-            correct_answer = correct_choice_text.split(".", 1)[-1].strip() if "." in correct_choice_text else correct_choice_text
-            is_correct = user_answer == correct_answer
-        
+
+        # Find the correct choice text and label
+        choices_list = q.get("choices", [])
+        if isinstance(choices_list, list):
+             for choice_dict in choices_list:
+                 # Check if the dictionary structure is {"label": "A", "text": "...", "correct": True/False}
+                 if "label" in choice_dict and "text" in choice_dict and "correct" in choice_dict:
+                      if choice_dict.get('correct') is True:
+                           correct_choice_label = choice_dict.get("label")
+                           correct_choice_text = choice_dict.get("text", "").strip()
+                           # --- Perform Comparison ---
+                           if user_selected_text is not None and user_selected_text == correct_choice_text:
+                                is_correct = True
+                           break # Found the correct answer
+
         if is_correct:
             correct_count += 1
 
         results.append({
             "qid": qid,
             "question": q.get('question'),
-            "user_choice": user_choice_text,
-            "correct_choice": correct_choice_text,
+            "user_choice": user_selected_option_string, # Store the full string user selected
+            "correct_choice": f"{correct_choice_label}. {correct_choice_text}" if correct_choice_label else correct_choice_text, # Store formatted correct choice
             "correct": is_correct,
             "explanation": q.get('explanation'),
             "evidence": q.get('evidence', [])
@@ -172,8 +186,8 @@ def grade_mcq_responses(quiz_data: Dict[str, Any], responses: Dict[str, str]) ->
     score = correct_count
     percent = (score / total * 100) if total > 0 else 0.0
     return {
-        "score": score, 
-        "total": total, 
-        "results": results, 
+        "score": score,
+        "total": total,
+        "results": results,
         "percent": percent
     }
