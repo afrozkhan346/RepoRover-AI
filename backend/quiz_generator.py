@@ -188,24 +188,12 @@ def validate_quiz_question(question: Dict[str, Any], source_map: Dict[str, Any])
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def generate_quiz_for_lesson(lesson: Dict[str, Any], contexts: List[Dict[str, Any]], repo_id: str) -> Tuple[Dict | None, List]:
-    """Generates a structured quiz with enhanced quality checks and logging."""
+    """Generates a structured quiz with enhanced quality checks."""
     if not lesson or not contexts:
         print("❌ Missing lesson or contexts for quiz generation.")
         return None, []
 
-    # Setup logging data structure
     lesson_id = lesson.get('lesson_id', 'L_Unknown')
-    quiz_id = f"{repo_id.replace('/', '_')}-{lesson_id}"
-    log_dir = os.path.join("data", "quiz_logs")
-    os.makedirs(log_dir, exist_ok=True)
-    log_filename = os.path.join(log_dir, f"quiz_log_{quiz_id}_{datetime.datetime.now():%Y%m%d_%H%M%S}.json")
-    log_data = {
-        "timestamp": datetime.datetime.now().isoformat(),
-        "quiz_id": quiz_id, "lesson_id": lesson_id, "repo_id": repo_id,
-        "lesson_title": lesson.get('title', 'Untitled'),
-        "prompt": None, "context_ids_used": [], "llm_attempts": [],
-        "validation_errors": [], "final_quiz_data": None, "status": "started"
-    }
 
     try:
         # Filter contexts to only those relevant to the lesson
@@ -220,18 +208,14 @@ def generate_quiz_for_lesson(lesson: Dict[str, Any], contexts: List[Dict[str, An
 
         # Build prompt and source map
         prompt, source_map = build_quiz_prompt(lesson, relevant_contexts, repo_id)
-        log_data["prompt"] = prompt
-        log_data["context_ids_used"] = list(source_map.keys())
         print(f"\n🎲 Generating Quiz for '{lesson.get('title', 'N/A')}', using {len(relevant_contexts)} contexts")
 
         # LLM call with retries
         MAX_JSON_RETRIES = 2 # Allow 2 retries (3 attempts total)
         for attempt in range(MAX_JSON_RETRIES + 1):
-            attempt_data = { "attempt_number": attempt + 1, "timestamp": datetime.datetime.now().isoformat(), "raw_response": None, "cleaned_response": None, "validation_errors": [], "status": "pending" }
             print(f"🤖 Attempt {attempt + 1} of {MAX_JSON_RETRIES + 1}")
 
             raw_response = llm_client.get_gemini_response(prompt, temperature=0.15)
-            attempt_data["raw_response"] = raw_response
 
             try:
                 if not raw_response or raw_response.startswith("Error:"):
@@ -242,13 +226,11 @@ def generate_quiz_for_lesson(lesson: Dict[str, Any], contexts: List[Dict[str, An
                 if cleaned_response.startswith("```json"): cleaned_response = cleaned_response[7:]
                 if cleaned_response.endswith("```"): cleaned_response = cleaned_response[:-3]
                 cleaned_response = cleaned_response.strip()
-                attempt_data["cleaned_response"] = cleaned_response
 
                 if not cleaned_response.startswith("{") or not cleaned_response.endswith("}"):
                     raise ValueError("Response is not a valid JSON object (missing braces)")
 
                 quiz_data = json.loads(cleaned_response)
-                attempt_data["status"] = "parsed"
 
                 # Check for practice quiz fallback
                 is_practice_quiz = quiz_data.get("is_practice_quiz", False)
@@ -257,12 +239,7 @@ def generate_quiz_for_lesson(lesson: Dict[str, Any], contexts: List[Dict[str, An
                     questions = quiz_data.get("questions", [])
                     if len(questions) != 1 or questions[0].get("type") != "practice":
                         raise ValueError("Invalid practice quiz format returned")
-                    log_data["status"] = "success_practice_quiz"
-                    log_data["final_quiz_data"] = quiz_data
-                    log_data["llm_attempts"].append(attempt_data)
-                    # Save log and return
-                    with open(log_filename, 'w', encoding='utf-8') as f: json.dump(log_data, f, indent=2, ensure_ascii=False)
-                    print(f"📝 Practice quiz log saved to: {log_filename}")
+                    print("📝 Practice quiz generated.")
                     return quiz_data, relevant_contexts # Return practice quiz
 
                 # Regular quiz validation
@@ -277,11 +254,7 @@ def generate_quiz_for_lesson(lesson: Dict[str, Any], contexts: List[Dict[str, An
                     q_errors = validate_quiz_question(q, source_map)
                     validation_errors.extend([f"Q{q.get('qid', '?')}: {err}" for err in q_errors])
 
-                attempt_data["validation_errors"] = validation_errors
-                log_data["validation_errors"].extend(validation_errors)
-
                 if validation_errors:
-                    attempt_data["status"] = "failed_validation"
                     raise ValueError(f"Validation failed: {'; '.join(validation_errors)}")
 
                 # Attach full context objects
@@ -292,38 +265,22 @@ def generate_quiz_for_lesson(lesson: Dict[str, Any], contexts: List[Dict[str, An
                     all_sources.extend(evidence_full)
 
                 # Success!
-                attempt_data["status"] = "success"
-                log_data["status"] = "success"
-                log_data["final_quiz_data"] = quiz_data
                 unique_sources = list({ctx['id']: ctx for ctx in all_sources}.values())
 
-                log_data["llm_attempts"].append(attempt_data)
-                with open(log_filename, 'w', encoding='utf-8') as f: json.dump(log_data, f, indent=2, ensure_ascii=False)
-
                 print(f"✅ Generated {len(questions)} questions using {len(unique_sources)} sources")
-                print(f"📝 Log saved to: {log_filename}")
                 return quiz_data, unique_sources # Success
 
             except (json.JSONDecodeError, ValueError) as e:
-                attempt_data["status"] = "error_parsing_validation"
-                attempt_data["validation_errors"].append(str(e))
-                log_data["llm_attempts"].append(attempt_data)
-
                 print(f"❌ Error: {str(e)}")
                 if attempt < MAX_JSON_RETRIES:
                     print("⏳ Retrying with stricter quality requirements...")
                     prompt += "\n\nIMPORTANT: Previous attempt failed parsing or validation. Respond ONLY with valid JSON exactly matching the schema."
                     time.sleep(2) # Wait before retry
                 else:
-                     log_data["status"] = "failed_all_attempts"
-                     with open(log_filename, 'w', encoding='utf-8') as f: json.dump(log_data, f, indent=2, ensure_ascii=False)
-                     print(f"❌ Max retries reached. Log saved to: {log_filename}")
+                     print("❌ Max retries reached.")
                      return None, relevant_contexts # Final failure
 
     except Exception as e:
-        log_data["status"] = "unexpected_error"
-        log_data["validation_errors"].append(str(e))
-        with open(log_filename, 'w', encoding='utf-8') as f: json.dump(log_data, f, indent=2, ensure_ascii=False)
         print(f"❌ Unexpected error in quiz generation: {str(e)}")
         return None, [] # Return empty list if contexts weren't set
 

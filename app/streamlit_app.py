@@ -2,50 +2,55 @@ import streamlit as st
 import streamlit.components.v1 as components
 import sys
 import os
+import json
+import time
 from urllib.parse import unquote
 from pathlib import Path
-import datetime
-import time
-import json
-import numpy as np
+import datetime # For logging
+import numpy as np # For metrics calc
+import re # For parsing retry delays
 
-# Add the project root to the Python path
+# --- 1. Add project root to Python path ---
+# This must be one of the first things to run
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# --- 2. Import local modules (app and backend) ---
+# This must come *after* sys.path.append
+from backend import logger
 from app import auth_github
-
-# --- Backend Imports ---
-from backend import ingestion, db, lesson_generator, quiz_generator, llm_client, retrieval
-from backend import quiz_eval, explain, graph_builder, vis_builder
+from backend import (ingestion, db, lesson_generator, quiz_generator, llm_client, 
+                   retrieval, quiz_eval, explain, graph_builder, vis_builder)
 from backend.utils import parse_github_url
 
 # --- Constants ---
 LOG_DIR_VIS = Path("data/visualization_logs")
 LOG_DIR_VIS.mkdir(parents=True, exist_ok=True)
-# --- IMPORTANT: Define your app's URLs ---
-# Must match your GitHub OAuth App settings
+# Define your app's URLs (must match GitHub OAuth App settings)
 REDIRECT_URI = "http://localhost:8501/"
-# TODO: When deploying, add your Streamlit Cloud URL to your GitHub OAuth App
-# and update this logic to detect the deployed URL.
-# (e.g., DEPLOYED_URL = "https://your-app-name.streamlit.app/"
-#       redirect_uri = DEPLOYED_URL if "streamlit" in st.get_option("server.baseUrlPath") else LOCAL_REDIRECT_URI)
+# TODO: When deploying, add your Streamlit Cloud URL (e.g., "https://your-app.streamlit.app/")
+# to your GitHub OAuth App settings.
 
-
-# --- 2. Session State Initialization (with 'user' key) ---
+# --- 3. Session State Initialization (Two-Column Layout) ---
 REQUIRED_STATE_KEYS = [
     'repo_url', 'repo_id', 'ingested', 'contexts',
     'graph_payload', 'graph_lessons_hash', 'selected_node_id',
     'current_explain', 'current_explain_sources', 'current_lesson_data', 'current_quiz_data',
-    'current_view', 'active_lesson_id', 'logs',
-    'user' # <-- Added 'user'
+    'current_view', # Controls right panel: 'welcome', 'explain', 'lesson', 'quiz', 'loading'
+    'active_lesson_id', # Which lesson to show/quiz
+    'logs',
+    'user', # For authentication
+    'user_logged_in' # Flag to prevent re-logging auth
 ]
 DEFAULT_VALUES = {
     'repo_url': '', 'repo_id': None, 'ingested': False, 'contexts': [],
     'graph_payload': None, 'graph_lessons_hash': None, 'selected_node_id': None,
     'current_explain': None, 'current_explain_sources': [], 'current_lesson_data': None, 'current_quiz_data': None,
-    'current_view': 'welcome', 'active_lesson_id': None, 'logs': [],
-    'user': None # <-- Default user to None
+    'current_view': 'welcome', # Start with welcome message
+    'active_lesson_id': None, 'logs': [],
+    'user': None, # Default to no user
+    'user_logged_in': False
 }
+# Initialize state if first run
 if 'initialized' not in st.session_state:
     print("--- Initializing Session State ---")
     for key in REQUIRED_STATE_KEYS:
@@ -53,7 +58,7 @@ if 'initialized' not in st.session_state:
     st.session_state['initialized'] = True
 
 
-# --- 3. Call OAuth Handler (Runs on every page load) ---
+# --- 4. Call OAuth Handler (Runs on every page load) ---
 # This checks the URL for a ?code=... parameter and handles the login
 # redirect from GitHub *before* any other UI is drawn.
 try:
@@ -63,8 +68,7 @@ except Exception as e:
     print(f"Auth flow error: {e}")
 
 
-# --- Helper Functions (calculate_lesson_metrics, render_vis, etc.) ---
-# (These functions remain unchanged from your previous version)
+# --- Helper Functions (Metrics, Vis) ---
 
 def calculate_lesson_metrics(lesson_data):
     """Calculates quality metrics based on the generated lesson JSON."""
@@ -74,6 +78,7 @@ def calculate_lesson_metrics(lesson_data):
     metrics["total_lessons"] = len(lessons);
     if not lessons: return metrics
     for lesson in lessons:
+        # Check 'sources_full' which contains the actual mapped contexts
         if lesson.get("sources_full"): metrics["lessons_with_sources"] += 1
         steps = lesson.get("steps", []); metrics["total_steps"] += len(steps)
         for step in steps: metrics["total_step_chars"] += len(step.get("instruction", ""))
@@ -88,12 +93,31 @@ def render_vis(payload: dict, height: int = 700):
         return
     nodes_json = json.dumps(payload.get('nodes', []), ensure_ascii=False)
     edges_json = json.dumps(payload.get('edges', []), ensure_ascii=False)
-    groups_config = { "lesson_beginner": {"color": {"background": '#ADD8E6', "border": '#6495ED'}, "shape": 'ellipse'}, "lesson_intermediate": {"color": {"background": '#FFD700', "border": '#FFA500'}, "shape": 'ellipse'}, "lesson_advanced": {"color": {"background": '#D8BFD8', "border": '#8A2BE2'}, "shape": 'ellipse'}, "python": {"color": {"background": '#FFF0AD', "border": '#FF9900'}}, "javascript": {"color": {"background": '#C2FABC', "border": '#399605'}}, "typescript": {"color": {"background": '#C2FABC', "border": '#399605'}}, "markdown": {"color": {"background": '#E1E1E1', "border": '#808080'}}, "json": {"color": {"background": '#FADADD', "border": '#D32F2F'}}, "yaml": {"color": {"background": '#D6CEDE', "border": '#6A1B9A'}}, "dockerfile": {"color": {"background": '#ADD8E6', "border": '#0277BD'}}, "text": {"color": {"background": '#FFFFFF', "border": '#BDBDBD'}}, "file": {"color": {"background": '#FFFFFF', "border": '#BDBDBD'}} }
+    # Define groups for styling
+    groups_config = {
+        # Lessons
+        "lesson_beginner":     {"color": {"background": '#E0F7FA', "border": '#00796B'}, "shape": 'ellipse', "font": {"color": '#004D40', "size": 15, "face": "sans-serif"}},
+        "lesson_intermediate": {"color": {"background": '#FFF9C4', "border": '#FBC02D'}, "shape": 'ellipse', "font": {"color": '#4E342E', "size": 15, "face": "sans-serif"}},
+        "lesson_advanced":   {"color": {"background": '#F3E5F5', "border": '#7B1FA2'}, "shape": 'ellipse', "font": {"color": '#4A148C', "size": 15, "face": "sans-serif"}},
+        # Files
+        "python":       {"color": {"background": '#FFF0AD', "border": '#FF9900'}, "shape": 'box', "font": {"face": "monospace"}},
+        "javascript":   {"color": {"background": '#C8E6C9', "border": '#388E3C'}, "shape": 'box', "font": {"face": "monospace"}},
+        "typescript":   {"color": {"background": '#C8E6C9', "border": '#388E3C'}, "shape": 'box', "font": {"face": "monospace"}},
+        "markdown":     {"color": {"background": '#E0E0E0', "border": '#616161'}, "shape": 'box'},
+        "json":         {"color": {"background": '#FFCDD2', "border": '#D32F2F'}, "shape": 'box'},
+        "yaml":         {"color": {"background": '#D1C4E9', "border": '#512DA8'}, "shape": 'box'},
+        "dockerfile":   {"color": {"background": '#B3E5FC', "border": '#0277BD'}, "shape": 'box'},
+        "text":         {"color": {"background": '#FFFFFF', "border": '#BDBDBD'}, "shape": 'box'},
+        "file":         {"color": {"background": '#FFFFFF', "border": '#BDBDBD'}, "shape": 'box'} # Default
+    }
     groups_json = json.dumps(groups_config, ensure_ascii=False)
+
     html = f"""
-    <!doctype html><html><head><meta charset="utf-8"/><script type="text/javascript" src="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js"></script><link href="https://unpkg.com/vis-network@9.1.9/dist/dist/vis-network.min.css" rel="stylesheet" type="text/css"/><style>#mynetwork{{width:100%;height:{height}px;border:1px solid lightgray;background-color:#f8f9fa;border-radius:5px;}}.vis-tooltip{{position:absolute;visibility:hidden;padding:5px;white-space:pre-wrap;max-width:300px;font-family:sans-serif;font-size:12px;color:#000;background-color:#f9f9f9;border:1px solid #ccc;border-radius:3px;box-shadow:2px 2px 5px rgba(0,0,0,.1);z-index:10}}</style></head><body><div id="mynetwork"></div><script type="text/javascript">const nodes=new vis.DataSet({nodes_json});const edges=new vis.DataSet({edges_json});const container=document.getElementById("mynetwork");const data={{nodes,edges}};const options={{nodes:{{shape:"box",margin:10,font:{{size:14,color:"#343434"}},borderWidth:1.5,shapeProperties:{{borderRadius:4}}}},edges:{{smooth:{{type:"continuous",roundness:.2}},color:{{color:"#848484",highlight:"#343434"}}}},groups:{groups_json},interaction:{{hover:!0,tooltipDelay:200,navigationButtons:!0,keyboard:!0}},physics:{{solver:"forceAtlas2Based",forceAtlas2Based:{{gravitationalConstant:-50,centralGravity:.01,springLength:100,springConstant:.08,avoidOverlap:.5}},stabilization:{{iterations:150}}}}}};const network=new vis.Network(container,data,options);network.on("click",function(params){{if(params.nodes.length>0){{const nodeId=params.nodes[0];const nodeData=nodes.get(nodeId);if(nodeData&&!nodeData.group.startsWith("lesson_")){{const currentUrl=new URL(window.location.href);currentUrl.searchParams.set("node",nodeId);window.location.href=currentUrl.toString();console.log('Navigating for node:', nodeId);}}}}}});</script></body></html>
+    <!doctype html><html><head><meta charset="utf-8"/><script type="text/javascript" src="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js"></script><link href="https://unpkg.com/vis-network@9.1.9/dist/dist/vis-network.min.css" rel="stylesheet" type="text/css"/><style>#mynetwork{{width:100%;height:{height}px;border:1px solid #ddd;background-color:#fdfdfd;border-radius:5px;}}.vis-tooltip{{position:absolute;visibility:hidden;padding:8px;white-space:pre-wrap;max-width:350px;font-family:sans-serif;font-size:13px;color:#000;background-color:rgba(255,255,255,0.95);border:1px solid #ccc;border-radius:4px;box-shadow:0 2px 5px rgba(0,0,0,.1);z-index:10}}</style></head><body><div id="mynetwork"></div><script type="text/javascript">const nodes=new vis.DataSet({nodes_json});const edges=new vis.DataSet({edges_json});const container=document.getElementById("mynetwork");const data={{nodes,edges}};const options={{nodes:{{shape:"box",margin:10,font:{{size:14,color:"#343434"}},borderWidth:1.5,shapeProperties:{{borderRadius:4}}}},edges:{{smooth:{{type:"continuous",roundness:.2}},color:{{color:"#848484",highlight:"#343434"}}}},groups:{groups_json},interaction:{{hover:!0,tooltipDelay:200,navigationButtons:!0,keyboard:!0}},physics:{{solver:"forceAtlas2Based",forceAtlas2Based:{{gravitationalConstant:-50,centralGravity:.01,springLength:100,springConstant:.08,avoidOverlap:.5}},stabilization:{{iterations:150}}}}}};const network=new vis.Network(container,data,options);network.on("click",function(params){{if(params.nodes.length>0){{const nodeId=params.nodes[0];const nodeData=nodes.get(nodeId);if(nodeData&&!nodeData.group.startsWith("lesson_")){{const currentUrl=new URL(window.location.href);currentUrl.searchParams.set("node",nodeId);window.location.href=currentUrl.toString();console.log('Navigating for node:', nodeId);}}}}}});</script></body></html>
     """
     components.html(html, height=height + 50, scrolling=False)
+
+# --- UI Rendering Functions for Right Panel ---
 
 def render_welcome_panel():
     """Renders the initial welcome message in the right panel."""
@@ -110,9 +134,60 @@ def render_welcome_panel():
 
 def render_explain_panel(explain_data, sources_used):
     """Renders the explanation view in the right panel."""
-    # ... (function is unchanged)
-    st.subheader(f"🧑‍💻 Explain: `{explain_data.get('object', 'N/A')}`")
-    # ...
+    if not explain_data:
+        st.error("Could not generate explanation data.")
+        if sources_used:
+            st.subheader("Contexts Sent (Debug):")
+            for ctx in sources_used: st.caption(f"- `{ctx.get('id', 'N/A')}`")
+        return
+
+    display_name = explain_data.get('object', explain_data.get('file_path','N/A'))
+    if display_name == 'file': display_name = explain_data.get('file_path','N/A')
+
+    st.subheader(f"🧑‍💻 Explain: `{display_name}`")
+    confidence = explain_data.get("confidence", "unknown")
+    confidence_colors = {"high": "🟢", "medium": "🟡", "low": "🔴"}
+    st.caption(f"Confidence: {confidence_colors.get(confidence, '⚪')} {confidence.title()}")
+    st.markdown("---")
+
+    st.markdown("**Summary:**")
+    st.write(explain_data.get("summary", "_Not available._"))
+
+    st.markdown("**Key Points:**")
+    key_points = explain_data.get("key_points", [])
+    if key_points:
+        for point in key_points: st.markdown(f"- {point}")
+    else: st.write("_None identified._")
+
+    test_sugg = explain_data.get("unit_test", {})
+    with st.expander("🧪 Test Suggestion"):
+        st.write(f"**Title:** `{test_sugg.get('title', 'N/A')}`")
+        st.code(test_sugg.get('code', '# No test provided'), language=test_sugg.get('language', 'python'))
+
+    example = explain_data.get("example", "")
+    if example and example != "No simple example applicable.":
+        with st.expander("📝 Example Usage"):
+            lang = "bash"
+            if ("python" in explain_data.get("file_path", "") or
+                "(" in example or "=" in example or "import" in example):
+                 lang="python"
+            st.code(example, language=lang)
+    else:
+        st.markdown("**Example Usage:**")
+        st.write("_No simple example applicable._")
+
+    with st.expander("📚 Sources Used", expanded=False):
+        if sources_used:
+            sources_used.sort(key=lambda x: x.get('start_line') or 0)
+            for ctx in sources_used:
+                line_info = f"Lines: {ctx.get('start_line', '?')}-{ctx.get('end_line', '?')}" if ctx.get('start_line') else "Section"
+                st.caption(f"- `{ctx['file_path']}` ({line_info}) ID: `{ctx.get('id', 'N/A')}`")
+        else: st.caption("No specific sources cited by the AI.")
+
+    warnings = explain_data.get("warnings", [])
+    if warnings:
+        with st.expander("⚠️ Notes & Validation Warnings", expanded=True):
+            for w in warnings: st.caption(f"- {w}")
 
 # --- UI Rendering Functions for Right Panel (Continued) ---
 
@@ -132,7 +207,7 @@ def render_lesson_panel(lesson_data):
     with m_col3: st.metric("Avg Step Length", f"{metrics['avg_step_length_chars']:.0f} chars")
     st.markdown("---")
 
-    # Lessons
+    # Lessons with Quiz Buttons
     lessons = lesson_data.get("lessons", [])
     for i, lesson in enumerate(lessons):
         lesson_id = lesson.get('lesson_id', f'L{i+1}')
@@ -177,12 +252,19 @@ def render_quiz_panel(quiz_data, lesson_title="Lesson"):
 
     quiz_questions = quiz_data.get("questions", [])
 
+    # Handle practice quiz
     if quiz_data.get("is_practice_quiz"):
-        # ... (Practice quiz rendering logic - unchanged) ...
-        pass # Placeholder
+        st.info("📝 This is a practice question...")
+        practice_q = quiz_questions[0] if quiz_questions else {}
+        st.markdown(f"**{practice_q.get('question', 'No question found.')}**")
+        st.text_area("Your Answer:", key="practice_answer", disabled=True)
+        st.caption(practice_q.get("explanation", "Review the README."))
+        if st.button("Back to Lessons", key="practice_quiz_back"):
+            st.session_state['current_view'] = 'lesson'; st.session_state['current_quiz_data'] = None; st.rerun()
+    # Handle regular MCQ quiz
     elif quiz_questions:
         with st.form(key="quiz_form"):
-            user_answers = {}
+            user_answers = {} # Stores the full selected option string ("A. Text")
             st.markdown("**Answer the questions below:**")
             for i, q in enumerate(quiz_questions):
                  q_id = q.get('qid', f'Q{i+1}')
@@ -274,12 +356,17 @@ else:
 
     # --- Sidebar ---
     with st.sidebar:
+        # st.image("assets/logo.png", width=150) # Uncomment if you add a logo
+        st.title("RepoRoverAI")
+        st.caption("AI-Powered Code Learning")
+        st.markdown("---")
+        
         st.header(f"Welcome, {user.get('name', 'User')}!")
         if user.get('avatar'):
             st.image(user.get('avatar'), width=80)
         st.caption(f"Logged in as `{user.get('login')}`")
 
-        # --- ADD ROLE-GATED UI ---
+        # --- Role-Gated UI ---
         user_roles = user.get('roles', [])
         if 'mentor' in user_roles:
             st.success("Mentor Role Active") # Show status
@@ -290,9 +377,10 @@ else:
                     st.toast("Analytics panel triggered! (Feature not implemented)")
         else:
             st.info("Student Role Active") # Show status
-        # --- END ROLE-GATED UI ---
-
+        
         if st.button("Sign out", use_container_width=True):
+            # Log logout event
+            logger.log_event("auth", {"action": "logout"})
             # Clear all session state on logout
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
@@ -333,28 +421,37 @@ else:
         
         # --- Analysis / Loading Logic ---
         if st.session_state.get('current_view') == 'loading' and st.session_state.get('repo_id'):
-            # (Analysis/Cache check logic - unchanged)
-            # ... (Try/Except db.get_repo_data_from_db) ...
-            # ... (If cached -> set state, rerun) ...
-            # ... (If not cached -> Ingest, save, set state, rerun) ...
             repo_id = st.session_state['repo_id']
             owner, repo = repo_id.split('/', 1)
+            t_start = time.time()
             try:
                 with st.spinner(f"Checking cache for {repo_id}..."): cached_data = db.get_repo_data_from_db(repo_id)
             except Exception as e: st.error(f"DB Error: {e}", icon="🔥"); st.stop()
+            
             if cached_data:
                 st.session_state['contexts'] = cached_data; st.session_state['ingested'] = True
                 st.session_state['current_view'] = 'welcome'; st.success(f"Loaded {len(cached_data)} chunks!"); time.sleep(1); st.rerun()
             else:
                 try:
                     st.info(f"'{repo_id}' not cached. Analyzing...");
-                    with st.spinner(f"Ingesting {repo_id}..."): chunks = ingestion.process_repository(owner, repo)
+                    with st.spinner(f"Ingesting {repo_id}... (this may take several minutes)"): 
+                        chunks = ingestion.process_repository(owner, repo)
+                    
                     if len(chunks) > 0:
                         with st.spinner("Saving to database..."): db.save_repo_data_to_db(repo_id, chunks)
                         st.session_state['contexts'] = chunks; st.session_state['ingested'] = True
-                        st.session_state['current_view'] = 'welcome'; st.success(f"Analyzed & Saved {len(chunks)} chunks!"); st.balloons(); time.sleep(2); st.rerun()
-                    else: st.warning("Ingested 0 chunks."); st.session_state['current_view'] = 'welcome'; st.rerun()
+                        st.session_state['current_view'] = 'welcome'; st.success(f"Analyzed & Saved {len(chunks)} chunks!"); 
+                        duration_ms = (time.time() - t_start) * 1000
+                        logger.log_event("ingest_success", {
+                            "duration_ms": duration_ms,
+                            "contexts_saved": len(chunks),
+                        })
+                        st.balloons(); time.sleep(2); st.rerun()
+                    else: 
+                        st.warning("Ingested 0 chunks."); st.session_state['current_view'] = 'welcome'; st.rerun()
                 except Exception as e:
+                    duration_ms = (time.time() - t_start) * 1000
+                    logger.log_event("ingest_fail", {"duration_ms": duration_ms, "error": str(e)})
                     st.error(f"Ingestion failed: {e}", icon="🔥"); st.session_state['ingested'] = False; st.session_state['contexts'] = []; st.session_state['current_view'] = 'welcome'; st.rerun()
 
         # --- Sidebar Controls (Only show if ingested) ---
@@ -362,58 +459,52 @@ else:
         if st.session_state.get('ingested') and st.session_state.get('repo_id'):
             st.markdown(f"**Current Repo:**\n`{st.session_state['repo_id']}`")
             st.metric("Context Chunks", len(st.session_state.get('contexts', [])))
-            # Lesson Generation Button
+            
             lesson_button_text = "🔄 Regenerate Lessons" if st.session_state.get('current_lesson_data') else "🚀 Generate Guided Lessons"
             if st.button(lesson_button_text, key="generate_lessons_sidebar", use_container_width=True):
-                 # (Lesson generation logic - unchanged)
-                 # ... (Call generate_lesson_rag, set state, rerun) ...
                  st.session_state['current_lesson_data'] = None; st.session_state['current_quiz_data'] = None
                  with st.spinner("AI generating lessons..."):
-                     contexts_for_lesson = retrieval.find_relevant_contexts("repository overview...", st.session_state['contexts'], top_k=12)
+                     t_start = time.time()
+                     contexts_for_lesson = retrieval.find_relevant_contexts("repository overview, setup, key files", st.session_state['contexts'], top_k=12)
                      high_priority_contexts = [ctx for ctx in contexts_for_lesson if ctx.get('priority', 99) <= 2][:8]
                      if not high_priority_contexts: st.warning("Not enough context.")
                      else:
                          lesson_data, sources = lesson_generator.generate_lesson_rag(high_priority_contexts, st.session_state['repo_id'])
+                         duration_ms = (time.time() - t_start) * 1000
                          if lesson_data:
                               st.session_state['current_lesson_data'] = lesson_data; st.session_state['current_view'] = 'lesson'
                               st.session_state['active_lesson_id'] = lesson_data['lessons'][0]['lesson_id'] if lesson_data.get('lessons') else None
                               st.session_state['graph_payload'] = None; st.success("Lessons generated!")
-                         else: st.error("Failed to generate lessons.")
+                              logger.log_event("llm_call_success", {"action": "lesson_generate", "duration_ms": duration_ms, "context_ids": [ctx['id'] for ctx in high_priority_contexts], "response_summary": f"Generated {len(lesson_data.get('lessons',[]))} lessons."})
+                         else: 
+                              st.error("Failed to generate lessons."); logger.log_event("llm_call_fail", {"action": "lesson_generate", "duration_ms": duration_ms})
                  st.rerun()
 
         # --- Debug Controls ---
         st.markdown("---")
         st.markdown("⚙️ **Debug & Settings**")
         
-        if st.button("Clear LLM Cache (Force Regenerate)", key="clear_llm_cache", use_container_width=True, help="Clears in-memory cache for lessons, quizzes, and explanations, forcing the AI to generate new content on the next click."):
-            # This clears all @st.cache_data and @st.cache_resource decorators
+        st.session_state['demo_mode'] = st.toggle("🚀 Demo Mode", value=st.session_state.get('demo_mode', True), help="Use pre-generated snapshots for lessons/quizzes/explanations to avoid API rate limits.")
+        
+        if st.button("Clear LLM Cache", key="clear_llm_cache", use_container_width=True, help="Clears in-memory cache (@st.cache_data) for lessons, quizzes, and explanations."):
             st.cache_data.clear()
-            st.cache_resource.clear()
-            
-            # Also clear the session state variables holding the generated content
-            st.session_state['graph_payload'] = DEFAULT_VALUES['graph_payload']
-            st.session_state['current_explain'] = DEFAULT_VALUES['current_explain']
-            st.session_state['current_lesson_data'] = DEFAULT_VALUES['current_lesson_data']
-            st.session_state['current_quiz_data'] = DEFAULT_VALUES['current_quiz_data']
-            st.session_state['selected_node_id'] = DEFAULT_VALUES['selected_node_id']
-            st.session_state['current_view'] = 'welcome' # Reset view
-            
-            st.success("App cache cleared! Click 'Generate' again to get fresh AI content.")
+            st.cache_resource.clear() # Clear DB connection cache too
+            st.session_state['graph_payload'] = None
+            st.session_state['current_explain'] = None
+            st.session_state['current_lesson_data'] = None
+            st.session_state['current_quiz_data'] = None
+            st.session_state['current_view'] = 'welcome'
+            st.success("App cache cleared! Click 'Generate' again.")
             st.rerun()
 
-        if st.button("Clear Full Session (New Repo)", key="clear_session_sidebar", use_container_width=True, help="Clears everything, including the loaded repository and user login. Use this to start fresh with a new repo URL."):
-            # This clears everything
-            user_to_keep = st.session_state.get('user') # Preserve user login
-            keys_to_clear = list(st.session_state.keys())
+        if st.button("Clear Session & Repo", key="clear_session_sidebar", use_container_width=True, help="Clears all session data including the loaded repo, but keeps you logged in. Use this to analyze a new repo."):
+            user_to_keep = st.session_state.get('user')
+            keys_to_clear = list(DEFAULT_VALUES.keys())
             for key in keys_to_clear:
-                del st.session_state[key]
-            # Restore defaults
-            for key, value in DEFAULT_VALUES.items():
-                 st.session_state[key] = value
-            st.session_state['initialized'] = True
+                st.session_state[key] = DEFAULT_VALUES[key]
             st.session_state['user'] = user_to_keep # Restore user
-            
-            st.success("Full session cleared. You can now analyze a new repository.")
+            st.session_state['initialized'] = True
+            st.success("Session cleared. Enter a new repo URL.")
             st.rerun()
 
 
@@ -426,8 +517,6 @@ else:
         if not st.session_state.get('ingested'):
             st.info("Analyze a repository in the sidebar to visualize its structure.")
         else:
-            # (Graph generation/rendering logic - unchanged)
-            # ... (Check payload, build if needed, render_vis) ...
             graph_lessons_hash = hash(json.dumps(st.session_state.get('current_lesson_data'), sort_keys=True))
             if not st.session_state.get('graph_payload') or st.session_state.get('graph_lessons_hash') != graph_lessons_hash:
                 print("Generating/Updating graph payload...")
@@ -437,6 +526,7 @@ else:
                     st.session_state['graph_lessons_hash'] = graph_lessons_hash
                 except Exception as e:
                      print(f"Error building graph: {e}"); st.session_state['graph_payload'] = {"nodes": [], "edges": []}
+            
             if st.session_state['graph_payload'] and st.session_state['graph_payload'].get("nodes"):
                 render_vis(st.session_state['graph_payload'], height=700)
             else: st.warning("Could not generate graph data.")
@@ -456,7 +546,11 @@ else:
                  st.session_state['current_explain'] = None # Force re-fetch
                  st.session_state['active_lesson_id'] = None; st.session_state['current_quiz_data'] = None
                  st.query_params.clear(); print(f"Node clicked: {clicked_node_id}");
-                 # (Logging logic for click can go here)
+                 # Log click
+                 try:
+                     log_entry = { "timestamp": datetime.datetime.now().isoformat(), "event_type": "node_click", "node_id": clicked_node_id}
+                     logger.log_event("vis_click", log_entry) # Use central logger
+                 except Exception as log_e: print(f"Error logging node click: {log_e}")
                  st.rerun()
 
         # --- Determine what to display ---
@@ -467,17 +561,27 @@ else:
             node_id_to_explain = st.session_state.get('selected_node_id')
             if not node_id_to_explain:
                  st.info("Click a file node on the graph to see details.")
+                 if st.session_state.get('current_lesson_data'):
+                     if st.button("View Lessons", key="explain_view_lessons_alt"):
+                         st.session_state['current_view'] = 'lesson'; st.session_state['selected_node_id'] = None; st.rerun()
             else:
-                # (Explanation generation/rendering logic - unchanged)
-                # ... (Check 'current_explain', call explain_target if needed, render_explain_panel) ...
+                 # Fetch/Generate Explanation
                  if not st.session_state.get('current_explain') or st.session_state['current_explain'].get('file_path') != node_id_to_explain:
                       with st.spinner(f"Generating explanation..."):
+                           t_start = time.time()
                            explanation_data, sources_used = explain.explain_target(
                                 repo_id=st.session_state['repo_id'], file_path=node_id_to_explain, object_name=None,
                                 all_contexts=st.session_state['contexts'], top_k=8
                            )
+                           duration_ms = (time.time() - t_start) * 1000
                            st.session_state['current_explain'] = explanation_data
                            st.session_state['current_explain_sources'] = sources_used
+                           # Log event
+                           if explanation_data and "llm_error" not in explanation_data.get('explain_id',''):
+                                logger.log_event("llm_call_success", {"action": "explain_generate", "file_path": node_id_to_explain, "duration_ms": duration_ms, "context_ids": [ctx['id'] for ctx in sources_used], "response_summary": explanation_data.get('summary', 'N/A')})
+                           else:
+                                logger.log_event("llm_call_fail", {"action": "explain_generate", "file_path": node_id_to_explain, "duration_ms": duration_ms})
+
                  render_explain_panel(st.session_state.get('current_explain'), st.session_state.get('current_explain_sources', []))
                  if st.session_state.get('current_lesson_data'):
                      if st.button("View Lessons", key="explain_view_lessons"):
@@ -503,12 +607,7 @@ else:
         else: # 'welcome'
              render_welcome_panel()
 
-
     # --- Footer ---
     st.markdown("---")
-    st.caption(f"RepoRoverAI © 2025 | Logged in as: {user.get('login')} | Current Repo: {st.session_state.get('repo_id', 'None')}")
+    st.caption(f"RepoRoverAI © 2025 | Logged in as: {user.get('login')} | Repo: {st.session_state.get('repo_id', 'None')}")
 
-# --- 6. Footer for Login Page (if not logged in) ---
-if not st.session_state.get("user"):
-     st.markdown("---")
-     st.caption("RepoRoverAI © 2025 - Halothon Entry")

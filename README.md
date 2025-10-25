@@ -1,4 +1,4 @@
-````markdown
+
 # RepoRoverAI 🤖
 
 **Your AI-powered co-pilot for exploring and learning from GitHub repositories!**
@@ -165,6 +165,10 @@ streamlit run app/streamlit_app.py
     ```bash
     python replay_log.py data/lesson_logs/<log_file_name>.json
     ```
+### Data Privacy & Retention
+- **No Secrets Logged:** API keys, tokens, and client secrets are loaded from Streamlit Secrets and are never logged.
+- **PII Minimization:** The app only logs the user's GitHub username (`user_login`) for event tracking. No emails or other PII are stored.
+- **Log Retention:** All logs (ingestion, LLM calls, quizzes) are generated for hackathon demonstration and reproducibility. They will be removed from the public repository after the judging period.
 
 -----
 

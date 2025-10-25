@@ -11,8 +11,6 @@ from pathlib import Path
 
 # --- Setup Log Directory ---
 SCRIPT_DIR_LESSON = Path(__file__).resolve().parent.parent # Project root
-LOG_DIR = SCRIPT_DIR_LESSON / "data" / "lesson_logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 # --- RAG Lesson Prompt Template (with Few-Shot Example) ---
 RAG_LESSON_PROMPT_TEMPLATE = """
@@ -156,21 +154,6 @@ def generate_lesson_rag(contexts: list[dict], repo_id: str, user_goal: str = "Un
     print(f"Repo: {repo_id}")
     print(f"Input Contexts: {len(contexts)} total")
 
-    # --- Setup Logging ---
-    log_data = {
-        "timestamp": datetime.datetime.now().isoformat(),
-        "repo_id": repo_id,
-        "user_goal": user_goal,
-        "prompt": None, # Will be set
-        "context_ids_used": [],
-        "llm_attempts": [],
-        "final_lesson_data": None,
-        "validation_warnings": [],
-        "status": "started"
-    }
-    log_filename = LOG_DIR / f"lesson_log_{repo_id.replace('/', '_')}_{datetime.datetime.now():%Y%m%d_%H%M%S}.json"
-    # --- End Logging Setup ---
-
     try:
         # --- Prepare Contexts ---
         MAX_CONTEXT_LENGTH = 15000
@@ -206,8 +189,6 @@ EXCERPT:
         prompt = RAG_LESSON_PROMPT_TEMPLATE.format(
             user_goal=user_goal, repo_id=repo_id, context_str=context_str.strip()
         )
-        log_data["prompt"] = prompt # Add prompt to log
-        log_data["context_ids_used"] = list(source_map.keys())
 
         print(f"\n📤 Sending prompt to LLM (Context length: {len(context_str)} chars)...")
         # print(f"Using contexts: {[ctx['id'] for ctx in included_contexts]}") # Verbose log
@@ -215,11 +196,9 @@ EXCERPT:
         # --- LLM Call with Retry Logic for JSON Parsing ---
         MAX_JSON_RETRIES = 1
         for attempt in range(MAX_JSON_RETRIES + 1):
-            attempt_data = {"attempt_number": attempt + 1, "timestamp": datetime.datetime.now().isoformat(), "raw_response": None, "validation_errors": [], "status": "pending"}
             print(f"\n🤖 Attempt {attempt + 1} of {MAX_JSON_RETRIES + 1}")
             
             raw_response = llm_client.get_gemini_response(prompt, temperature=0.2)
-            attempt_data["raw_response"] = raw_response
 
             try:
                 if not raw_response or raw_response.startswith("Error:"):
@@ -234,7 +213,6 @@ EXCERPT:
                      raise ValueError("Response is not a valid JSON object (missing braces).")
 
                 lesson_data = json.loads(cleaned_response)
-                attempt_data["status"] = "parsed"
 
                 # Validate the parsed JSON
                 print("\n🔍 Validating lesson data...")
@@ -242,7 +220,6 @@ EXCERPT:
                 if validation_warnings:
                     print("⚠ Validation warnings found:"); [print(f"  - {w}") for w in validation_warnings]
                 lesson_data["warnings"] = lesson_data.get("warnings", []) + validation_warnings
-                attempt_data["validation_errors"] = validation_warnings
 
                 # Attach full context objects for UI display
                 print("\n📎 Attaching full source contexts to lesson data...")
@@ -262,125 +239,20 @@ EXCERPT:
 
                 # --- Success ---
                 print(f"✅ Success! Generated {len(lesson_data['lessons'])} lessons.")
-                log_data["status"] = "success"
-                log_data["final_lesson_data"] = lesson_data
-                log_data["llm_attempts"].append(attempt_data)
-                with open(log_filename, 'w', encoding='utf-8') as f:
-                    json.dump(log_data, f, indent=2, ensure_ascii=False)
-                print(f"📝 Lesson log saved to {log_filename}")
                 return lesson_data, unique_sources_used
 
             except (json.JSONDecodeError, ValueError) as e:
                 print(f"❌ Error processing response (Attempt {attempt + 1}): {e}")
-                attempt_data["status"] = "error_parsing"
-                attempt_data["validation_errors"].append(str(e))
-                log_data["llm_attempts"].append(attempt_data)
                 if attempt < MAX_JSON_RETRIES:
                     print("⏳ Retrying...")
                     prompt += "\n\nIMPORTANT REMINDER: Your response MUST be ONLY the valid JSON object requested, starting with '{' and ending with '}'. Do NOT include any other text, comments, or markdown formatting."
                     time.sleep(2)
                 else:
                     print("❌ Max retries reached.")
-                    log_data["status"] = "failed_all_attempts"
-                    with open(log_filename, 'w', encoding='utf-8') as f:
-                        json.dump(log_data, f, indent=2, ensure_ascii=False)
                     return None, included_contexts
         
     except Exception as e:
         print(f"❌ Unexpected error in lesson generation: {str(e)}")
-        log_data["status"] = "unexpected_error"; log_data["validation_warnings"].append(str(e))
-        with open(log_filename, 'w', encoding='utf-8') as f:
-            json.dump(log_data, f, indent=2, ensure_ascii=False)
         return None, []
 
     return None, included_contexts # Fallback
-
-# def generate_explanation_rag(context: dict, repo_id: str, object_name: str = "file"):
-#     """Generates a structured explanation using the context excerpt."""
-#     if not context or not context.get('content'):
-#         print("\n❌ Error: Invalid context for explanation")
-#         return None, []
-
-#     context_id = context.get('id', 'N/A')
-#     file_path = context.get('file_path', 'N/A')
-#     # Use excerpt or create one from content
-#     excerpt = context.get('excerpt')
-#     if not excerpt:
-#         content = context.get('content', '')
-#         excerpt = content[:400] + ('...' if len(content) > 400 else '')
-
-#     # Ensure we have valid content to work with
-#     if not excerpt.strip():
-#         print(f"❌ Context {context_id} has empty excerpt/content")
-#         return None, []
-
-#     # Build prompt with excerpt
-#     prompt = CODE_EXPLAIN_PROMPT_TEMPLATE.format(
-#         repo_id=repo_id,
-#         context_id=context_id,
-#         file_path=file_path,
-#         excerpt=excerpt
-#     )
-
-#     print("\n📤 Sending explanation prompt to LLM")
-#     raw_response = llm_client.get_gemini_response(prompt, temperature=0.15)
-
-#     try:
-#         if not raw_response or raw_response.startswith("Error:"):
-#             raise ValueError(f"LLM Error: {raw_response}")
-
-#         # Clean and parse JSON
-#         cleaned_response = raw_response.strip()
-#         if cleaned_response.startswith("```json"): 
-#             cleaned_response = cleaned_response[7:]
-#         if cleaned_response.endswith("```"):
-#             cleaned_response = cleaned_response[:-3]
-        
-#         llm_data = json.loads(cleaned_response.strip())
-        
-#         # Validate required fields
-#         required_keys = ["summary", "key_points", "unit_test", "example", "sources"]
-#         missing_keys = [key for key in required_keys if key not in llm_data]
-#         if missing_keys:
-#             raise ValueError(f"Missing required fields: {missing_keys}")
-
-#         # Validate key_points
-#         if not isinstance(llm_data.get("key_points"), list) or len(llm_data["key_points"]) != 3:
-#             raise ValueError("key_points must be a list of exactly 3 strings")
-
-#         # Validate unit_test structure
-#         unit_test = llm_data.get("unit_test", {})
-#         if not isinstance(unit_test, dict) or not all(k in unit_test for k in ["title", "code", "language"]):
-#             raise ValueError("unit_test object structure is invalid")
-
-#         # Validate sources
-#         if not isinstance(llm_data.get("sources"), list) or context_id not in llm_data.get("sources", []):
-#             print(f"⚠️ Warning: explanation sources don't match expected context_id {context_id}")
-
-#         # Construct final explanation data
-#         final_explanation_data = {
-#             "explain_id": f"{repo_id}:{file_path}:{object_name}:{context.get('start_line', 0)}:{context.get('chunk_index', 0)}",
-#             "repo_id": repo_id,
-#             "file_path": file_path,
-#             "object": object_name,
-#             "summary": llm_data["summary"],
-#             "key_points": llm_data["key_points"],
-#             "unit_test": llm_data["unit_test"],
-#             "example": llm_data["example"],
-#             "sources": llm_data["sources"],
-#             "warnings": []
-#         }
-
-#         print("✅ Successfully generated explanation")
-#         return final_explanation_data, [context]
-
-#     except json.JSONDecodeError as e:
-#         print(f"❌ JSON parsing error: {str(e)}")
-#         print(f"Raw response:\n{raw_response}")
-#         return None, [context]
-#     except Exception as e:
-#         print(f"❌ Error generating explanation: {str(e)}")
-#         return None, [context]
-
-# def generate_explanation_rag(contexts: list[dict], repo_id: str, file_path: str, object_name: str = "file"):
-#     """Generates a structured explanation using RAG based on multiple contexts."""

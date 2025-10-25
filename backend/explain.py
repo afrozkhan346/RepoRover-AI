@@ -11,12 +11,19 @@ import re # For parsing retry delay
 from . import llm_client
 from . import retrieval
 
-# Create logs directory relative to this file
-SCRIPT_DIR_EXPLAIN = Path(__file__).resolve().parent.parent # Goes up to project root
-LOG_DIR = SCRIPT_DIR_EXPLAIN / "data" / "explain_logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)
+# --- Setup Log Directory ---
+# Define the log directory relative to this file
+# (backend/explain.py -> backend/ -> RepoRover-AI/ -> data/explain_logs)
+try:
+    SCRIPT_DIR = Path(__file__).resolve().parent.parent
+    LOG_DIR = SCRIPT_DIR / "data" / "explain_logs"
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    print(f"Explain logger initialized. Log directory set to: {LOG_DIR}")
+except Exception as e:
+    print(f"Warning: Could not create explain log directory at {LOG_DIR}. Error: {e}")
+    LOG_DIR = None # Set to None to prevent write errors
 
-# --- Prompt Template ---
+# --- Prompt Template (from 6.4) ---
 # Note: Use f-string compatible escaping {{ }} for JSON schema parts
 CODE_EXPLAIN_PROMPT_TEMPLATE = """
 SYSTEM:
@@ -36,23 +43,25 @@ Using ONLY the CONTEXTS below, produce EXACTLY one JSON object (no extra text) m
       "string (concise point 1, <=120 chars)",
       "string (concise point 2, <=120 chars)",
       "string (concise point 3, <=120 chars)"
+      // Exactly 3 points
    ],
-  "unit_test": {{ 
+  "unit_test": {{
       "title": "string (Descriptive test name)",
       "code": "string (Single, runnable assert or pytest snippet)",
-      "language": "python"
+      "language": "python" // Always python
    }},
   "example": "string (one-line example to run or use, or 'No simple example applicable.')",
-  "sources": ["CONTEXT_ID", "..."],
-  "warnings": []
+  "sources": ["CONTEXT_ID", "..."], // List CONTEXT_IDs used
+  "warnings": [] // Optional strings for missing info etc.
 }}
 ```
 
 CONSTRAINTS:
-- Use only information present in the CONTEXTS. If insufficient info, set summary to "Insufficient context to summarize {object_name}." and add a warning.
-- Base key points, test, and example strictly on provided CONTEXTS.
-- At least one CONTEXT_ID must be listed in "sources".
-- Return valid JSON only, starting with `{{` and ending with `}}`.
+
+  - Use only information present in the CONTEXTS. If insufficient info, set summary to "Insufficient context to summarize {object_name}." and add a warning.
+  - Base key points, test, and example strictly on provided CONTEXTS.
+  - At least one CONTEXT_ID must be listed in "sources".
+  - Return valid JSON only, starting with `{{` and ending with `}}`.
 
 CONTEXTS:
 ---BEGIN
@@ -63,6 +72,7 @@ Return only the JSON object.
 """
 
 # --- Helper to Call LLM and Parse JSON (with Retry) ---
+
 def _call_llm_json(prompt: str, max_tokens: int = 700, temperature: float = 0.1) -> Dict:
     """
     Calls the LLM, attempts to parse JSON, retries once on parse error.
@@ -81,8 +91,8 @@ def _call_llm_json(prompt: str, max_tokens: int = 700, temperature: float = 0.1)
         try:
             # Check if llm_client returned an error message
             if raw_response is None or not raw_response.strip() or raw_response.startswith("Error:"):
-                # Propagate the error message from the client
-                raise ValueError(f"LLM client error: {raw_response}")
+                 # Propagate the error message from the client
+                 raise ValueError(f"LLM client error: {raw_response}")
 
             # Clean up potential markdown fences and extra whitespace
             cleaned_response = raw_response.strip()
@@ -92,7 +102,7 @@ def _call_llm_json(prompt: str, max_tokens: int = 700, temperature: float = 0.1)
 
             # Basic check for JSON object format
             if not cleaned_response.startswith("{") or not cleaned_response.endswith("}"):
-                raise ValueError("Response is not wrapped in {}")
+                 raise ValueError("Response is not wrapped in {}")
 
             # Attempt to parse
             parsed_json = json.loads(cleaned_response)
@@ -111,13 +121,14 @@ def _call_llm_json(prompt: str, max_tokens: int = 700, temperature: float = 0.1)
                 # Raise final error after retries fail
                 error_msg = f"Failed to get valid JSON explanation after {MAX_JSON_RETRIES + 1} attempts. Last error: {last_error}"
                 print(f"❌ {error_msg}")
-                print(f"Raw response: {final_raw_response}")
+                # print(f"Raw response: {final_raw_response}") # Optionally print for debug
                 raise ValueError(error_msg) from last_error
 
     # Should not be reached, but needed for safety
     raise Exception("Exited LLM call loop unexpectedly.")
 
 # --- Helper to Build Prompt ---
+
 def build_explain_prompt(repo_id: str, file_path: str, object_name: str, contexts: List[Dict]) -> Tuple[str, List[str]]:
     """Builds the prompt string for the explanation LLM call and returns used context IDs."""
     contexts_text = ""
@@ -129,7 +140,7 @@ def build_explain_prompt(repo_id: str, file_path: str, object_name: str, context
         context_id = c.get('id', 'N/A')
         # Use excerpt, fallback to start of content if excerpt is missing/empty
         excerpt = c.get('excerpt') or (c.get('content', '')[:400].strip() + "...")
-        if not excerpt: # Skip contexts with no usable text
+        if not excerpt.strip(): # Skip contexts with no usable text
             print(f"Skipping context {context_id} due to empty excerpt/content.")
             continue
 
@@ -148,7 +159,7 @@ EXCERPT:
             break # Stop adding context
 
     if not included_context_ids:
-        print("Warning: No contexts could be included in the prompt due to length or empty content.")
+         print("Warning: No contexts could be included in the prompt due to length or empty content.")
 
     # Format the main template
     prompt = CODE_EXPLAIN_PROMPT_TEMPLATE.format(
@@ -160,13 +171,39 @@ EXCERPT:
     return prompt, included_context_ids # Return prompt and list of IDs actually used
 
 
+# --- Helper Function for Logging ---
+def log_error(error_data: Dict, contexts: List[Dict], error_message: str):
+    """Saves error details to a log file."""
+    if not LOG_DIR:
+        print("Log directory not initialized. Skipping error log.")
+        return
+    try:
+        log_content = {
+            "timestamp": datetime.datetime.now().isoformat(),
+            "error_details": error_data,
+            "error_message": error_message,
+            "contexts_provided_ids": [ctx.get('id') for ctx in contexts if ctx]
+        }
+        repo_id = error_data.get("repo_id", "unknown_repo")
+        file_path = error_data.get("file_path", "unknown_file")
+        target_object = error_data.get("object", "unknown_object")
+        
+        safe_filename = f"error_{repo_id.replace('/','_')}_{file_path.replace('/','_')}_{target_object}_{datetime.datetime.now():%Y%m%d_%H%M%S}.json"
+        log_filepath = LOG_DIR / safe_filename
+        with open(log_filepath, 'w', encoding='utf-8') as f:
+            json.dump(log_content, f, indent=2, ensure_ascii=False)
+        print(f"📝 Error log saved to {log_filepath}")
+    except Exception as log_e:
+        print(f"⚠️ Warning: Failed to save error log: {log_e}")
+
+
 # --- Main Explanation Function (Cached) ---
 @st.cache_data(show_spinner=False, ttl=3600) # Cache explanations for 1 hour
 def explain_target(repo_id: str, file_path: str, object_name: str | None,
                    all_contexts: List[Dict], top_k: int = 8) -> Tuple[Dict, List[Dict]]:
     """
     Retrieves contexts, generates a structured explanation via LLM, validates,
-    calculates confidence, logs, and returns the explanation object and sources used.
+    calculates confidence, and returns the explanation object and sources used.
     Results are cached based on input arguments.
     """
     target_object = object_name or "file" # Use "file" if object_name is None/empty
@@ -226,13 +263,14 @@ def explain_target(repo_id: str, file_path: str, object_name: str | None,
     validation_warnings = []
 
     try:
-        llm_data = _call_llm_json(prompt)
+        llm_data = _call_llm_json(prompt) # Uses temperature=0.1 by default
 
         # --- Validate Response Structure ---
         required_keys = ["summary", "key_points", "unit_test", "example", "sources"]
         if not all(key in llm_data for key in required_keys):
              missing = [key for key in required_keys if key not in llm_data]
              validation_warnings.append(f"LLM response missing required keys: {missing}")
+             # Provide defaults for missing keys to prevent downstream errors
              if "key_points" not in llm_data: llm_data["key_points"] = []
              if "unit_test" not in llm_data: llm_data["unit_test"] = {"title":"N/A","code":"","language":"python"}
              if "example" not in llm_data: llm_data["example"] = "N/A"
@@ -240,18 +278,18 @@ def explain_target(repo_id: str, file_path: str, object_name: str | None,
 
         key_points = llm_data.get("key_points", [])
         if not isinstance(key_points, list):
-             validation_warnings.append(f"'key_points' should be a list (found {len(key_points)} items).")
-             if isinstance(key_points, str): llm_data["key_points"] = [key_points]
+             validation_warnings.append(f"'key_points' should be a list.")
+             if isinstance(key_points, str): llm_data["key_points"] = [key_points] # Attempt to fix
 
         unit_test = llm_data.get("unit_test", {})
         if not isinstance(unit_test, dict) or not all(k in unit_test for k in ["title", "code", "language"]):
              validation_warnings.append("'unit_test' object structure is invalid.")
-             llm_data["unit_test"] = {"title":"N/A","code":"","language":"python"}
+             llm_data["unit_test"] = {"title":"N/A","code":"","language":"python"} # Reset
 
         llm_sources = llm_data.get("sources", [])
         if not isinstance(llm_sources, list):
              validation_warnings.append("LLM 'sources' field is not a list.")
-             llm_sources = []
+             llm_sources = [] # Reset
 
         valid_sources_cited_ids = []
         invalid_sources_cited = []
@@ -297,50 +335,30 @@ def explain_target(repo_id: str, file_path: str, object_name: str | None,
 
     except Exception as e:
         print(f"❌ Error during explanation generation or validation: {e}")
+        # Return structured error using helper
         return create_error_response("llm_error", str(e), contexts_to_use)
 
-    # --- Logging ---
-    log_explanation(repo_id, file_path, target_object, context_ids_used_in_prompt, prompt, final_explanation)
+    # --- Logging (Moved helper function) ---
+    def log_explanation(prompt_hash: str, final_explanation_data: Dict):
+        """Saves explanation details to a log file."""
+        if not LOG_DIR: return # Skip if log dir failed
+        try:
+            log_data = {
+                "timestamp": datetime.datetime.now().isoformat(),
+                "repo_id": repo_id, "file_path": file_path, "object": target_object,
+                "context_ids_used_in_prompt": context_ids_used_in_prompt,
+                "prompt_hash": prompt_hash,
+                "explanation_result": final_explanation_data
+            }
+            safe_filename = f"explain_{explain_id_base}_{datetime.datetime.now():%Y%m%d_%H%M%S}.json"
+            log_filepath = LOG_DIR / safe_filename
+            with open(log_filepath, 'w', encoding='utf-8') as f:
+                json.dump(log_data, f, indent=2, ensure_ascii=False, default=str)
+            print(f"📝 Explanation log saved to {log_filepath}")
+        except Exception as log_e:
+            print(f"⚠️ Warning: Failed to save explanation log: {log_e}")
 
+    log_explanation(hashlib.sha256(prompt.encode('utf-8')).hexdigest(), final_explanation)
+
+    # Return the structured data and the full context objects cited
     return final_explanation, sources_full_for_ui
-
-
-# --- Helper Function for Logging ---
-def log_explanation(repo_id: str, file_path: str, target_object: str, context_ids_used: List[str], prompt: str, final_explanation: Dict):
-    """Saves explanation details to a log file."""
-    try:
-        log_data = {
-            "timestamp": datetime.datetime.now().isoformat(),
-            "repo_id": repo_id, "file_path": file_path, "object": target_object,
-            "context_ids_used_in_prompt": context_ids_used,
-            "prompt_hash": hashlib.sha256(prompt.encode('utf-8')).hexdigest(),
-            "explanation_result": final_explanation
-        }
-        safe_filename = f"explain_{repo_id.replace('/','_')}_{file_path.replace('/','_')}_{target_object}_{datetime.datetime.now():%Y%m%d_%H%M%S}.json"
-        log_filepath = LOG_DIR / safe_filename
-        with open(log_filepath, 'w', encoding='utf-8') as f:
-            json.dump(log_data, f, indent=2, ensure_ascii=False)
-        print(f"📝 Explanation log saved to {log_filepath}")
-    except Exception as log_e:
-        print(f"⚠️ Warning: Failed to save explanation log: {log_e}")
-
-def log_error(error_data: Dict, contexts: List[Dict], error_message: str):
-    """Saves error details to a log file."""
-    try:
-        log_content = {
-            "timestamp": datetime.datetime.now().isoformat(),
-            "error_details": error_data,
-            "error_message": error_message,
-            "contexts_provided": [ctx.get('id') for ctx in contexts]
-        }
-        repo_id = error_data.get("repo_id", "unknown_repo")
-        file_path = error_data.get("file_path", "unknown_file")
-        target_object = error_data.get("object", "unknown_object")
-        
-        safe_filename = f"error_{repo_id.replace('/','_')}_{file_path.replace('/','_')}_{target_object}_{datetime.datetime.now():%Y%m%d_%H%M%S}.json"
-        log_filepath = LOG_DIR / safe_filename
-        with open(log_filepath, 'w', encoding='utf-8') as f:
-            json.dump(log_content, f, indent=2, ensure_ascii=False)
-        print(f"📝 Error log saved to {log_filepath}")
-    except Exception as log_e:
-        print(f"⚠️ Warning: Failed to save error log: {log_e}")

@@ -18,3 +18,4 @@ from . import explain
 from . import graph_builder
 from . import mermaid
 from . import vis_builder
+from . import logger
