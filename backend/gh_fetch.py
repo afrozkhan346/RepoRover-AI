@@ -22,7 +22,7 @@ def _get_github_headers():
         headers["Authorization"] = f"Bearer {github_token}"
     return headers
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=86400)
 def get_repo_details(owner, repo):
     """Gets main repository details, including the default branch."""
     api_url = f"https://api.github.com/repos/{owner}/{repo}"
@@ -30,7 +30,7 @@ def get_repo_details(owner, repo):
     response.raise_for_status()
     return response.json()
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=86400)
 def get_repo_tree(owner, repo):
     """
     Fetches the full, recursive file tree for the default branch.
@@ -64,7 +64,7 @@ def get_repo_tree(owner, repo):
         st.error(f"Failed to fetch repository tree. Rate limit exceeded? Error: {e}")
         return None, None
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=86400)
 def get_file_blob(owner, repo, file_sha):
     """
     Fetches a single file's content (blob) using its SHA.

@@ -1,5 +1,7 @@
 import math
-from . import embeddings # Import embeddings module
+from . import embeddings 
+import streamlit as st 
+from typing import List, Dict
 
 # --- This function is correct ---
 def cosine_sim(a: list[float], b: list[float]) -> float:
@@ -19,7 +21,7 @@ def cosine_sim(a: list[float], b: list[float]) -> float:
         
     return dot / denominator
 
-# --- ADD THIS FUNCTION BACK ---
+@st.cache_data(ttl=3600, show_spinner=False)
 def find_relevant_contexts(query: str, contexts: list[dict], top_k: int = 6) -> list[dict]:
     """
     Finds the top_k most relevant contexts from a list based on cosine similarity

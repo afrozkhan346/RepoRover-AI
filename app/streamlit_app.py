@@ -381,17 +381,39 @@ else:
                          else: st.error("Failed to generate lessons.")
                  st.rerun()
 
-        # Debug Clear Button
+        # --- Debug Controls ---
         st.markdown("---")
-        st.markdown("⚙️ **Debug**")
-        if st.button("Clear Current Repo", key="clear_session_sidebar", use_container_width=True):
-            # Clear repo-specific keys, keep user
-            repo_id_to_clear = st.session_state.get('repo_id')
-            keys_to_clear = ['repo_url', 'repo_id', 'ingested', 'contexts', 'graph_payload', 'graph_lessons_hash', 'selected_node_id', 'current_explain', 'current_explain_sources', 'current_lesson_data', 'current_quiz_data', 'current_view', 'active_lesson_id']
-            for key in keys_to_clear:
-                if key in st.session_state: st.session_state[key] = DEFAULT_VALUES[key]
+        st.markdown("⚙️ **Debug & Settings**")
+        
+        if st.button("Clear LLM Cache (Force Regenerate)", key="clear_llm_cache", use_container_width=True, help="Clears in-memory cache for lessons, quizzes, and explanations, forcing the AI to generate new content on the next click."):
+            # This clears all @st.cache_data and @st.cache_resource decorators
+            st.cache_data.clear()
+            st.cache_resource.clear()
+            
+            # Also clear the session state variables holding the generated content
+            st.session_state['graph_payload'] = DEFAULT_VALUES['graph_payload']
+            st.session_state['current_explain'] = DEFAULT_VALUES['current_explain']
+            st.session_state['current_lesson_data'] = DEFAULT_VALUES['current_lesson_data']
+            st.session_state['current_quiz_data'] = DEFAULT_VALUES['current_quiz_data']
+            st.session_state['selected_node_id'] = DEFAULT_VALUES['selected_node_id']
             st.session_state['current_view'] = 'welcome' # Reset view
-            st.success(f"Cleared session data for {repo_id_to_clear}.")
+            
+            st.success("App cache cleared! Click 'Generate' again to get fresh AI content.")
+            st.rerun()
+
+        if st.button("Clear Full Session (New Repo)", key="clear_session_sidebar", use_container_width=True, help="Clears everything, including the loaded repository and user login. Use this to start fresh with a new repo URL."):
+            # This clears everything
+            user_to_keep = st.session_state.get('user') # Preserve user login
+            keys_to_clear = list(st.session_state.keys())
+            for key in keys_to_clear:
+                del st.session_state[key]
+            # Restore defaults
+            for key, value in DEFAULT_VALUES.items():
+                 st.session_state[key] = value
+            st.session_state['initialized'] = True
+            st.session_state['user'] = user_to_keep # Restore user
+            
+            st.success("Full session cleared. You can now analyze a new repository.")
             st.rerun()
 
 

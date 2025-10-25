@@ -1,102 +1,124 @@
-RepoRoverAI 🤖
+````markdown
+# RepoRoverAI 🤖
 
-An AI web app that converts any GitHub repository into an interactive learning experience, featuring guided lessons, code explainers, visualizations, and quizzes.
+**Your AI-powered co-pilot for exploring and learning from GitHub repositories!**
 
-This is an entry for the Halothon 2025 hackathon.
+**[➡️ View the Live Demo Here](https://your-app-name.streamlit.app/)**
 
-Features
+RepoRoverAI transforms any GitHub repository into an **interactive learning experience**, featuring guided lessons, code explainers, visualizations, and quizzes. Built for developers, students, and mentors, RepoRoverAI makes understanding complex repositories simple and engaging.
 
-GitHub OAuth Sign-in: Secure user authentication via GitHub.
+---
 
-Persistent Caching: Analyzed repos (contexts & embeddings) are cached in Firestore for instant re-loads.
+## 🌟 Features
 
-Interactive Repo Map: A vis-network graph showing key files, generated lessons, and their relationships.
+### 🔐 **GitHub OAuth Sign-in**
+- Securely log in using your GitHub account.
+- Role-based access: Users are assigned roles (`mentor` or `student`) based on the `roles.json` file.
 
-RAG-Powered Lessons: Generates structured, multi-step guided lessons from repository context.
+### 🗺️ **Interactive Repository Map**
+- Visualize the structure of a repository with an interactive **vis-network graph**.
+- Explore key files, lessons, and their relationships in an intuitive interface.
 
-RAG-Powered Code Explainer: Provides detailed JSON explanations (summary, key points, test cases, examples) for any selected file.
+### 🎓 **RAG-Powered Guided Lessons**
+- Automatically generates **structured, multi-step lessons** from repository contexts.
+- Lessons include:
+  - **Beginner-friendly explanations**.
+  - **Step-by-step instructions** with cited sources.
+  - **Summaries** and **hints** for better understanding.
 
-RAG-Powered Quizzes: Generates interactive, auto-graded multiple-choice quizzes based on lesson content, complete with AI-generated hints.
+### 🧑‍💻 **RAG-Powered Code Explainer**
+- Provides detailed explanations for any selected file or function.
+- Outputs include:
+  - **Summary** of the code.
+  - **Key points** and **examples**.
+  - **Unit tests** and **sources** for reference.
 
-Tech Stack
+### 🧪 **RAG-Powered Quizzes**
+- Generates **interactive multiple-choice quizzes** based on lesson content.
+- Features:
+  - AI-generated **hints** for incorrect answers.
+  - Auto-grading with detailed feedback.
+  - Practice quizzes when insufficient context is available.
 
-UI: Streamlit (with Streamlit Components V1)
+### ⚡ **Persistent Caching**
+- Analyzed repositories are cached in **Google Firestore** for instant re-loads.
+- First-time analysis is slower (due to API limits), but subsequent loads are lightning-fast.
 
-LLM: Google Gemini API (for embeddings and generation)
+### 📊 **Mentor Tools**
+- Role-gated features for mentors (demoed in sidebar).
 
-Database: Google Firestore (for caching ingested repo data)
+---
 
-Code Fetching: GitHub REST API
+## 🛠️ How It Works
 
-Visualization: vis-network (via HTML component)
+### 1️⃣ **Authentication**
+- Users log in via **GitHub OAuth**.
+- The app requests `read:user` and `user:email` scopes for secure authentication.
+- Roles (`mentor` or `student`) are assigned based on the `data/roles.json` file.
 
-Key Design Choices
+### 2️⃣ **Repository Ingestion**
+- Fetches repository details, file trees, and content using the **GitHub REST API**.
+- Uses **semantic chunking** (by file type) to split files into meaningful contexts (e.g., functions, classes, sections).
 
-GitHub REST API over git clone: We use the GitHub API directly to stay serverless, lightweight, and fast, avoiding disk I/O and git dependency.
+### 3️⃣ **Retrieval-Augmented Generation (RAG)**
+- Generates embeddings for all contexts using the **Google Gemini API**.
+- Relevant contexts are retrieved using **embedding similarity**.
+- These contexts are fed into the **Google Gemini API** to generate:
+  - **Lessons**: Structured, multi-step guides.
+  - **Explanations**: Detailed breakdowns of code.
+  - **Quizzes**: Interactive, auto-graded MCQs.
 
-Semantic Chunking: Instead of naive splitting, we use language-specific extractors (e.g., Python ast, Markdown regex) to create meaningful contexts (functions, classes, sections) for the LLM.
+### 4️⃣ **Interactive UI**
+- Visualize the repository structure with an **interactive graph**.
+- Click on nodes to explore files, generate lessons, or take quizzes.
 
-Firestore as Cache: Using Firestore to store the heavy-lifting (contexts + embeddings) means the first analysis of a repo is slow, but every subsequent load by any user is instantaneous.
+---
 
-RAG for All Content: All educational content (lessons, explanations, quizzes, hints) is generated using a Retrieval-Augmented Generation (RAG) pipeline. We retrieve the most relevant contexts via embedding similarity and feed them to the LLM with a structured prompt, ensuring answers are grounded in the repo's actual code.
+## 🧑‍💻 Tech Stack
 
-🛑 Hackathon Disclosures
+### **Frontend**
+- **Streamlit**: For a responsive and interactive UI.
+- **vis-network**: For graph-based repository visualization (embedded via `streamlit.components`).
 
-Authentication
+### **Backend**
+- **Google Gemini API**: For embeddings and content generation.
+- **Google Firestore**: For caching analyzed repository data.
+- **GitHub REST API**: For fetching repository details and content.
 
-Method: We use a direct GitHub OAuth App flow.
+### **Other Tools**
+- **Python**: Core programming language.
+- **GitHub OAuth**: For secure user authentication.
 
-Purpose: This securely verifies the user's GitHub identity. The app requests read:user and user:email scopes.
+---
 
-Role-Gating: Upon login, the user's GitHub username is checked against the local data/roles.json file to assign a "mentor" or "student" role, which can conditionally show/hide UI elements (like mentor-only buttons). User access tokens are stored only in the temporary session state and are not logged or saved.
+## 🚀 Getting Started
 
-AI Usage & Provenance
+### 1️⃣ **Clone the Repository**
+```bash
+git clone [https://github.com/afrozkhan346/RepoRover-AI.git](https://github.com/afrozkhan346/RepoRover-AI.git)
+cd RepoRover-AI
+````
 
-This project relies heavily on the Google Gemini API for its core functionality. Here is the breakdown:
+### 2️⃣ **Set Up a Virtual Environment**
 
-Hand-Coded by Developer (with AI assistance):
-
-The entire application framework and architecture (all Python files in backend/ and app/).
-
-The Streamlit UI layout and state management logic.
-
-The complete data pipeline (fetching, priority filtering, AST/regex extractors, chunking).
-
-The RAG retrieval logic (embedding generation, cosine similarity, context ranking).
-
-All prompt templates (for lessons, explanations, quizzes, hints) that instruct the AI.
-
-All data validation and logging logic.
-
-Generated by the Gemini LLM:
-
-The educational content (summaries, lesson steps, key points, quiz questions, explanations, hints).
-
-The embeddings for each code/text chunk.
-
-The LLM's output is constrained by our prompts to return structured JSON, which our hand-coded UI then parses and renders.
-
-Reproducibility:
-
-To ensure transparency and auditability for judges, the app saves logs for key AI generation steps (explanations and quizzes) to the data/explain_logs/ and data/quiz_logs/ directories (when run locally). These logs contain the contexts used and the final JSON response from the AI.
-
-Local Setup
-
-Clone the repo.
-
-Create a virtual environment:
-
+```bash
 python -m venv venv
-source venv/Scripts/activate  # Or venv/bin/activate
+source venv/Scripts/activate  # On Windows
+# OR
+source venv/bin/activate      # On macOS/Linux
+```
 
+### 3️⃣ **Install Dependencies**
 
-Install requirements:
-
+```bash
 pip install -r requirements.txt
+```
 
+### 4️⃣ **Configure Secrets**
 
-Create your secrets file at .streamlit/secrets.toml and add your credentials:
+Create a `.streamlit/secrets.toml` file and add your credentials:
 
+```toml
 # .streamlit/secrets.toml
 GEMINI_API_KEY = "YOUR_GEMINI_KEY"
 GITHUB_TOKEN = "ghp_...YOUR_API_TOKEN_FOR_INGESTION..."
@@ -109,9 +131,69 @@ GITHUB_CLIENT_SECRET = "YOUR_OAUTH_CLIENT_SECRET"
 [firestore]
 type = "service_account"
 project_id = "..."
-# ... (paste your full JSON key here)
+# ... (Paste your full JSON key here) ...
+```
 
+### 5️⃣ **Run the App**
 
-Run the app:
-
+```bash
 streamlit run app/streamlit_app.py
+```
+
+-----
+
+## 🛡️ Hackathon Disclosures
+
+### **Authentication**
+
+  - **Method**: GitHub OAuth App flow (direct).
+  - **Purpose**: Securely verifies the user's GitHub identity.
+  - **Scopes**: `read:user` and `user:email`.
+  - **Role-Gating**: Roles (`mentor` or `student`) are assigned based on the `data/roles.json` file.
+
+### **AI Usage**
+
+  - **Google Gemini API** is used for:
+      - Generating embeddings (`text-embedding-004`).
+      - Generating structured JSON for lessons, explanations, quizzes, and hints (`gemini-pro-latest`).
+  - **Prompts** are carefully designed with few-shot examples and constraints to ensure outputs are grounded in the repository's content and to reduce hallucinations.
+
+### **Reproducibility**
+
+  - **Logs:** To ensure transparency, the app saves detailed JSON logs for all major AI generation steps (lessons, explanations, and quizzes) to the `data/lesson_logs/`, `data/explain_logs/`, and `data/quiz_logs/` directories (when run locally).
+  - **Replay Script:** You can inspect the exact prompt and AI response from any log file using the provided replay script:
+    ```bash
+    python replay_log.py data/lesson_logs/<log_file_name>.json
+    ```
+
+-----
+
+## 🤝 Contributing
+
+We welcome contributions\! Please fork the repo, create a feature branch, and submit a pull request.
+
+-----
+
+## 📜 License
+
+This project is licensed under the **MIT License**. See the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
+
+```
+MIT License
+Copyright (c) 2025 RepoRoverAI Team
+```
+
+-----
+
+## ❤️ Acknowledgments
+
+  - **Halothon 2025 Hackathon**: This project was built as part of the hackathon.
+  - **Google Gemini API**: For powering the AI capabilities.
+  - **Streamlit**: For the interactive UI framework.
+
+-----
+
+Made with ❤️ by the RepoRoverAI Team.
+
+```
+```
