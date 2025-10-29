@@ -1,0 +1,9 @@
+{
+  "repoId": "user/repo",
+  "question": "How does authentication work?",
+  "answer": "Auth in this repo is implemented in auth.py. Look at the function check_token() which validates bearer tokens by checking the Authorization header. The main route uses @login_required decorator in routes/auth_routes.py. For local testing, see README.md section 'Auth setup'.",
+  "references": [
+    {"file": "auth.py", "lines": "1-120"},
+    {"file": "routes/auth_routes.py", "lines": "10-45"}
+  ]
+}
