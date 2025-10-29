@@ -1,0 +1,18 @@
+{
+  "id": "p1",
+  "repoId": "user/repo",
+  "title": "Add /health endpoint",
+  "eta_minutes": 20,
+  "difficulty": "easy",
+  "objective": "Add a /health HTTP endpoint that returns {\"status\":\"ok\"} and 200.",
+  "steps": [
+    { "id": "s1", "text": "Open app.py and locate the Flask app instance", "file": "app.py", "lines": "10-40" },
+    { "id": "s2", "text": "Create a new handler function health() that returns JSON", "file": "app.py", "lines": "45-60" },
+    { "id": "s3", "text": "Register route @app.route('/health') and return status 200", "file": "app.py", "lines": "61-75" }
+  ],
+  "verification": { "cmd": "curl -sSf http://localhost:5000/health", "expected": "{\"status\":\"ok\"}" },
+  "patch": "diff --git a/app.py b/app.py\nindex 123..abc 100644\n--- a/app.py\n+++ b/app.py\n@@ -40,6 +40,12 @@\n def index():\n     return \"Hello\"\n+\n+@app.route('/health')\n+def health():\n+    return jsonify({\"status\":\"ok\"}), 200\n",
+  "code_snippets": {
+    "app.py": "from flask import Flask, jsonify\n\napp = Flask(_name_)\n\n@app.route('/')\ndef index():\n    return \"Hello\"\n"
+  }
+}
