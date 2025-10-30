@@ -1,68 +1,51 @@
 # RepoRover AI
 
-[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Google Gemini](https://img.shields.io/badge/Google_Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
-[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Next.js](https://img.shields.io/badge/Next.js-14.0+-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.0+-38B2AC)](https://tailwindcss.com/)
+[![Google Generative AI](https://img.shields.io/badge/Google_Generative_AI-0.24+-orange)](https://ai.google.dev/)
 
-A cutting-edge, AI-powered GitHub repository analyzer that provides deep insights into codebases using advanced machine learning and natural language processing. Built with modern web technologies for a seamless developer experience.
+An AI-powered GitHub repository analysis tool that helps developers understand, learn from, and build upon any repository instantly. Get intelligent insights, step-by-step learning guides, and accelerate your development journey.
+
+![RepoRover AI Preview](./public/placeholder.jpg)
 
 ## ✨ Features
 
-### 🚀 Core Functionality
-- **AI-Powered Analysis**: Leverages Google Gemini AI for intelligent code analysis and insights
-- **Repository Visualization**: Interactive file tree and code structure exploration
-- **Real-time Chat**: AI-powered Q&A system for codebase understanding
-- **Code Diff Viewer**: Advanced diff visualization with syntax highlighting
-- **Project Snapshots**: Export and share repository analysis reports
+### 🤖 AI-Powered Analysis
+- **Instant Repository Insights**: Get comprehensive analysis of any GitHub repository
+- **Code Structure Understanding**: AI-powered breakdown of architecture and patterns
+- **Best Practices Detection**: Identify modern development practices and conventions
+- **Technology Stack Recognition**: Automatic detection of frameworks, libraries, and tools
 
-### 🎨 User Experience
-- **Modern UI**: Glass morphism design with smooth animations
-- **Dark/Light Themes**: Automatic theme switching with system preference detection
-- **Fully Responsive**: Optimized for desktop, tablet, and mobile devices
-- **Accessibility**: WCAG compliant with keyboard navigation support
+### 📚 Learn by Building
+- **Interactive Learning Projects**: Step-by-step guides to understand repository patterns
+- **Difficulty Levels**: Projects categorized by estimated time and complexity
+- **Code Examples**: Practical implementations with copy-paste ready code
+- **Verification Commands**: Built-in testing to ensure correct implementation
 
-### 🔧 Developer Tools
-- **Quick Analysis**: Fast repository scanning for immediate insights
-- **Deep Analysis**: Comprehensive codebase evaluation with detailed metrics
-- **Learn-by-Building**: Interactive guides for understanding complex codebases
-- **Export Capabilities**: Generate PDF reports and shareable links
+### ⚡ Quick Projects
+- **Time-Efficient Learning**: Projects designed for 1-3 hour completion
+- **Skill Progression**: From beginner to advanced difficulty levels
+- **Real-World Application**: Learn through practical, production-ready examples
 
-## 🛠️ Tech Stack
+### 📸 Repository Snapshots
+- **Export Analysis**: Save and share repository analysis snapshots
+- **Team Collaboration**: Share insights with your development team
+- **Historical Tracking**: Keep track of repository evolution over time
 
-### Frontend
-- **Framework**: Next.js 16 with App Router
-- **Language**: TypeScript for type safety
-- **Styling**: Tailwind CSS with custom animations
-- **UI Components**: Radix UI primitives with shadcn/ui
-- **State Management**: React hooks with context API
-- **Charts**: Recharts for data visualization
-
-### Backend & AI
-- **AI Engine**: Google Generative AI (Gemini)
-- **Authentication**: GitHub OAuth integration
-- **Database**: Firebase Admin SDK
-- **API**: RESTful endpoints with Next.js API routes
-
-### Development Tools
-- **Build Tool**: Next.js with SWC compiler
-- **Linting**: ESLint with TypeScript rules
-- **Package Manager**: npm/pnpm support
-- **Deployment**: Vercel platform optimized
-
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ installed
-- npm or pnpm package manager
-- GitHub account for OAuth (optional)
+- Node.js 18.0 or later
+- npm, yarn, or pnpm
+- GitHub account (optional, for authentication)
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/rushikesh-bobade/RepoRover-AI.git
+   git clone https://github.com/afrozkhan346/RepoRover-AI.git
    cd RepoRover-AI
    ```
 
@@ -70,32 +53,35 @@ A cutting-edge, AI-powered GitHub repository analyzer that provides deep insight
    ```bash
    npm install
    # or
+   yarn install
+   # or
    pnpm install
    ```
 
 3. **Environment Setup**
-   Create a `.env.local` file in the root directory:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   Configure the following environment variables:
    ```env
-   # GitHub OAuth (Optional - for authentication)
-   NEXT_PUBLIC_GITHUB_OAUTH_URL=https://github.com/login/oauth/authorize?client_id=YOUR_CLIENT_ID
+   # Google Generative AI API Key (for AI analysis)
+   GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here
 
-   # API Endpoints (Optional - uses mock data if not provided)
-   NEXT_PUBLIC_ANALYZE_ENDPOINT=http://localhost:3000/api/analyze
-   NEXT_PUBLIC_CHAT_ENDPOINT=http://localhost:3000/api/chat
-   NEXT_PUBLIC_PROJECTS_ENDPOINT=http://localhost:3000/api/projects
+   # GitHub OAuth (optional, for enhanced features)
+   GITHUB_CLIENT_ID=your_github_client_id
+   GITHUB_CLIENT_SECRET=your_github_client_secret
 
-   # Google Gemini AI (Required for AI features)
-   GOOGLE_GEMINI_API_KEY=your_gemini_api_key_here
-
-   # Firebase (Optional - for data persistence)
-   FIREBASE_PROJECT_ID=your_project_id
-   FIREBASE_PRIVATE_KEY=your_private_key
-   FIREBASE_CLIENT_EMAIL=your_client_email
+   # Analysis endpoints (optional, for backend integration)
+   NEXT_PUBLIC_ANALYZE_ENDPOINT=https://your-api-endpoint.com/analyze
+   NEXT_PUBLIC_CHAT_ENDPOINT=https://your-api-endpoint.com/chat
    ```
 
 4. **Run the development server**
    ```bash
    npm run dev
+   # or
+   yarn dev
    # or
    pnpm dev
    ```
@@ -103,86 +89,136 @@ A cutting-edge, AI-powered GitHub repository analyzer that provides deep insight
 5. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## 📁 Project Structure
+## 🏗️ Project Structure
 
 ```
 RepoRover-AI/
-├── app/                          # Next.js App Router
+├── app/                          # Next.js app directory
 │   ├── api/                      # API routes
-│   │   ├── auth/                 # Authentication endpoints
-│   │   ├── analyze/              # Analysis endpoints
-│   │   └── chat/                 # Chat endpoints
-│   ├── analyze/                  # Analysis page
-│   ├── project/[id]/             # Dynamic project pages
+│   │   └── auth/                 # Authentication endpoints
+│   ├── analyze/                  # Repository analysis page
+│   ├── project/                  # Learning project pages
 │   ├── globals.css               # Global styles
-│   ├── layout.tsx                # Root layout
-│   └── page.tsx                  # Home page
-├── components/                   # Reusable UI components
-│   ├── ui/                       # shadcn/ui components
+│   └── layout.tsx                # Root layout
+├── components/                   # React components
+│   ├── ui/                       # Shadcn/ui components
 │   ├── chat-panel.tsx            # AI chat interface
-│   ├── code-diff.tsx             # Code diff viewer
-│   ├── file-tree.tsx             # Repository file tree
-│   ├── repo-overview.tsx         # Repository overview
+│   ├── dashboard-cards.tsx       # Analytics dashboard
+│   ├── file-tree.tsx             # Repository file structure
 │   └── ...
 ├── hooks/                        # Custom React hooks
 ├── lib/                          # Utility functions
-├── mock_data/                    # Mock data for development
+├── mock_data/                    # Sample data for development
 ├── public/                       # Static assets
 ├── styles/                       # Additional stylesheets
-└── types/                        # TypeScript type definitions
+├── package.json                  # Dependencies and scripts
+├── next.config.mjs              # Next.js configuration
+├── tailwind.config.js           # Tailwind CSS configuration
+└── tsconfig.json                # TypeScript configuration
 ```
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Framework**: [Next.js 16](https://nextjs.org/) - React framework with App Router
+- **Language**: [TypeScript 5](https://www.typescriptlang.org/) - Type-safe JavaScript
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) - Utility-first CSS framework
+- **UI Components**: [Shadcn/ui](https://ui.shadcn.com/) - Modern component library
+- **Icons**: [Lucide React](https://lucide.dev/) - Beautiful icon library
+
+### AI & APIs
+- **AI Engine**: [Google Generative AI](https://ai.google.dev/) - For repository analysis
+- **Authentication**: GitHub OAuth integration
+- **Analytics**: [Vercel Analytics](https://vercel.com/analytics) - Usage tracking
+
+### Development Tools
+- **Package Manager**: npm/pnpm/yarn
+- **Linting**: ESLint with Next.js rules
+- **Code Quality**: Prettier for code formatting
+- **Version Control**: Git with conventional commits
+
+## 📖 Usage Guide
+
+### Analyzing a Repository
+
+1. **Enter Repository URL**: Paste any GitHub repository URL in the input field
+2. **Choose Analysis Type**:
+   - **Quick Analysis**: Basic overview and structure
+   - **Deep Analysis**: Comprehensive code review and insights
+3. **View Results**: Explore AI-generated insights, file structure, and learning projects
+
+### Learning Projects
+
+1. **Browse Available Projects**: Check the project grid for learning opportunities
+2. **Select Difficulty Level**: Choose projects matching your skill level
+3. **Follow Step-by-Step Guide**: Complete each step with provided code examples
+4. **Verify Implementation**: Use built-in verification commands
+
+### AI Chat Support
+
+- **Ask Questions**: Get help understanding repository concepts
+- **Code Explanations**: Request detailed explanations of specific code sections
+- **Best Practices**: Learn about development best practices and patterns
 
 ## 🔧 Configuration
 
-### Customizing Themes
-Edit `app/globals.css` to modify color schemes and glass morphism effects:
+### Environment Variables
 
-```css
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --primary: 221.2 83.2% 53.3%;
-  /* ... other CSS variables */
-}
-```
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google AI API key for analysis | Yes |
+| `GITHUB_CLIENT_ID` | GitHub OAuth client ID | No |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret | No |
+| `NEXT_PUBLIC_ANALYZE_ENDPOINT` | Backend analysis API endpoint | No |
+| `NEXT_PUBLIC_CHAT_ENDPOINT` | Backend chat API endpoint | No |
 
-### API Integration
-The app supports both mock data and real API endpoints. To connect real services:
+### Build Configuration
 
-1. **Analysis API**: Expects `{ repoUrl: string, analysisType: 'quick' | 'deep' }`
-2. **Chat API**: Expects `{ projectId: string, message: string }`
-3. **Projects API**: Returns array of project objects
+The project uses Next.js with the following key configurations:
+
+- **TypeScript**: Strict mode enabled for type safety
+- **Images**: Unoptimized for static deployment
+- **Build Errors**: Ignored during development for faster iteration
 
 ## 🚀 Deployment
 
 ### Vercel (Recommended)
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Add environment variables in Vercel dashboard
-4. Deploy automatically on every push
 
-### Manual Deployment
+1. **Connect Repository**: Link your GitHub repo to Vercel
+2. **Configure Environment Variables**: Set up required env vars in Vercel dashboard
+3. **Deploy**: Automatic deployments on push to main branch
+
+### Other Platforms
+
+The app can be deployed to any platform supporting Next.js:
+
 ```bash
+# Build for production
 npm run build
+
+# Start production server
 npm start
 ```
 
 ## 🤝 Contributing
 
-We welcome contributions! Please follow these steps:
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Setup
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+3. Make your changes and test thoroughly
+4. Commit with conventional commits: `git commit -m 'feat: add amazing feature'`
+5. Push to your branch: `git push origin feature/amazing-feature`
+6. Open a Pull Request
 
-### Development Guidelines
-- Use TypeScript for all new code
-- Follow ESLint configuration
-- Write meaningful commit messages
-- Test your changes thoroughly
-- Update documentation as needed
+### Code Style
+
+- **TypeScript**: Strict typing required
+- **ESLint**: All linting rules must pass
+- **Prettier**: Code formatting enforced
+- **Conventional Commits**: Required for all commits
 
 ## 📄 License
 
@@ -190,26 +226,20 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **Google Gemini AI** for powering the intelligent analysis
-- **Vercel** for hosting and deployment platform
-- **shadcn/ui** for beautiful UI components
-- **Radix UI** for accessible primitives
-- **Tailwind CSS** for utility-first styling
+- **Next.js Team** for the amazing React framework
+- **Shadcn** for the beautiful UI components
+- **Google AI** for the powerful Generative AI capabilities
+- **Vercel** for hosting and analytics
+- **Open Source Community** for inspiration and tools
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/rushikesh-bobade/RepoRover-AI/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/rushikesh-bobade/RepoRover-AI/discussions)
-- **Email**: support@reporover.ai
+- **Issues**: [GitHub Issues](https://github.com/afrozkhan346/RepoRover-AI/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/afrozkhan346/RepoRover-AI/discussions)
+- **Documentation**: [Wiki](https://github.com/afrozkhan346/RepoRover-AI/wiki)
 
 ---
 
-<div align="center">
-  <p>Built with ❤️ using Next.js and TypeScript</p>
-  <p>
-    <a href="#features">Features</a> •
-    <a href="#getting-started">Getting Started</a> •
-    <a href="#contributing">Contributing</a> •
-    <a href="#license">License</a>
-  </p>
-</div>
+**Built with ❤️ for developers, by developers**
+
+[![Star History Chart](https://api.star-history.com/svg?repos=afrozkhan346/RepoRover-AI&type=Date)](https://star-history.com/#afrozkhan346/RepoRover-AI&Date)
