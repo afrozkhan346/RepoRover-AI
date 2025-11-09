@@ -28,6 +28,83 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+// Component to render formatted explanation
+function FormattedExplanation({ text }: { text: string }) {
+  // Convert markdown-style formatting to HTML
+  const formatText = (content: string) => {
+    return content
+      // Convert **bold** to <strong>
+      .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-foreground">$1</strong>')
+      // Convert *italic* to <em> (but not ** which is already handled)
+      .replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g, '<em class="italic text-primary">$1</em>')
+      // Convert `code` to styled spans
+      .replace(/`([^`]+?)`/g, '<code class="px-1.5 py-0.5 bg-muted text-primary rounded text-sm font-mono">$1</code>')
+      // Convert ### Headers to h3
+      .replace(/^###\s+(.+?)$/gm, '<h3 class="text-lg font-bold mt-6 mb-3 text-foreground">$1</h3>')
+      // Convert ## Headers to h2
+      .replace(/^##\s+(.+?)$/gm, '<h2 class="text-xl font-bold mt-8 mb-4 text-foreground">$1</h2>')
+      // Convert # Headers to h1
+      .replace(/^#\s+(.+?)$/gm, '<h1 class="text-2xl font-bold mt-8 mb-4 text-foreground">$1</h1>')
+      // Convert bullet points
+      .replace(/^\*\s+(.+?)$/gm, '<li class="ml-4">$1</li>')
+      // Split into paragraphs (double line breaks)
+      .split('\n\n')
+      .map(para => {
+        // Wrap lists
+        if (para.includes('<li class="ml-4">')) {
+          return `<ul class="list-disc ml-6 space-y-2 my-4">${para}</ul>`;
+        }
+        // Don't wrap headers
+        if (para.match(/^<h[1-3]/)) {
+          return para;
+        }
+        // Wrap regular paragraphs
+        return `<p class="mb-4 leading-relaxed">${para.replace(/\n/g, '<br/>')}</p>`;
+      })
+      .join('\n');
+  };
+
+  // Split by code blocks first
+  const parts = text.split(/(```[\s\S]*?```)/g);
+  
+  return (
+    <div className="space-y-2">
+      {parts.map((part, index) => {
+        // Check if this is a code block
+        if (part.startsWith('```')) {
+          const lines = part.split('\n');
+          const language = lines[0].replace('```', '').trim() || 'code';
+          const code = lines.slice(1, -1).join('\n');
+          
+          return (
+            <div key={index} className="my-6">
+              <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-t-lg border border-b-0">
+                <Code2 className="h-4 w-4 text-primary" />
+                <span className="text-xs font-mono font-semibold text-foreground">{language}</span>
+              </div>
+              <pre className="bg-slate-950 dark:bg-slate-900 text-slate-50 p-4 rounded-b-lg overflow-x-auto border border-slate-700">
+                <code className="text-sm font-mono leading-relaxed">{code}</code>
+              </pre>
+            </div>
+          );
+        }
+        
+        // Skip empty parts
+        if (!part.trim()) return null;
+        
+        // Regular text with inline formatting
+        return (
+          <div 
+            key={index}
+            className="text-sm"
+            dangerouslySetInnerHTML={{ __html: formatText(part) }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AITutorPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
@@ -310,10 +387,8 @@ async function fetchUser(id: number): Promise<User> {
                       </p>
                     </div>
                   ) : explanation ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <div className="whitespace-pre-wrap leading-relaxed">
-                        {explanation}
-                      </div>
+                    <div className="max-w-none">
+                      <FormattedExplanation text={explanation} />
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-12 space-y-4 text-center">

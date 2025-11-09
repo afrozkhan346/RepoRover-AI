@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Code is required' }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     const prompt = question 
       ? `You are an expert code tutor. A student is learning ${language || 'programming'} and has the following question about this code:\n\nCode:\n\`\`\`${language || ''}\n${code}\n\`\`\`\n\nQuestion: ${question}\n\nProvide a clear, educational explanation that helps them understand the code and answers their question. Break down complex concepts into simple terms.`
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     // Simple health check
     return NextResponse.json({ 
       status: 'ready',
-      model: 'gemini-pro',
+      model: 'gemini-2.0-flash-exp',
       features: ['code-explanation', 'question-answering', 'concept-breakdown']
     }, { status: 200 });
 

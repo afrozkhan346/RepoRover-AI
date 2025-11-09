@@ -11,3 +11,14 @@ const client = createClient({
 export const db = drizzle(client, { schema });
 
 export type Database = typeof db;
+
+// Export optimization utilities
+export {
+  monitoredQuery,
+  queryMonitor,
+  connectionPool,
+  n1Detector,
+  dbAnalytics,
+  batchExecutor,
+  dbOptimization,
+} from './optimization';

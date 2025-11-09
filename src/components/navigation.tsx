@@ -16,6 +16,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Code2, User, LogOut, LayoutDashboard, BookOpen, Trophy, Settings, Menu, X, Github, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Navigation() {
   const router = useRouter();
@@ -85,7 +86,10 @@ export function Navigation() {
           </div>
 
           {/* User Menu or Auth Buttons */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+            
             {isPending ? (
               <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
             ) : session?.user ? (
