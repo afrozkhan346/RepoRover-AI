@@ -1,10 +1,25 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 import { Navigation } from "@/components/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Code2, Sparkles, Trophy, BarChart3, BookOpen, GitBranch, Zap, Target } from "lucide-react";
 
 export default function Home() {
+  const router = useRouter();
+  const { data: session } = useSession();
+
+  const handleGetStarted = () => {
+    if (session?.user) {
+      router.push("/dashboard");
+    } else {
+      router.push("/register");
+    }
+  };
+
   const features = [
     {
       icon: BookOpen,
@@ -89,8 +104,8 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button size="lg" asChild className="text-lg px-8">
-                  <Link href="/register">Start Learning Free</Link>
+                <Button size="lg" className="text-lg px-8" onClick={handleGetStarted}>
+                  {session?.user ? "Go to Dashboard" : "Start Learning Free"}
                 </Button>
                 <Button size="lg" variant="outline" asChild className="text-lg px-8">
                   <Link href="/lessons">Browse Lessons</Link>
@@ -198,11 +213,13 @@ export default function Home() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button size="lg" className="flex-1 text-lg" asChild>
-                    <Link href="/register">Create Free Account</Link>
+                  <Button size="lg" className="flex-1 text-lg" onClick={handleGetStarted}>
+                    {session?.user ? "Go to Dashboard" : "Create Free Account"}
                   </Button>
                   <Button size="lg" variant="outline" className="flex-1 text-lg" asChild>
-                    <Link href="/login">Sign In</Link>
+                    <Link href={session?.user ? "/lessons" : "/login"}>
+                      {session?.user ? "Browse Lessons" : "Sign In"}
+                    </Link>
                   </Button>
                 </div>
                 <p className="text-center text-sm text-muted-foreground">

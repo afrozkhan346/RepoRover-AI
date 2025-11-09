@@ -1,0 +1,342 @@
+# Cloud Build Configuration for RepoRover AI
+# Builds and deploys 5 microservices to Cloud Run
+# Triggered automatically on push to main branch
+
+steps:
+  # ==================================
+  # 1. BUILD FRONTEND SERVICE (Next.js)
+  # ==================================
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-frontend'
+    args:
+      - 'build'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/frontend:${SHORT_SHA}'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/frontend:latest'
+      - '-f'
+      - 'Dockerfile.frontend'
+      - '.'
+
+  # ==================================
+  # 2. BUILD AI SERVICE (Gemini Integration)
+  # ==================================
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-ai-service'
+    args:
+      - 'build'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/ai-service:${SHORT_SHA}'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/ai-service:latest'
+      - '-f'
+      - 'Dockerfile.ai'
+      - '.'
+
+  # ==================================
+  # 3. BUILD ANALYZE SERVICE (GitHub Repo Analysis)
+  # ==================================
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-analyze-service'
+    args:
+      - 'build'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/analyze-service:${SHORT_SHA}'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/analyze-service:latest'
+      - '-f'
+      - 'Dockerfile.analyze'
+      - '.'
+
+  # ==================================
+  # 4. BUILD DATA SERVICE (Firestore + Cache)
+  # ==================================
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-data-service'
+    args:
+      - 'build'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/data-service:${SHORT_SHA}'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/data-service:latest'
+      - '-f'
+      - 'Dockerfile.data'
+      - '.'
+
+  # ==================================
+  # 5. BUILD AUTH SERVICE (Firebase Auth)
+  # ==================================
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-auth-service'
+    args:
+      - 'build'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/auth-service:${SHORT_SHA}'
+      - '-t'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/auth-service:latest'
+      - '-f'
+      - 'Dockerfile.auth'
+      - '.'
+
+  # ==================================
+  # 6. PUSH ALL IMAGES TO ARTIFACT REGISTRY
+  # ==================================
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-images'
+    waitFor:
+      - 'build-frontend'
+      - 'build-ai-service'
+      - 'build-analyze-service'
+      - 'build-data-service'
+      - 'build-auth-service'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/frontend'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-ai'
+    waitFor: ['build-ai-service']
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/ai-service'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-analyze'
+    waitFor: ['build-analyze-service']
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/analyze-service'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-data'
+    waitFor: ['build-data-service']
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/data-service'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-auth'
+    waitFor: ['build-auth-service']
+    args:
+      - 'push'
+      - '--all-tags'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/auth-service'
+
+  # ==================================
+  # 7. DEPLOY FRONTEND TO CLOUD RUN
+  # ==================================
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-frontend'
+    waitFor: ['push-images']
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'frontend-service'
+      - '--image'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/frontend:${SHORT_SHA}'
+      - '--region'
+      - '${_DEPLOY_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '2'
+      - '--concurrency'
+      - '100'
+      - '--max-instances'
+      - '100'
+      - '--min-instances'
+      - '1'
+      - '--timeout'
+      - '300'
+      - '--port'
+      - '3000'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,GOOGLE_CLOUD_PROJECT=${PROJECT_ID}'
+      - '--set-secrets'
+      - 'GEMINI_API_KEY=gemini-api-key:latest,TURSO_AUTH_TOKEN=turso-auth-token:latest,REDIS_PASSWORD=redis-password:latest'
+
+  # ==================================
+  # 8. DEPLOY AI SERVICE TO CLOUD RUN
+  # ==================================
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-ai-service'
+    waitFor: ['push-ai']
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'ai-service'
+      - '--image'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/ai-service:${SHORT_SHA}'
+      - '--region'
+      - '${_DEPLOY_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--no-allow-unauthenticated'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '2'
+      - '--concurrency'
+      - '80'
+      - '--max-instances'
+      - '50'
+      - '--min-instances'
+      - '0'
+      - '--timeout'
+      - '300'
+      - '--port'
+      - '8001'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,GOOGLE_CLOUD_PROJECT=${PROJECT_ID}'
+      - '--set-secrets'
+      - 'GEMINI_API_KEY=gemini-api-key:latest'
+
+  # ==================================
+  # 9. DEPLOY ANALYZE SERVICE TO CLOUD RUN
+  # ==================================
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-analyze-service'
+    waitFor: ['push-analyze']
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'analyze-service'
+      - '--image'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/analyze-service:${SHORT_SHA}'
+      - '--region'
+      - '${_DEPLOY_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--no-allow-unauthenticated'
+      - '--memory'
+      - '1Gi'
+      - '--cpu'
+      - '1'
+      - '--concurrency'
+      - '50'
+      - '--max-instances'
+      - '20'
+      - '--min-instances'
+      - '0'
+      - '--timeout'
+      - '300'
+      - '--port'
+      - '8002'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,GOOGLE_CLOUD_PROJECT=${PROJECT_ID}'
+      - '--set-secrets'
+      - 'GITHUB_TOKEN=github-token:latest'
+
+  # ==================================
+  # 10. DEPLOY DATA SERVICE TO CLOUD RUN
+  # ==================================
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-data-service'
+    waitFor: ['push-data']
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'data-service'
+      - '--image'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/data-service:${SHORT_SHA}'
+      - '--region'
+      - '${_DEPLOY_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--no-allow-unauthenticated'
+      - '--memory'
+      - '1Gi'
+      - '--cpu'
+      - '1'
+      - '--concurrency'
+      - '100'
+      - '--max-instances'
+      - '30'
+      - '--min-instances'
+      - '0'
+      - '--timeout'
+      - '60'
+      - '--port'
+      - '8003'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,GOOGLE_CLOUD_PROJECT=${PROJECT_ID}'
+      - '--set-secrets'
+      - 'TURSO_AUTH_TOKEN=turso-auth-token:latest,REDIS_PASSWORD=redis-password:latest'
+
+  # ==================================
+  # 11. DEPLOY AUTH SERVICE TO CLOUD RUN
+  # ==================================
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-auth-service'
+    waitFor: ['push-auth']
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'auth-service'
+      - '--image'
+      - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/auth-service:${SHORT_SHA}'
+      - '--region'
+      - '${_DEPLOY_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--no-allow-unauthenticated'
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+      - '--concurrency'
+      - '80'
+      - '--max-instances'
+      - '20'
+      - '--min-instances'
+      - '0'
+      - '--timeout'
+      - '60'
+      - '--port'
+      - '8004'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,GOOGLE_CLOUD_PROJECT=${PROJECT_ID}'
+
+# ==================================
+# SUBSTITUTIONS (Default Values)
+# ==================================
+substitutions:
+  _DEPLOY_REGION: us-central1
+  _ARTIFACT_REGISTRY_LOCATION: us-central1
+  _ARTIFACT_REGISTRY_REPO: repoorover-ai
+
+# ==================================
+# BUILD OPTIONS
+# ==================================
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+  substitutionOption: 'ALLOW_LOOSE'
+  dynamic_substitutions: true
+
+# ==================================
+# TIMEOUT
+# ==================================
+timeout: '3600s'
+
+# ==================================
+# IMAGES (For Cloud Build History)
+# ==================================
+images:
+  - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/frontend:${SHORT_SHA}'
+  - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/ai-service:${SHORT_SHA}'
+  - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/analyze-service:${SHORT_SHA}'
+  - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/data-service:${SHORT_SHA}'
+  - '${_ARTIFACT_REGISTRY_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_ARTIFACT_REGISTRY_REPO}/auth-service:${SHORT_SHA}'

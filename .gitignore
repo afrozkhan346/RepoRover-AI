@@ -39,7 +39,25 @@ next-env.d.t
 
 # environment variables
 .env
+.env.local
+.env*.local
+.env.development
+.env.production
 env
+
+# IMPORTANT: Only .env.example should be committed
+# Never commit .env.development or .env.production as they contain real API keys!
+
+# database files
+*.db
+*.db-shm
+*.db-wal
+local.db*
+*.sqlite
+*.sqlite3
+
+# Drizzle migrations (keep schema, exclude data)
+drizzle/*.db
 
 # logs
 *.log
@@ -148,3 +166,5 @@ temp/
 # API keys and secrets
 .env
 env
+
+.git
