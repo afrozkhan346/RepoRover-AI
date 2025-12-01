@@ -117,36 +117,24 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 
 4. Visit `http://localhost:3000/register` to see the new fast signup!
 
-### **For Production (Cloud Run)**
+### **For Production**
 
-1. Store OAuth credentials in **Secret Manager**:
-   ```bash
-   # Google OAuth
-   echo -n "your-google-client-id" | gcloud secrets create google-client-id --data-file=-
-   echo -n "your-google-client-secret" | gcloud secrets create google-client-secret --data-file=-
-   
-   # GitHub OAuth
-   echo -n "your-github-client-id" | gcloud secrets create github-client-id --data-file=-
-   echo -n "your-github-client-secret" | gcloud secrets create github-client-secret --data-file=-
+1. Set environment variables on your hosting platform:
+   - Vercel: Project Settings → Environment Variables
+   - Netlify: Site Settings → Environment Variables
+   - Other platforms: Follow their documentation for secrets management
+
+2. Add the same OAuth credentials:
+   ```
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
+   GITHUB_CLIENT_ID=your-github-client-id
+   GITHUB_CLIENT_SECRET=your-github-client-secret
+   BETTER_AUTH_SECRET=your-production-secret
+   BETTER_AUTH_URL=https://your-domain.com
    ```
 
-2. Update `cloudbuild.yaml` to inject secrets:
-   ```yaml
-   - name: 'gcr.io/cloud-builders/gcloud'
-     args:
-       - 'run'
-       - 'deploy'
-       - 'frontend-service'
-       - '--set-env-vars'
-       - 'GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID},GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}'
-       - '--set-secrets'
-       - 'GOOGLE_CLIENT_SECRET=google-client-secret:latest,GITHUB_CLIENT_SECRET=github-client-secret:latest'
-   ```
-
-3. Deploy:
-   ```bash
-   gcloud builds submit --config=cloudbuild.yaml
-   ```
+3. Deploy your application using your platform's deployment tools
 
 ---
 
@@ -193,7 +181,7 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 **Solution**:
 - Check your `.env` file exists and has the correct variables
 - Restart your development server after adding env vars
-- For Cloud Run, verify secrets are injected correctly
+- Verify environment variables are properly configured in production
 
 ### **"Access blocked: This app's request is invalid" (Google)**
 
@@ -268,7 +256,6 @@ The new signup/login pages include:
 - [Better Auth Documentation](https://better-auth.vercel.app/)
 - [Google OAuth 2.0 Guide](https://developers.google.com/identity/protocols/oauth2)
 - [GitHub OAuth Apps Guide](https://docs.github.com/en/developers/apps/building-oauth-apps)
-- [Cloud Run Secret Management](https://cloud.google.com/run/docs/configuring/secrets)
 
 ---
 
@@ -282,6 +269,7 @@ If you encounter issues:
 
 ---
 
-**Built for Google Cloud Run Hackathon - AI Studio Category**
+**Built with ❤️ using Next.js and Better Auth**
 
-*Modern, fast, secure authentication for the serverless era* ✨
+*Modern, fast, secure authentication* ✨
+
