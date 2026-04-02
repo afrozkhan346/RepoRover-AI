@@ -35,3 +35,15 @@
 - [x] Create toggle-group.tsx
 - [x] Create toggle.tsx
 - [x] Create tooltip.tsx
+
+## TODO: Unique Tech Implementation (Multi-View Code Representation)
+
+- [ ] Add token-level extraction module for lexical features
+- [ ] Integrate Tree-sitter parsers for supported languages
+- [ ] Define normalized AST node schema
+- [ ] Build call graph generator (intra-file and cross-file)
+- [ ] Build dependency graph generator (imports and package usage)
+- [ ] Add lightweight graph algorithms (centrality, BFS path tracing, impact ranking)
+- [ ] Expose graph summary in analysis API response
+- [ ] Add UI section for token/AST/graph views in analyze page
+- [ ] Add explanation mapping: finding -> token/AST/graph evidence

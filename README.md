@@ -45,6 +45,8 @@ An AI-powered learning platform that revolutionizes coding education through int
 
 ## 🏗️ Tech Stack
 
+Current implementation details are listed below. The finalized target architecture is documented in docs/FINAL_TECH_STACK.md.
+
 ### **Frontend**
 - **Framework**: Next.js 15.3.5 with App Router
 - **Language**: TypeScript 5.7.3
