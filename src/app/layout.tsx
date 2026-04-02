@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import ErrorReporter from "@/components/ErrorReporter";
-import Script from "next/script";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: "RepoRoverAI - AI-Powered Code Learning Platform",
-  description: "Learn to code with AI-powered explanations, interactive lessons, and gamified learning paths",
+  title: "RepoRoverAI",
+  description: "FastAPI-backed repository intelligence with AI explanations, graph analysis, and visual diagnostics.",
 };
 
 export default function RootLayout({
@@ -25,16 +24,6 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ErrorReporter />
-          <Script
-            src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/scripts//route-messenger.js"
-            strategy="afterInteractive"
-            data-target-origin="*"
-            data-message-type="ROUTE_CHANGE"
-            data-include-search-params="true"
-            data-only-in-iframe="true"
-            data-debug="true"
-            data-custom-data='{"appName": "YourApp", "version": "1.0.0", "greeting": "hi"}'
-          />
           {children}
           <Toaster />
         </ThemeProvider>
