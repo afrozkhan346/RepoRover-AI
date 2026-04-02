@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "repoorover-backend"
+version = "0.1.0"
+description = "RepoRover AI FastAPI backend"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic-settings>=2.4.0",
+  "python-dotenv>=1.0.1",
+]
+
+[tool.setuptools]
+packages = ["app"]

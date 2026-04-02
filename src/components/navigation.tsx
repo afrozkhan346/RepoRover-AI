@@ -38,10 +38,9 @@ export function Navigation() {
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/lessons", label: "Lessons", protected: true },
-    { href: "/analyze", label: "Analyze Repos", protected: true, icon: Github },
+    { href: "/dashboard", label: "Dashboard", protected: true, icon: LayoutDashboard },
+    { href: "/analyze", label: "Analyze", protected: true, icon: Github },
     { href: "/ai-tutor", label: "AI Tutor", protected: true, icon: Sparkles },
-    { href: "/achievements", label: "Achievements", protected: true },
   ];
 
   const getInitials = (name: string) => {
