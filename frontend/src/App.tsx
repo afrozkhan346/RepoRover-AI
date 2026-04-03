@@ -48,6 +48,7 @@ import {
   loginUser,
   logoutUser,
   registerUser,
+  fetchProjectFlow,
   uploadProjectFiles,
   type AIExplanationResponse,
   type AuthUser,
@@ -55,10 +56,11 @@ import {
   type Lesson,
   type ProjectAnalyzeResponse,
   type ProjectCloneResponse,
+  type ProjectFlowResponse,
   type ProjectUploadResponse,
 } from "./api";
 
-type ResultPayload = ProjectUploadResponse | ProjectCloneResponse | ProjectAnalyzeResponse | null;
+type ResultPayload = ProjectUploadResponse | ProjectCloneResponse | ProjectAnalyzeResponse | ProjectFlowResponse | null;
 
 type SavedWorkspaceState = {
   projectName: string;
@@ -1048,6 +1050,8 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
   const [loadingAnalyze, setLoadingAnalyze] = useState(false);
   const [loadingCodeAnalyze, setLoadingCodeAnalyze] = useState(false);
   const [loadingGraph, setLoadingGraph] = useState(false);
+  const [loadingFlow, setLoadingFlow] = useState(false);
+  const [loadingUnderstanding, setLoadingUnderstanding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payload, setPayload] = useState<ResultPayload>(null);
   const [analysisResult, setAnalysisResult] = useState<unknown>(null);
@@ -1215,6 +1219,50 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
     }
   };
 
+  const getFlow = async () => {
+    if (!projectName.trim()) {
+      setError("Enter a project name first.");
+      return;
+    }
+
+    setLoadingFlow(true);
+    setError(null);
+
+    try {
+      const res = await fetchProjectFlow(projectName.trim());
+      console.log("Execution flow:", res);
+      setAnalysisResult(res);
+      persistWorkspace(res, res, "flow");
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : "Unable to trace execution flow";
+      setError(message);
+    } finally {
+      setLoadingFlow(false);
+    }
+  };
+
+  const getUnderstanding = async () => {
+    if (!projectName.trim()) {
+      setError("Enter a project name first.");
+      return;
+    }
+
+    setLoadingUnderstanding(true);
+    setError(null);
+
+    try {
+      const res = await axios.get(`http://127.0.0.1:8000/project/understand/${encodeURIComponent(projectName.trim())}`);
+      console.log(res.data);
+      setAnalysisResult(res.data);
+      persistWorkspace(payload, res.data, "understanding");
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : "Unable to understand project";
+      setError(message);
+    } finally {
+      setLoadingUnderstanding(false);
+    }
+  };
+
   const payloadPreview = analysisResult ?? payload;
 
   const filesScanned =
@@ -1345,6 +1393,12 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
               </button>
               <button onClick={getGraph} disabled={loadingGraph} className="secondary-button">
                 {loadingGraph ? <Loader2 className="icon-sm spinning" /> : <Route className="icon-sm" />} Build Graph
+              </button>
+              <button onClick={getFlow} disabled={loadingFlow} className="secondary-button">
+                {loadingFlow ? <Loader2 className="icon-sm spinning" /> : <Route className="icon-sm" />} Flow Test
+              </button>
+              <button onClick={getUnderstanding} disabled={loadingUnderstanding} className="secondary-button">
+                {loadingUnderstanding ? <Loader2 className="icon-sm spinning" /> : <Brain className="icon-sm" />} Understanding Test
               </button>
             </div>
 

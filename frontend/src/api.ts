@@ -139,6 +139,10 @@ export type ProjectAnalyzeResponse = {
   }>;
 };
 
+export type ProjectFlowResponse = {
+  execution_flow: string[];
+};
+
 export type LearningPath = {
   id: number;
   title: string;
@@ -241,6 +245,11 @@ export async function cloneProjectFromGithub(repoUrl: string) {
 
 export async function analyzeProjectByName(projectName: string) {
   const { data } = await apiClient.get<ProjectAnalyzeResponse>(`/project/analyze/${encodeURIComponent(projectName)}`);
+  return data;
+}
+
+export async function fetchProjectFlow(projectName: string) {
+  const { data } = await apiClient.get<ProjectFlowResponse>(`/project/flow/${encodeURIComponent(projectName)}`);
   return data;
 }
 

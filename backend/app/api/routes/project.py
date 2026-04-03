@@ -8,9 +8,11 @@ import os
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.services.ast_parser import parse_project_code
+from app.services.graph_analysis_service import dfs_traversal
 from app.services.graph_builder import analyze_graph, build_graph
 from app.services.parser import parse_project
 from app.services.repository_loader import clone_repository
+from app.services.understanding import understand_project
 
 router = APIRouter()
 
@@ -145,3 +147,39 @@ def get_graph(project_name: str) -> dict[str, int]:
         return analyze_graph(graph, call_edge_info)
     except ValueError as error:
         raise HTTPException(status_code=400, detail={"detail": str(error), "code": "GRAPH_BUILD_FAILED"}) from error
+
+
+@router.get("/flow/{project_name}")
+def get_flow(project_name: str) -> dict[str, list[str]]:
+    safe_name = Path(project_name).name
+    if safe_name != project_name or safe_name in {"", ".", ".."}:
+        raise HTTPException(status_code=400, detail={"detail": "Invalid project name", "code": "INVALID_PROJECT"})
+
+    path = _projects_root() / safe_name
+    if not path.exists() or not path.is_dir():
+        raise HTTPException(status_code=404, detail={"detail": "Project not found", "code": "PROJECT_NOT_FOUND"})
+
+    try:
+        ast_data = parse_project_code(str(path))
+        graph, _ = build_graph(ast_data)
+        start_node = next(iter(graph.nodes), None)
+        flow = dfs_traversal(graph, start_node)
+        return {"execution_flow": flow}
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail={"detail": str(error), "code": "FLOW_BUILD_FAILED"}) from error
+
+
+@router.get("/understand/{project_name}")
+def understand(project_name: str) -> dict:
+    safe_name = Path(project_name).name
+    if safe_name != project_name or safe_name in {"", ".", ".."}:
+        raise HTTPException(status_code=400, detail={"detail": "Invalid project name", "code": "INVALID_PROJECT"})
+
+    path = _projects_root() / safe_name
+    if not path.exists() or not path.is_dir():
+        raise HTTPException(status_code=404, detail={"detail": "Project not found", "code": "PROJECT_NOT_FOUND"})
+
+    try:
+        return understand_project(str(path))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail={"detail": str(error), "code": "UNDERSTAND_FAILED"}) from error
