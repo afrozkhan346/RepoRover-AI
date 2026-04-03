@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = True
     log_level: str = "INFO"
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000", "http://localhost:5173"])
     database_url: str = "sqlite:///./repoorover.db"
     postgres_host: str | None = None
     postgres_port: int = 5432
@@ -30,12 +30,12 @@ class Settings(BaseSettings):
     @classmethod
     def parse_cors_origins(cls, value: Any) -> list[str]:
         if value is None:
-            return ["http://localhost:3000"]
+            return ["http://localhost:3000", "http://localhost:5173"]
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         if isinstance(value, list):
             return value
-        return ["http://localhost:3000"]
+        return ["http://localhost:3000", "http://localhost:5173"]
 
 
 @lru_cache

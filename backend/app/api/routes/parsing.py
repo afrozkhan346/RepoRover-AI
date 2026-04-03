@@ -1,15 +1,16 @@
 from fastapi import APIRouter, HTTPException
 
+from app.engine.parser import ParserEngine
 from app.schemas.parsing import AstStructureRequest, AstStructureResponse, ParseRequest, ParseResponse
-from app.services.parser_service import parse_source, parse_structure
 
 router = APIRouter()
+parser_engine = ParserEngine()
 
 
 @router.post("/ast-preview", response_model=ParseResponse)
 def parse_ast_preview(payload: ParseRequest) -> ParseResponse:
     try:
-        result = parse_source(
+        result = parser_engine.parse_ast_preview(
             payload.source_code,
             language=payload.language,
             file_extension=payload.file_extension,
@@ -28,7 +29,7 @@ def parse_ast_preview(payload: ParseRequest) -> ParseResponse:
 @router.post("/ast-structure", response_model=AstStructureResponse)
 def parse_ast_structure(payload: AstStructureRequest) -> AstStructureResponse:
     try:
-        result = parse_structure(
+        result = parser_engine.parse_ast_structure(
             payload.source_code,
             language=payload.language,
             file_extension=payload.file_extension,

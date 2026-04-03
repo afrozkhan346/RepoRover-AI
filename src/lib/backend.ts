@@ -1,6 +1,8 @@
 export const BACKEND_API_BASE =
   process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "http://localhost:8000/api";
 
+export const BACKEND_ROOT_BASE = BACKEND_API_BASE.replace(/\/api$/, "");
+
 export type ApiErrorPayload = {
   detail: string;
   code?: string | null;
@@ -135,6 +137,13 @@ export type AIExplanationResponse = {
   key_concepts?: string[];
 };
 
+export type ProjectUploadResponse = {
+  message: string;
+  project_path: string;
+  files_saved: number;
+  total_size: number;
+};
+
 export async function fetchProjectSummaries(localPath: string, maxFiles = 1000) {
   return backendFetch<ProjectSummariesResponse>("/ai/project-summaries", {
     method: "POST",
@@ -185,4 +194,34 @@ export async function explainCode(code: string, language?: string, question?: st
     method: "POST",
     body: JSON.stringify({ code, language, question }),
   });
+}
+
+export async function uploadProjectFiles(files: File[]) {
+  const formData = new FormData();
+
+  files.forEach((file) => {
+    const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+    formData.append("files", file);
+    formData.append("relative_paths", relativePath);
+  });
+
+  const response = await fetch(`${BACKEND_ROOT_BASE}/project/upload`, {
+    method: "POST",
+    body: formData,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    let errorPayload: ApiErrorPayload | null = null;
+    try {
+      errorPayload = (await response.json()) as ApiErrorPayload;
+    } catch {
+      errorPayload = null;
+    }
+
+    const message = errorPayload?.detail || `Request failed with status ${response.status}`;
+    throw new Error(message);
+  }
+
+  return (await response.json()) as ProjectUploadResponse;
 }

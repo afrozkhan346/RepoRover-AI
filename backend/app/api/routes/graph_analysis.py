@@ -1,15 +1,16 @@
 from fastapi import APIRouter, HTTPException
 
+from app.engine.graph_builder import GraphBuilderEngine
 from app.schemas.graph_analysis import GraphAnalysisRequest, GraphAnalysisResponse
-from app.services.graph_analysis_service import analyze_graph
 
 router = APIRouter()
+graph_builder_engine = GraphBuilderEngine()
 
 
 @router.post("/from-path", response_model=GraphAnalysisResponse)
 def graph_analysis_from_path(payload: GraphAnalysisRequest) -> GraphAnalysisResponse:
     try:
-        return analyze_graph(
+        return graph_builder_engine.graph_analysis(
             local_path=payload.local_path,
             graph_type=payload.graph_type,
             max_files=payload.max_files,

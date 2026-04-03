@@ -13,6 +13,75 @@ An AI-powered learning platform that revolutionizes coding education through int
 
 ---
 
+## 🧭 Overall Architecture (IMPORTANT)
+
+RepoRover AI is organized around this flow:
+
+Frontend (React + Vite)
+   ↓
+Backend API (FastAPI)
+   ↓
+Core Engine
+ ├── Parser (AST)
+ ├── Graph Builder
+ ├── AI/NLP Layer
+ └── Explanation Engine
+   ↓
+Database (optional)
+
+### Core Engine module map
+
+- `backend/app/engine/parser` - AST preview, AST structure, and token extraction wrappers
+- `backend/app/engine/graph_builder` - dependency graph, call graph, and graph analytics wrappers
+- `backend/app/engine/ai_nlp` - AI explanation, project summaries, quality analysis, and risk scoring
+- `backend/app/engine/explanation_engine` - explainability trace generation
+- `backend/app/engine/orchestrator.py` - unified orchestration entrypoint for end-to-end repository analysis
+
+This engine layer isolates core analysis capabilities from transport concerns (FastAPI routes) so frontend clients can evolve independently.
+
+### Migration status
+
+- The active UI entrypoint is now the Vite frontend in `frontend/`.
+- The root Next.js app is being phased out step by step to avoid breaking changes.
+- Root npm scripts now point to the Vite frontend so day-to-day runs use the new stack.
+- The remaining Next.js pages are now legacy handoff screens while migration continues.
+
+---
+
+## Project Parsing Engine Milestone
+
+The backend now includes a project parsing engine that can:
+
+- Scan local or cloned projects
+- Extract folder and file structure
+- Detect project language from discovered file extensions
+- Produce structured metadata ready for AST parsing
+
+### Example Output
+
+```json
+{
+   "language": "Python",
+   "total_files": 25,
+   "files": [
+      {
+         "name": "main.py",
+         "path": "backend/projects/demo/main.py",
+         "extension": "py"
+      }
+   ]
+}
+```
+
+### What You Achieved
+
+- Project scanning engine
+- Language detection
+- File metadata extraction
+- Ready for AST parsing
+
+---
+
 ## 🌟 Features
 
 ### 🎓 Interactive Learning Platform
