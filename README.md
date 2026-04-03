@@ -41,10 +41,19 @@ This engine layer isolates core analysis capabilities from transport concerns (F
 
 ### Migration status
 
-- The active UI entrypoint is now the Vite frontend in `frontend/`.
-- The root Next.js app is being phased out step by step to avoid breaking changes.
-- Root npm scripts now point to the Vite frontend so day-to-day runs use the new stack.
-- The remaining Next.js pages are now legacy handoff screens while migration continues.
+- **Active UI**: The Vite frontend in `frontend/` is now the primary interface for all major features.
+- **Pages migrated to Vite**:
+  - Landing / Home
+  - Dashboard (with project analysis summaries)
+  - Learning Paths (with path browsing and lesson listing)
+  - Lessons (browse and view lesson details)
+  - AI Tutor (interactive code explanation and tutoring)
+  - Authentication (Login, Register, Profile)  
+  - Achievements (user progress and badges)
+  - Code Analysis (project upload, clone, and analysis workflows)
+- **Legacy Next.js pages**: All remaining Next.js pages are now minimal handoff screens that redirect to the Vite app.
+- **Backend**: FastAPI provides all data via RESTful endpoints. Auth, achievements, lessons, and learning paths are seeded in memory for rapid iteration.
+- **Startup**: `npm run dev` from the repo root starts the Vite frontend on `http://localhost:5173`. The FastAPI backend runs on `http://localhost:8000`.
 
 ---
 

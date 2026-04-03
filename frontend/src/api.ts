@@ -86,6 +86,43 @@ export type AIExplanationResponse = {
   key_concepts?: string[];
 };
 
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  email_verified: boolean;
+  image: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AuthSessionResponse = {
+  token: string;
+  user: AuthUser;
+};
+
+export type SessionResponse = {
+  token: string | null;
+  user: AuthUser | null;
+};
+
+export type Achievement = {
+  id: number;
+  title: string;
+  description: string | null;
+  icon: string | null;
+  xp_reward: number;
+  requirement: string;
+};
+
+export type UserAchievement = {
+  id: number;
+  user_id: string;
+  achievement_id: number;
+  earned_at: string;
+  created_at: string;
+};
+
 export type ProjectCloneResponse = {
   message: string;
   repo_url: string;
@@ -113,6 +150,19 @@ export type LearningPath = {
   created_at: string;
 };
 
+export type Lesson = {
+  id: number;
+  learning_path_id: number;
+  title: string;
+  description: string | null;
+  content: string | null;
+  difficulty: string;
+  xp_reward: number;
+  estimated_minutes: number;
+  order_index: number;
+  created_at: string;
+};
+
 export async function uploadProjectFiles(files: File[]) {
   const formData = new FormData();
   files.forEach((file) => {
@@ -135,6 +185,49 @@ export async function explainCode(code: string, language?: string, question?: st
   return data;
 }
 
+export async function registerUser(name: string, email: string, password: string) {
+  const { data } = await apiClient.post<AuthSessionResponse>("/api/auth/register", {
+    name,
+    email,
+    password,
+  });
+  return data;
+}
+
+export async function loginUser(email: string, password: string) {
+  const { data } = await apiClient.post<AuthSessionResponse>("/api/auth/login", {
+    email,
+    password,
+  });
+  return data;
+}
+
+export async function fetchAuthSession(token: string | null) {
+  const { data } = await apiClient.get<SessionResponse>("/api/auth/session", {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  return data;
+}
+
+export async function logoutUser(token: string | null) {
+  const { data } = await apiClient.post<{ message: string }>("/api/auth/logout", null, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  return data;
+}
+
+export async function fetchAchievements() {
+  const { data } = await apiClient.get<{ achievements: Achievement[] }>("/api/achievements");
+  return data.achievements;
+}
+
+export async function fetchUserAchievements(token: string | null) {
+  const { data } = await apiClient.get<{ achievements: UserAchievement[] }>("/api/achievements/user", {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  return data.achievements;
+}
+
 export async function cloneProjectFromGithub(repoUrl: string) {
   const formData = new FormData();
   formData.append("repo_url", repoUrl);
@@ -153,5 +246,19 @@ export async function analyzeProjectByName(projectName: string) {
 
 export async function fetchLearningPaths() {
   const { data } = await apiClient.get<LearningPath[]>('/api/learning-paths');
+  return data;
+}
+
+export async function fetchLessons(learningPathId?: number) {
+  const { data } = await apiClient.get<Lesson[] | Lesson>('/api/lessons', {
+    params: learningPathId ? { learningPathId } : undefined,
+  });
+  return data;
+}
+
+export async function fetchLesson(lessonId: number) {
+  const { data } = await apiClient.get<Lesson>('/api/lessons', {
+    params: { id: lessonId },
+  });
   return data;
 }

@@ -22,6 +22,7 @@ class GraphMetrics(BaseModel):
 
 class TraversalResult(BaseModel):
     start_node: str | None
+    dfs_order: list[str]
     bfs_order: list[str]
 
 

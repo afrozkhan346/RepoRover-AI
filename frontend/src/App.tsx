@@ -1,26 +1,58 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import {
+  Activity,
   ArrowRight,
   BarChart3,
   Brain,
+  BookOpen,
+  ChartColumnBig,
+  Calendar,
+  ClipboardCopy,
   Code2,
+  Clock,
+  FileText,
   FolderOpen,
   GitBranch,
-  Layers3,
+  Github,
+  LayoutDashboard,
+  Loader2,
+  Lock,
+  LogOut,
+  Mail,
+  Menu,
+  Moon,
+  Route,
   Sparkles,
-  Wand2,
+  Sun,
+  Target,
+  TriangleAlert,
+  TrendingUp,
+  User,
+  Award,
+  Trophy,
+  X,
 } from "lucide-react";
 
 import "./App.css";
 import {
   analyzeProjectByName,
-  explainCode,
   cloneProjectFromGithub,
+  explainCode,
+  fetchAuthSession,
+  fetchAchievements,
+  fetchLesson,
+  fetchLessons,
+  fetchUserAchievements,
   fetchLearningPaths,
+  loginUser,
+  logoutUser,
+  registerUser,
   uploadProjectFiles,
   type AIExplanationResponse,
+  type AuthUser,
   type LearningPath,
+  type Lesson,
   type ProjectAnalyzeResponse,
   type ProjectCloneResponse,
   type ProjectUploadResponse,
@@ -37,8 +69,7 @@ type SavedWorkspaceState = {
 };
 
 const WORKSPACE_STORAGE_KEY = "repoorover:vite-workspace";
-const LEARNING_PATHS_KEY = "repoorover:vite-learning-paths";
-
+const THEME_STORAGE_KEY = "repoorover:theme";
 const SAMPLE_CODE = `function calculateScore(items) {
   const total = items.reduce((sum, item) => sum + item.value, 0);
   if (total > 100) {
@@ -47,30 +78,967 @@ const SAMPLE_CODE = `function calculateScore(items) {
   return total;
 }`;
 
-const pillars = [
-  {
-    icon: GitBranch,
-    title: "Repository intelligence",
-    description: "Scan projects, map structure, and prepare the codebase for deeper analysis.",
-  },
-  {
-    icon: BarChart3,
-    title: "Backend metrics",
-    description: "Use FastAPI outputs for summaries, quality signals, and analysis summaries.",
-  },
-  {
-    icon: Wand2,
-    title: "AST parsing",
-    description: "Extract functions, classes, and imports from Python code first.",
-  },
-  {
-    icon: Brain,
-    title: "Explainable pipeline",
-    description: "Move from raw files to semantic data ready for graph building and AI layers.",
-  },
-];
+type NavigateFn = (path: string) => void;
 
-export default function App() {
+type Achievement = {
+  id: number;
+  title: string;
+  description: string | null;
+  icon: string | null;
+  xp_reward: number;
+  requirement: string;
+};
+
+type UserAchievement = {
+  id: number;
+  user_id: string;
+  achievement_id: number;
+  earned_at: string;
+  created_at: string;
+};
+
+function MainNav({
+  navigate,
+  authActions,
+}: {
+  navigate: NavigateFn;
+  authActions?: React.ReactNode;
+}) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (savedTheme === "dark") {
+      return true;
+    }
+    if (savedTheme === "light") {
+      return false;
+    }
+
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+  const currentPath = window.location.pathname;
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("theme-dark", isDarkMode);
+    window.localStorage.setItem(THEME_STORAGE_KEY, isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
+
+  const navLinks = [
+    { path: "/", label: "Home" },
+    { path: "/dashboard", label: "Dashboard" },
+    { path: "/analyze", label: "Analyze" },
+    { path: "/ai-tutor", label: "AI Tutor" },
+    { path: "/lessons", label: "Lessons" },
+    { path: "/achievements", label: "Achievements" },
+  ];
+
+  const go = (path: string) => {
+    setMobileMenuOpen(false);
+    if (path.startsWith("#")) {
+      if (window.location.pathname !== "/") {
+        navigate("/");
+      }
+      setTimeout(() => {
+        const target = document.querySelector(path);
+        target?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 0);
+      return;
+    }
+    navigate(path);
+  };
+
+  const isActivePath = (path: string) => {
+    if (path === "/") {
+      return currentPath === "/";
+    }
+    return currentPath === path || currentPath.startsWith(`${path}/`);
+  };
+
+  return (
+    <nav className="site-nav">
+      <div className="site-nav-inner">
+        <button type="button" className="site-brand" onClick={() => go("/")}>
+          <div className="site-brand-icon">
+            <Code2 className="icon-sm" />
+          </div>
+          <span>RepoRoverAI</span>
+        </button>
+
+        <div className="site-nav-links">
+          {navLinks.map((link) => (
+            <button
+              key={link.label}
+              type="button"
+              className={`site-nav-link ${isActivePath(link.path) ? "site-nav-link-active" : ""}`}
+              aria-current={isActivePath(link.path) ? "page" : undefined}
+              onClick={() => go(link.path)}
+            >
+              {link.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="site-nav-actions">
+          <button
+            type="button"
+            className="secondary-button site-theme-toggle"
+            onClick={() => setIsDarkMode((prev) => !prev)}
+            aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+            title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDarkMode ? <Sun className="icon-sm" /> : <Moon className="icon-sm" />}
+          </button>
+          {authActions}
+          <button
+            type="button"
+            className="site-nav-mobile-toggle"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+          >
+            {mobileMenuOpen ? <X className="icon-sm" /> : <Menu className="icon-sm" />}
+          </button>
+        </div>
+      </div>
+
+      {mobileMenuOpen ? (
+        <div className="site-nav-mobile-panel">
+          {navLinks.map((link) => (
+            <button
+              key={link.label}
+              type="button"
+              className={`site-nav-mobile-link ${isActivePath(link.path) ? "site-nav-mobile-link-active" : ""}`}
+              aria-current={isActivePath(link.path) ? "page" : undefined}
+              onClick={() => go(link.path)}
+            >
+              {link.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </nav>
+  );
+}
+
+function App() {
+  const [locationPath, setLocationPath] = useState(() => window.location.pathname + window.location.search);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setLocationPath(window.location.pathname + window.location.search);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const navigate = (path: string) => {
+    if (window.location.pathname + window.location.search === path) {
+      return;
+    }
+
+    window.history.pushState({}, "", path);
+    setLocationPath(path);
+
+    if (!path.startsWith("#")) {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+  };
+
+  const pathname = locationPath.split("?")[0];
+
+  if (pathname === "/login") {
+    return <LoginView navigate={navigate} />;
+  }
+
+  if (pathname === "/register") {
+    return <RegisterView navigate={navigate} />;
+  }
+
+  if (pathname === "/profile") {
+    return <ProfileView navigate={navigate} />;
+  }
+
+  if (pathname === "/achievements") {
+    return <AchievementsView navigate={navigate} />;
+  }
+
+  if (pathname === "/dashboard") {
+    return <DashboardView navigate={navigate} />;
+  }
+
+  if (pathname === "/analyze") {
+    return <AnalyzeView navigate={navigate} />;
+  }
+
+  if (pathname === "/ai-tutor") {
+    return <AiTutorView navigate={navigate} />;
+  }
+
+  if (pathname === "/lessons") {
+    return <LessonsView navigate={navigate} />;
+  }
+
+  if (pathname.startsWith("/lessons/")) {
+    const lessonId = Number(pathname.replace("/lessons/", ""));
+    if (Number.isFinite(lessonId) && lessonId > 0) {
+      return <LessonDetailView navigate={navigate} lessonId={lessonId} />;
+    }
+  }
+
+  return <LandingPage navigate={navigate} />;
+}
+
+function LandingPage({ navigate }: { navigate: NavigateFn }) {
+  return (
+    <div className="app-shell app-shell-minimal">
+      <MainNav
+        navigate={navigate}
+        authActions={(
+          <>
+            <button type="button" className="secondary-button site-auth-btn" onClick={() => navigate("/login")}>
+              Sign in
+            </button>
+            <button type="button" className="site-auth-btn" onClick={() => navigate("/register")}>
+              Get started
+            </button>
+          </>
+        )}
+      />
+
+      <main className="minimal-home">
+        <section className="minimal-home-card">
+          <div className="eyebrow">
+            <Sparkles className="icon-sm" />
+            Minimal Home
+          </div>
+          <h1>One clean entry point for RepoRoverAI.</h1>
+          <p>
+            The home page is now intentionally minimal. Use dedicated routes for analysis, dashboards, lessons,
+            achievements, and AI tutoring.
+          </p>
+          <div className="hero-actions">
+            <button type="button" onClick={() => navigate("/analyze")}>
+              Open Analyze <ArrowRight className="icon-sm" />
+            </button>
+            <button type="button" className="secondary-button" onClick={() => navigate("/dashboard")}>
+              Open Dashboard
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function LoginView({ navigate }: { navigate: NavigateFn }) {
+  const query = new URLSearchParams(window.location.search);
+  const registered = query.get("registered") === "true";
+  const redirectUrl = query.get("redirect") || "/dashboard";
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [githubLoading, setGithubLoading] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    setError("Google sign-in is not enabled in the FastAPI auth bridge yet.");
+    setGoogleLoading(false);
+  };
+
+  const handleGithubLogin = async () => {
+    setGithubLoading(true);
+    setError("GitHub sign-in is not enabled in the FastAPI auth bridge yet.");
+    setGithubLoading(false);
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await loginUser(email, password);
+      localStorage.setItem("bearer_token", response.token);
+      navigate(redirectUrl);
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : "Unable to sign in";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-shell">
+      <section className="auth-card auth-modern-card">
+        <div className="auth-brand">
+          <Code2 className="icon-md" />
+          <span>RepoRover AI</span>
+        </div>
+        <h1>Welcome back</h1>
+        <p>Sign in to continue your learning and repository analysis flow.</p>
+        {registered ? <div className="auth-note">Account created successfully. Sign in to continue.</div> : null}
+
+        {!showEmailForm ? (
+          <div className="auth-social-stack">
+            <button type="button" className="auth-social-btn" onClick={handleGoogleLogin} disabled={googleLoading || githubLoading}>
+              {googleLoading ? <Loader2 className="icon-sm spinning" /> : <Sparkles className="icon-sm" />} Continue with Google
+            </button>
+
+            <button type="button" className="auth-social-btn" onClick={handleGithubLogin} disabled={googleLoading || githubLoading}>
+              {githubLoading ? <Loader2 className="icon-sm spinning" /> : <Github className="icon-sm" />} Continue with GitHub
+            </button>
+
+            <div className="auth-divider"><span>or</span></div>
+
+            <button type="button" className="auth-social-btn" onClick={() => setShowEmailForm(true)}>
+              <Mail className="icon-sm" /> Continue with Email
+            </button>
+          </div>
+        ) : (
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <label>
+              Email
+              <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" placeholder="you@example.com" />
+            </label>
+            <label>
+              Password
+              <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" placeholder="••••••••" />
+            </label>
+            <button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="icon-sm spin" /> : <Mail className="icon-sm" />} Sign in
+            </button>
+
+            <button type="button" className="secondary-button auth-back-btn" onClick={() => setShowEmailForm(false)} disabled={loading}>
+              Back to social login
+            </button>
+          </form>
+        )}
+
+        {error ? <div className="error">{error}</div> : null}
+        <div className="auth-links">
+          <button type="button" className="secondary-button" onClick={() => navigate("/")}>Back home</button>
+          <button type="button" className="secondary-button" onClick={() => navigate("/register")}>Create account</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function RegisterView({ navigate }: { navigate: NavigateFn }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [githubLoading, setGithubLoading] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGoogleSignup = async () => {
+    setGoogleLoading(true);
+    setError("Google signup is not enabled in the FastAPI auth bridge yet.");
+    setGoogleLoading(false);
+  };
+
+  const handleGithubSignup = async () => {
+    setGithubLoading(true);
+    setError("GitHub signup is not enabled in the FastAPI auth bridge yet.");
+    setGithubLoading(false);
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await registerUser(name, email, password);
+      localStorage.setItem("bearer_token", response.token);
+      navigate("/profile");
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : "Unable to register";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-shell">
+      <section className="auth-card auth-modern-card">
+        <div className="auth-brand">
+          <Code2 className="icon-md" />
+          <span>RepoRover AI</span>
+        </div>
+        <h1>Join RepoRover AI</h1>
+        <p>Start your AI-powered learning journey in seconds.</p>
+
+        {!showEmailForm ? (
+          <div className="auth-social-stack">
+            <button type="button" className="auth-social-btn" onClick={handleGoogleSignup} disabled={googleLoading || githubLoading}>
+              {googleLoading ? <Loader2 className="icon-sm spinning" /> : <Sparkles className="icon-sm" />} Continue with Google
+            </button>
+
+            <button type="button" className="auth-social-btn" onClick={handleGithubSignup} disabled={googleLoading || githubLoading}>
+              {githubLoading ? <Loader2 className="icon-sm spinning" /> : <Github className="icon-sm" />} Continue with GitHub
+            </button>
+
+            <div className="auth-divider"><span>or</span></div>
+
+            <button type="button" className="auth-social-btn" onClick={() => setShowEmailForm(true)}>
+              <Mail className="icon-sm" /> Continue with Email
+            </button>
+          </div>
+        ) : (
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <label>
+              Full name
+              <input value={name} onChange={(event) => setName(event.target.value)} type="text" placeholder="John Doe" />
+            </label>
+            <label>
+              Email
+              <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" placeholder="you@example.com" />
+            </label>
+            <label>
+              Password
+              <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" placeholder="••••••••" />
+            </label>
+            <label>
+              Confirm password
+              <input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} type="password" placeholder="••••••••" />
+            </label>
+            <button type="submit" disabled={loading}>
+              {loading ? <Loader2 className="icon-sm spin" /> : <User className="icon-sm" />} Create account
+            </button>
+
+            <button type="button" className="secondary-button auth-back-btn" onClick={() => setShowEmailForm(false)} disabled={loading}>
+              Back to social login
+            </button>
+          </form>
+        )}
+
+        {error ? <div className="error">{error}</div> : null}
+        <div className="auth-links">
+          <button type="button" className="secondary-button" onClick={() => navigate("/")}>Back home</button>
+          <button type="button" className="secondary-button" onClick={() => navigate("/login")}>Sign in</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ProfileView({ navigate }: { navigate: NavigateFn }) {
+  const [session, setSession] = useState<AuthUser | null>(null);
+  const [stats, setStats] = useState({
+    totalXp: 0,
+    unlockedAchievements: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadSession = async () => {
+      const token = localStorage.getItem("bearer_token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const response = await fetchAuthSession(token);
+        if (!response.user) {
+          navigate("/login");
+          return;
+        }
+        setSession(response.user);
+
+        try {
+          const [allAchievements, userAchievements] = await Promise.all([
+            fetchAchievements(),
+            fetchUserAchievements(token),
+          ]);
+
+          const unlockedIds = new Set(userAchievements.map((item) => item.achievement_id));
+          const totalXp = allAchievements
+            .filter((achievement) => unlockedIds.has(achievement.id))
+            .reduce((sum, achievement) => sum + achievement.xp_reward, 0);
+
+          setStats({
+            totalXp,
+            unlockedAchievements: userAchievements.length,
+            currentStreak: Math.min(userAchievements.length, 7),
+            longestStreak: Math.max(userAchievements.length, 0),
+          });
+        } catch {
+          // Keep profile usable even if progress aggregation fails.
+        }
+      } catch (requestError) {
+        const message = requestError instanceof Error ? requestError.message : "Unable to load profile";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSession();
+  }, [navigate]);
+
+  const handleSignOut = async () => {
+    const token = localStorage.getItem("bearer_token");
+    await logoutUser(token);
+    localStorage.removeItem("bearer_token");
+    navigate("/");
+  };
+
+  const getInitials = (name: string) =>
+    name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+
+  const currentLevel = Math.floor(stats.totalXp / 100) + 1;
+  const xpProgress = stats.totalXp % 100;
+
+  if (loading) {
+    return (
+      <div className="auth-shell">
+        <section className="auth-card">Loading profile...</section>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-shell">
+      <MainNav navigate={navigate} />
+      <main className="profile-shell">
+        <section className="profile-header-card">
+          <h1>Profile & Settings</h1>
+          <p>View your account details and learning statistics.</p>
+          {error ? <div className="error">{error}</div> : null}
+        </section>
+
+        <section className="profile-layout-grid">
+          <article className="profile-main-card">
+            <div className="profile-avatar">{getInitials(session?.name || "User")}</div>
+            <h2>{session?.name || "User"}</h2>
+            <p>Level {currentLevel} Developer</p>
+
+            <div className="profile-detail-list">
+              <div className="profile-detail-item">
+                <Mail className="icon-sm" />
+                <span>{session?.email || "No email available"}</span>
+              </div>
+              <div className="profile-detail-item">
+                <Calendar className="icon-sm" />
+                <span>Joined {session?.created_at ? new Date(session.created_at).toLocaleDateString() : "n/a"}</span>
+              </div>
+            </div>
+
+            <div className="profile-xp-block">
+              <div className="profile-xp-head">
+                <span>Level {currentLevel}</span>
+                <span>{xpProgress}/100 XP</span>
+              </div>
+              <div className="achievements-progress-track">
+                <div className="achievements-progress-fill" style={{ width: `${xpProgress}%` }} />
+              </div>
+            </div>
+
+            <div className="auth-links">
+              <button type="button" className="secondary-button" onClick={() => navigate("/")}>Home</button>
+              <button type="button" onClick={handleSignOut}>
+                <LogOut className="icon-sm" /> Sign out
+              </button>
+            </div>
+          </article>
+
+          <div className="profile-side-stack">
+            <section className="profile-stats-grid">
+              <article className="profile-stat-card">
+                <span>Total XP</span>
+                <strong>{stats.totalXp}</strong>
+              </article>
+              <article className="profile-stat-card">
+                <span>Achievements</span>
+                <strong>{stats.unlockedAchievements}</strong>
+              </article>
+              <article className="profile-stat-card">
+                <span>Current Streak</span>
+                <strong>{stats.currentStreak}</strong>
+              </article>
+              <article className="profile-stat-card">
+                <span>Longest Streak</span>
+                <strong>{stats.longestStreak}</strong>
+              </article>
+            </section>
+
+            <section className="profile-activity-card">
+              <h3>
+                <TrendingUp className="icon-sm" /> Learning Activity
+              </h3>
+              <div className="ai-tip-list">
+                <p>
+                  <Target className="icon-sm" /> Overall progress: {stats.unlockedAchievements} unlocked achievements
+                </p>
+                <p>
+                  <Sparkles className="icon-sm" /> XP rate: {stats.unlockedAchievements > 0 ? Math.round(stats.totalXp / stats.unlockedAchievements) : 0} XP per achievement
+                </p>
+                <p>
+                  <Trophy className="icon-sm" /> Milestone track: continue lessons to raise your level.
+                </p>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function AchievementsView({ navigate }: { navigate: NavigateFn }) {
+  const [allAchievements, setAllAchievements] = useState<Achievement[]>([]);
+  const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadAchievements = async () => {
+      const token = localStorage.getItem("bearer_token");
+      if (!token) {
+        navigate("/login?redirect=/achievements");
+        return;
+      }
+
+      try {
+        const [all, user] = await Promise.all([fetchAchievements(), fetchUserAchievements(token)]);
+        setAllAchievements(all);
+        setUserAchievements(user);
+      } catch (requestError) {
+        const message = requestError instanceof Error ? requestError.message : "Unable to load achievements";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAchievements();
+  }, [navigate]);
+
+  const isUnlocked = (achievementId: number) => userAchievements.some((ua) => ua.achievement_id === achievementId);
+  const unlockedCount = userAchievements.length;
+  const totalCount = allAchievements.length;
+  const completionPercentage = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;
+
+  if (loading) {
+    return <div className="auth-shell"><section className="auth-card">Loading achievements...</section></div>;
+  }
+
+  return (
+    <div className="app-shell">
+      <MainNav navigate={navigate} />
+
+      <main className="achievements-shell">
+        <section className="achievements-header-card">
+          <h1>
+            <Trophy className="icon-lg" /> Achievements
+          </h1>
+          <p>Unlock badges by completing lessons and reaching milestones.</p>
+          {error ? <div className="error">{error}</div> : null}
+        </section>
+
+        <section className="achievements-progress-card">
+          <div className="achievements-progress-head">
+            <div>
+              <h2>Your Progress</h2>
+              <p>{unlockedCount} of {totalCount} achievements unlocked</p>
+            </div>
+            <span className="achievements-progress-badge">
+              <Sparkles className="icon-sm" /> {Math.round(completionPercentage)}%
+            </span>
+          </div>
+          <div className="achievements-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(completionPercentage)}>
+            <div className="achievements-progress-fill" style={{ width: `${completionPercentage}%` }} />
+          </div>
+        </section>
+
+        <section className="achievements-grid">
+          {allAchievements.map((achievement) => {
+            const unlocked = isUnlocked(achievement.id);
+
+            return (
+              <article key={achievement.id} className={`achievement-card ${unlocked ? "achievement-card-unlocked" : "achievement-card-locked"}`}>
+                <div className="achievement-card-head">
+                  <span className="achievement-icon">{unlocked ? achievement.icon || "🏆" : "🔒"}</span>
+                  <span className={`achievement-status-badge ${unlocked ? "unlocked" : "locked"}`}>
+                    {unlocked ? <Award className="icon-sm" /> : <Lock className="icon-sm" />} {unlocked ? "Unlocked" : "Locked"}
+                  </span>
+                </div>
+                <h3 className="achievement-title">{achievement.title}</h3>
+                <p className="achievement-description">{achievement.description || "Achievement details are provided by the backend."}</p>
+                <div className="achievement-footer">
+                  <span className="achievement-reward">+{achievement.xp_reward} XP</span>
+                  {achievement.requirement ? <span className="achievement-requirement">{achievement.requirement}</span> : null}
+                </div>
+              </article>
+            );
+          })}
+
+          {!allAchievements.length ? (
+            <div className="achievement-card learning-card-empty">
+              <Award className="icon-lg" />
+              <p>No achievements yet.</p>
+            </div>
+          ) : null}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function LessonsView({ navigate }: { navigate: NavigateFn }) {
+  const [learningPaths, setLearningPaths] = useState<LearningPath[]>([]);
+  const [lessons, setLessons] = useState<Record<number, Lesson[]>>({});
+  const [expandedPath, setExpandedPath] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchLearningPaths();
+        const sorted = [...data].sort((a, b) => a.order_index - b.order_index);
+        setLearningPaths(sorted);
+      } catch (requestError) {
+        const message = requestError instanceof Error ? requestError.message : "Unable to load learning paths";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  const toggleLessons = async (pathId: number) => {
+    if (lessons[pathId]) {
+      setExpandedPath(expandedPath === pathId ? null : pathId);
+      return;
+    }
+
+    try {
+      const data = await fetchLessons(pathId);
+      const normalized = Array.isArray(data) ? data : [data];
+      setLessons((prev) => ({
+        ...prev,
+        [pathId]: normalized.sort((a, b) => a.order_index - b.order_index),
+      }));
+      setExpandedPath(pathId);
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : "Unable to load lessons";
+      setError(message);
+    }
+  };
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty.toLowerCase()) {
+      case "beginner":
+        return "bg-green-500/10 text-green-700";
+      case "intermediate":
+        return "bg-blue-500/10 text-blue-700";
+      case "advanced":
+        return "bg-purple-500/10 text-purple-700";
+      default:
+        return "bg-gray-500/10 text-gray-700";
+    }
+  };
+
+  if (loading) {
+    return <div className="auth-shell"><section className="auth-card">Loading lessons...</section></div>;
+  }
+
+  return (
+    <div className="app-shell">
+      <MainNav navigate={navigate} />
+
+      <main className="lessons-shell">
+        <section className="lessons-header-card">
+          <h1>Learning Paths</h1>
+          <p>
+            Choose a learning path and start your coding journey. Each path contains structured lessons
+            designed to move from beginner to expert.
+          </p>
+          {error ? <div className="error">{error}</div> : null}
+        </section>
+
+        <section className="lessons-paths-stack">
+          {learningPaths.map((path) => (
+            <article key={path.id} className="learning-path-card">
+              <div className="learning-path-head">
+                <div className="learning-path-main">
+                  <div className="learning-path-icon">{path.icon || "📘"}</div>
+                  <div className="learning-path-copy">
+                    <h2>{path.title}</h2>
+                    <p>{path.description || "Structured lessons are available for this path."}</p>
+                    <div className="learning-path-meta">
+                      <span className={`learning-difficulty ${getDifficultyColor(path.difficulty)}`}>{path.difficulty}</span>
+                      <span className="learning-time">
+                        <Clock className="icon-sm" /> {path.estimated_hours} hours
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="learning-path-actions">
+                <button
+                  type="button"
+                  onClick={() => toggleLessons(path.id)}
+                  className={expandedPath === path.id ? "secondary-button" : ""}
+                >
+                  {expandedPath === path.id ? "Hide Lessons" : "View Lessons"}
+                  {expandedPath === path.id ? null : <ArrowRight className="icon-sm" />}
+                </button>
+              </div>
+
+              {expandedPath === path.id && lessons[path.id] ? (
+                <div className="lesson-stack">
+                  <h3>Lessons in this path:</h3>
+                  {lessons[path.id].map((lesson, index) => (
+                    <article
+                      key={lesson.id}
+                      className="lesson-row-card"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/lessons/${lesson.id}`)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          navigate(`/lessons/${lesson.id}`);
+                        }
+                      }}
+                    >
+                      <div className="lesson-row-main">
+                        <div className="lesson-index">{index + 1}</div>
+                        <div className="lesson-row-copy">
+                          <strong>{lesson.title}</strong>
+                          <p>{lesson.description || "Lesson preview available in the backend."}</p>
+                          <div className="lesson-row-meta">
+                            <span>
+                              <Clock className="icon-sm" /> {lesson.estimated_minutes} min
+                            </span>
+                            <span>
+                              <Award className="icon-sm" /> {lesson.xp_reward} XP
+                            </span>
+                            <span className={`learning-difficulty ${getDifficultyColor(lesson.difficulty)}`}>
+                              {lesson.difficulty}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <ArrowRight className="icon-sm lesson-row-arrow" />
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+            </article>
+          ))}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function LessonDetailView({ navigate, lessonId }: { navigate: NavigateFn; lessonId: number }) {
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchLesson(lessonId);
+        setLesson(data);
+      } catch (requestError) {
+        const message = requestError instanceof Error ? requestError.message : "Unable to load lesson";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [lessonId]);
+
+  if (loading) {
+    return <div className="auth-shell"><section className="auth-card">Loading lesson...</section></div>;
+  }
+
+  return (
+    <div className="app-shell">
+      <MainNav navigate={navigate} />
+
+      <main className="lesson-detail-shell">
+        <section className="lesson-detail-hero">
+          <button type="button" className="secondary-button lesson-back-button" onClick={() => navigate("/lessons")}>
+            <ArrowRight className="icon-sm lesson-back-icon" /> Back to lessons
+          </button>
+
+          {error ? <div className="error">{error}</div> : null}
+
+          {lesson ? (
+            <>
+              <h1>{lesson.title}</h1>
+              <p>{lesson.description || "Lesson details from the FastAPI backend."}</p>
+              <div className="lesson-detail-meta">
+                <span className="learning-difficulty">{lesson.difficulty}</span>
+                <span>
+                  <Clock className="icon-sm" /> {lesson.estimated_minutes} min
+                </span>
+                <span>
+                  <Award className="icon-sm" /> {lesson.xp_reward} XP
+                </span>
+              </div>
+            </>
+          ) : null}
+        </section>
+
+        <section className="lesson-detail-content-card">
+          <h2>Lesson content</h2>
+          {lesson ? (
+            <p>{lesson.content || "Detailed lesson content will appear here as soon as it is provided by the backend."}</p>
+          ) : (
+            <p>No lesson data available.</p>
+          )}
+        </section>
+
+        <section className="lesson-detail-content-card">
+          <h2>How to use this lesson</h2>
+          <ul className="lesson-detail-list">
+            <li>Read the summary and estimated time first.</li>
+            <li>Practice the concept in your local workspace.</li>
+            <li>Return to the learning path and continue in order.</li>
+          </ul>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [githubUrl, setGithubUrl] = useState("");
   const [projectName, setProjectName] = useState("your_project_name");
@@ -78,17 +1046,12 @@ export default function App() {
   const [loadingUpload, setLoadingUpload] = useState(false);
   const [loadingClone, setLoadingClone] = useState(false);
   const [loadingAnalyze, setLoadingAnalyze] = useState(false);
-  const [tutorCode, setTutorCode] = useState(SAMPLE_CODE);
-  const [tutorLanguage, setTutorLanguage] = useState("typescript");
-  const [tutorQuestion, setTutorQuestion] = useState("");
-  const [tutorResponse, setTutorResponse] = useState<AIExplanationResponse | null>(null);
-  const [loadingTutor, setLoadingTutor] = useState(false);
+  const [loadingCodeAnalyze, setLoadingCodeAnalyze] = useState(false);
+  const [loadingGraph, setLoadingGraph] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payload, setPayload] = useState<ResultPayload>(null);
   const [analysisResult, setAnalysisResult] = useState<unknown>(null);
   const [savedWorkspace, setSavedWorkspace] = useState<SavedWorkspaceState | null>(null);
-  const [learningPaths, setLearningPaths] = useState<LearningPath[]>([]);
-  const [learningPathsLoading, setLearningPathsLoading] = useState(true);
 
   useEffect(() => {
     if (!fileInputRef.current) {
@@ -110,32 +1073,6 @@ export default function App() {
     } catch {
       window.localStorage.removeItem(WORKSPACE_STORAGE_KEY);
     }
-  }, []);
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(LEARNING_PATHS_KEY);
-    if (saved) {
-      try {
-        setLearningPaths(JSON.parse(saved) as LearningPath[]);
-      } catch {
-        window.localStorage.removeItem(LEARNING_PATHS_KEY);
-      }
-    }
-
-    const loadLearningPaths = async () => {
-      try {
-        const data = await fetchLearningPaths();
-        const sorted = [...data].sort((a, b) => a.order_index - b.order_index);
-        setLearningPaths(sorted);
-        window.localStorage.setItem(LEARNING_PATHS_KEY, JSON.stringify(sorted));
-      } catch {
-        // Keep the dashboard usable even if the backend list is unavailable.
-      } finally {
-        setLearningPathsLoading(false);
-      }
-    };
-
-    loadLearningPaths();
   }, []);
 
   const persistWorkspace = (nextPayload: ResultPayload, nextAnalysis: unknown, lastAction: string) => {
@@ -227,65 +1164,260 @@ export default function App() {
       return;
     }
 
-    setLoadingAnalyze(true);
+    setLoadingCodeAnalyze(true);
     setError(null);
 
     try {
       const res = await axios.get(`http://127.0.0.1:8000/project/code-analysis/${encodeURIComponent(projectName.trim())}`);
       setAnalysisResult(res.data);
       persistWorkspace(payload, res.data, "code-analysis");
-      console.log(res.data);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : "Unable to analyze code";
       setError(message);
     } finally {
-      setLoadingAnalyze(false);
+      setLoadingCodeAnalyze(false);
     }
   };
 
-  const handleExplainCode = async () => {
-    if (!tutorCode.trim()) {
-      setError("Paste code before requesting an explanation.");
+  const getGraph = async () => {
+    if (!projectName.trim()) {
+      setError("Enter a project name first.");
       return;
     }
 
-    setLoadingTutor(true);
+    setLoadingGraph(true);
     setError(null);
 
     try {
-      const response = await explainCode(tutorCode, tutorLanguage, tutorQuestion.trim() || undefined);
-      setTutorResponse(response);
-      persistWorkspace(payload, response, "ai-tutor");
+      const res = await axios.get(`http://127.0.0.1:8000/project/graph/${encodeURIComponent(projectName.trim())}`);
+      console.log("📊 Graph Data with Call Relationships:", res.data);
+      
+      // Enhance the display with insights
+      const graphData = {
+        ...res.data,
+        insights: {
+          description: "Function call graph showing execution relationships",
+          total_call_paths: res.data.call_edges || 0,
+          node_types: {
+            functions: "Analyzable code functions",
+            called_by_count: "How many times a function is called"
+          }
+        }
+      };
+      
+      setAnalysisResult(graphData);
+      persistWorkspace(payload, graphData, "graph");
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : "Unable to explain code";
+      const message = requestError instanceof Error ? requestError.message : "Unable to build graph";
       setError(message);
     } finally {
-      setLoadingTutor(false);
+      setLoadingGraph(false);
     }
   };
 
-  const copyTutorExplanation = async () => {
-    if (!tutorResponse?.explanation) {
+  const payloadPreview = analysisResult ?? payload;
+
+  const filesScanned =
+    typeof savedWorkspace?.payload === "object" &&
+    savedWorkspace.payload !== null &&
+    "total_files" in savedWorkspace.payload
+      ? Number((savedWorkspace.payload as ProjectAnalyzeResponse).total_files)
+      : typeof savedWorkspace?.payload === "object" &&
+          savedWorkspace.payload !== null &&
+          "files_saved" in savedWorkspace.payload
+        ? Number((savedWorkspace.payload as ProjectUploadResponse).files_saved)
+        : 0;
+
+  return (
+    <div className="app-shell">
+      <MainNav navigate={navigate} />
+
+      <main className="analyze-shell">
+        <section className="analyze-hero-grid">
+          <article className="analyze-hero-card">
+            <div className="eyebrow">
+              <Sparkles className="icon-sm" /> FastAPI analysis workspace
+            </div>
+            <h1>Repository intelligence, rendered live.</h1>
+            <p>
+              Point the app at a local project path and the backend returns project summaries, quality findings,
+              graph analytics, explainability traces, and Mermaid-ready flow paths.
+            </p>
+            <div className="hero-actions">
+              <a className="primary-link" href="#analyze-controls">
+                Open controls <ArrowRight className="icon-sm" />
+              </a>
+              <button type="button" className="secondary-link analyze-link-button" onClick={() => navigate("/")}>
+                Open dashboard
+              </button>
+            </div>
+          </article>
+
+          <div className="analyze-signal-stack">
+            <article className="analyze-signal-card">
+              <h2>Backend signals</h2>
+              <p>Metrics returned by the FastAPI analysis pipeline.</p>
+              <div className="analyze-signal-grid">
+                <AnalyzeStatTile icon={ChartColumnBig} label="Files" value={filesScanned} />
+                <AnalyzeStatTile icon={GitBranch} label="Graph nodes" value={0} />
+                <AnalyzeStatTile icon={TriangleAlert} label="Risk score" value={0} />
+                <AnalyzeStatTile icon={Brain} label="Reliability" value={0} />
+              </div>
+            </article>
+
+            <article className="analyze-signal-card">
+              <h2>Explainability coverage</h2>
+              <p>Trace counts tied back to tokens, AST nodes, and graph paths.</p>
+              <div className="analyze-signal-grid analyze-signal-grid-3">
+                <AnalyzeStatTile icon={Code2} label="Tokens" value={0} />
+                <AnalyzeStatTile icon={FileText} label="AST nodes" value={0} />
+                <AnalyzeStatTile icon={Route} label="Paths" value={0} />
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="analyze-controls" className="analyze-block-grid">
+          <article className="analyze-block-card">
+            <div className="section-heading">
+              <h2>
+                <Activity className="icon-sm" /> Analysis controls
+              </h2>
+              <p>Upload a folder, clone from GitHub, or analyze a saved project by name.</p>
+            </div>
+
+            <div className="form-row">
+              <label htmlFor="analyze-github-url">GitHub URL</label>
+              <input
+                id="analyze-github-url"
+                type="url"
+                placeholder="https://github.com/owner/repo"
+                value={githubUrl}
+                onChange={(event) => setGithubUrl(event.target.value)}
+              />
+            </div>
+
+            <div className="form-row">
+              <label htmlFor="analyze-project-name">Project Name</label>
+              <input
+                id="analyze-project-name"
+                type="text"
+                placeholder="upload-project-20260403123456-ab12cd34"
+                value={projectName}
+                onChange={(event) => setProjectName(event.target.value)}
+              />
+            </div>
+
+            <div className="upload-card">
+              <input
+                ref={fileInputRef}
+                id="analyze-project-file"
+                type="file"
+                className="hidden-file-input"
+                multiple
+                onChange={(event) => setProjectFiles(Array.from(event.target.files ?? []))}
+              />
+
+              <button type="button" className="upload-picker" onClick={openFilePicker}>
+                <span className="upload-plus" aria-hidden="true">
+                  +
+                </span>
+                <span>{projectFiles.length ? "Change project folder" : "Choose project folder"}</span>
+              </button>
+
+              <p className="file-selection">
+                {projectFiles.length ? `Selected files: ${projectFiles.length}` : "No folder selected yet"}
+              </p>
+            </div>
+
+            <div className="action-row">
+              <button onClick={handleUpload} disabled={loadingUpload}>
+                {loadingUpload ? <Loader2 className="icon-sm spinning" /> : <FolderOpen className="icon-sm" />} Upload
+              </button>
+              <button onClick={handleClone} disabled={loadingClone}>
+                {loadingClone ? <Loader2 className="icon-sm spinning" /> : <GitBranch className="icon-sm" />} Clone
+              </button>
+              <button onClick={handleAnalyzeProject} disabled={loadingAnalyze}>
+                {loadingAnalyze ? <Loader2 className="icon-sm spinning" /> : <Sparkles className="icon-sm" />} Analyze
+              </button>
+              <button onClick={analyzeCode} disabled={loadingCodeAnalyze} className="secondary-button">
+                {loadingCodeAnalyze ? <Loader2 className="icon-sm spinning" /> : <Code2 className="icon-sm" />} Code analysis
+              </button>
+              <button onClick={getGraph} disabled={loadingGraph} className="secondary-button">
+                {loadingGraph ? <Loader2 className="icon-sm spinning" /> : <Route className="icon-sm" />} Build Graph
+              </button>
+            </div>
+
+            {error ? <div className="error">{error}</div> : null}
+          </article>
+          <article className="analyze-block-card">
+            <div className="section-heading">
+              <h2>
+                <BarChart3 className="icon-sm" /> Results panel
+              </h2>
+              <p>Latest backend payload or code analysis output.</p>
+            </div>
+
+            <div className="result-card">
+              {payloadPreview ? (
+                <pre>{JSON.stringify(payloadPreview, null, 2)}</pre>
+              ) : (
+                <div className="empty-state">
+                  <Sparkles className="icon-lg" />
+                  <p>No results yet. Run an action from the controls panel.</p>
+                </div>
+              )}
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function AnalyzeStatTile({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number | string;
+}) {
+  return (
+    <div className="analyze-stat-tile">
+      <div className="analyze-stat-label">
+        <Icon className="icon-sm" />
+        <span>{label}</span>
+      </div>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function DashboardView({ navigate }: { navigate: NavigateFn }) {
+  const [savedWorkspace, setSavedWorkspace] = useState<SavedWorkspaceState | null>(null);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
+    if (!saved) {
       return;
     }
 
-    await navigator.clipboard.writeText(tutorResponse.explanation);
-  };
-
-  const payloadPreview = useMemo(() => {
-    if (analysisResult) {
-      return analysisResult;
+    try {
+      setSavedWorkspace(JSON.parse(saved) as SavedWorkspaceState);
+    } catch {
+      window.localStorage.removeItem(WORKSPACE_STORAGE_KEY);
     }
-    return payload;
-  }, [analysisResult, payload]);
+  }, []);
 
   const workspaceSummary = useMemo(() => {
     const latest = savedWorkspace ?? {
-      projectName,
+      projectName: "",
       lastAction: "none",
-      payload,
-      analysisResult,
-      savedAt: null,
+      payload: null,
+      analysisResult: null,
+      savedAt: null as string | null,
     };
 
     const totalFiles =
@@ -293,301 +1425,390 @@ export default function App() {
         ? Number((latest.payload as ProjectAnalyzeResponse).total_files)
         : typeof latest.payload === "object" && latest.payload !== null && "files_saved" in latest.payload
           ? Number((latest.payload as ProjectUploadResponse).files_saved)
-          : projectFiles.length;
-
-    const projectPath =
-      typeof latest.payload === "object" && latest.payload !== null && "project_path" in latest.payload
-        ? (latest.payload as ProjectUploadResponse | ProjectCloneResponse).project_path
-        : "n/a";
+          : 0;
 
     return {
       ...latest,
       totalFiles,
-      projectPath,
     };
-  }, [analysisResult, payload, projectFiles.length, projectName, savedWorkspace]);
+  }, [savedWorkspace]);
+
+  const analysis =
+    workspaceSummary.analysisResult && typeof workspaceSummary.analysisResult === "object"
+      ? (workspaceSummary.analysisResult as Record<string, unknown>)
+      : null;
+
+  const metrics =
+    analysis && typeof analysis.metrics === "object" && analysis.metrics !== null
+      ? (analysis.metrics as Record<string, unknown>)
+      : null;
+
+  const severity =
+    analysis && typeof analysis.severity_distribution === "object" && analysis.severity_distribution !== null
+      ? (analysis.severity_distribution as Record<string, unknown>)
+      : null;
+
+  const toNumber = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
+
+  const graphType = typeof analysis?.graph_type === "string" ? analysis.graph_type : "n/a";
+  const riskScore = typeof analysis?.risk_score === "number" ? analysis.risk_score : 0;
+  const reliabilityScore = typeof analysis?.reliability_score === "number" ? analysis.reliability_score : 0;
+
+  const footprint = [
+    { label: "Files", value: workspaceSummary.totalFiles || toNumber(metrics?.files_scanned) },
+    { label: "Lines", value: toNumber(metrics?.total_lines) },
+    { label: "Dependency edges", value: toNumber(metrics?.dependency_edges) },
+    { label: "Call edges", value: toNumber(metrics?.call_edges) },
+  ];
+
+  const maxFootprint = Math.max(...footprint.map((item) => item.value), 1);
+
+  const severityMix = [
+    { label: "High", value: toNumber(severity?.high), tone: "high" },
+    { label: "Medium", value: toNumber(severity?.medium), tone: "medium" },
+    { label: "Low", value: toNumber(severity?.low), tone: "low" },
+  ];
+
+  const flowPath =
+    analysis && Array.isArray(analysis.flow_path)
+      ? (analysis.flow_path.filter((node): node is string => typeof node === "string") as string[])
+      : [];
+
+  const projectSummary = typeof analysis?.project_summary === "string" ? analysis.project_summary : null;
+  const architectureSummary = typeof analysis?.architecture_summary === "string" ? analysis.architecture_summary : null;
+  const executionSummary =
+    typeof analysis?.execution_flow_summary === "string" ? analysis.execution_flow_summary : null;
 
   return (
     <div className="app-shell">
-      <header className="hero">
-        <div className="hero-copy">
-          <div className="eyebrow">
-            <Sparkles className="icon-sm" />
-            React + Vite frontend
+      <MainNav navigate={navigate} />
+
+      <main className="dashboard-shell">
+        <section className="dashboard-hero-card">
+          <div className="dashboard-badge">
+            <LayoutDashboard className="icon-sm" /> Analysis dashboard
           </div>
-          <h1>Repository intelligence, explanation, and parsing without Next.js.</h1>
+          <h1>Backend results at a glance.</h1>
           <p>
-            The active frontend now runs as a standalone Vite app and talks directly to FastAPI for project
-            ingestion, code analysis, and AST-ready parsing workflows.
+            The dashboard reads the last analysis saved by the analyzer workspace and turns FastAPI outputs
+            into summary cards and visual diagnostics.
           </p>
-          <div className="hero-actions">
-            <a className="primary-link" href="#workspace">
-              Open workspace <ArrowRight className="icon-sm" />
-            </a>
-            <a className="secondary-link" href="#features">
-              View capabilities
-            </a>
+          <div className="dashboard-hero-actions">
+            <button type="button" onClick={() => navigate("/analyze")}>
+              Open analyzer <ArrowRight className="icon-sm" />
+            </button>
+            <button type="button" className="secondary-button" onClick={() => navigate("/")}>
+              Open home
+            </button>
           </div>
-        </div>
+        </section>
 
-        <aside className="hero-panel">
-          <div className="panel-kicker">
-            <Layers3 className="icon-sm" />
-            Migration status
-          </div>
-          <ul>
-            <li>Vite is the active UI runtime.</li>
-            <li>FastAPI powers upload, clone, and analysis.</li>
-            <li>Parser and AST services are ready for graph building.</li>
-          </ul>
-        </aside>
-      </header>
+        <section className="dashboard-metric-section">
+          <article className="dashboard-card">
+            <span className="dashboard-label">Workspace signals</span>
+            <div className="dashboard-metric-grid">
+              <DashboardMetricTile icon={Activity} label="Loaded" value={savedWorkspace ? "Yes" : "No"} />
+              <DashboardMetricTile icon={GitBranch} label="Graph type" value={graphType} />
+              <DashboardMetricTile icon={TriangleAlert} label="Risk" value={riskScore} />
+              <DashboardMetricTile icon={Sparkles} label="Reliability" value={reliabilityScore} />
+            </div>
+          </article>
 
-      <section className="feature-grid" id="features">
-        {pillars.map((pillar) => {
-          const Icon = pillar.icon;
-          return (
-            <article key={pillar.title} className="feature-card">
-              <div className="feature-icon">
-                <Icon className="icon-md" />
+          <article className="dashboard-card">
+            <span className="dashboard-label">Snapshot details</span>
+            <div className="dashboard-detail-stack">
+              <div className="dashboard-detail-row">
+                <strong>Project name</strong>
+                <span>{workspaceSummary.projectName || "n/a"}</span>
               </div>
-              <h2>{pillar.title}</h2>
-              <p>{pillar.description}</p>
-            </article>
-          );
-        })}
-      </section>
-
-      <section className="dashboard-section">
-        <div className="section-heading dashboard-heading">
-          <div>
-            <h2>Dashboard</h2>
-            <p>The migrated dashboard view now lives inside the Vite frontend and reads the latest workspace state.</p>
-          </div>
-        </div>
-
-        <div className="dashboard-grid">
-          <article className="dashboard-card">
-            <span className="dashboard-label">Workspace status</span>
-            <strong>{savedWorkspace ? "Loaded" : "No saved data"}</strong>
-            <p>{savedWorkspace ? `Last action: ${workspaceSummary.lastAction}` : "Run upload, clone, or analysis to populate the dashboard."}</p>
+              <div className="dashboard-detail-row">
+                <strong>File count</strong>
+                <span>{workspaceSummary.totalFiles}</span>
+              </div>
+              <div className="dashboard-detail-row">
+                <strong>Last action</strong>
+                <span>{workspaceSummary.lastAction || "none"}</span>
+              </div>
+              <div className="dashboard-detail-row">
+                <strong>Saved at</strong>
+                <span>{workspaceSummary.savedAt ? new Date(workspaceSummary.savedAt).toLocaleString() : "n/a"}</span>
+              </div>
+            </div>
           </article>
+        </section>
+
+        <section className="dashboard-visual-grid">
           <article className="dashboard-card">
-            <span className="dashboard-label">Project name</span>
-            <strong>{workspaceSummary.projectName || "n/a"}</strong>
-            <p>{workspaceSummary.projectPath}</p>
-          </article>
-          <article className="dashboard-card">
-            <span className="dashboard-label">File count</span>
-            <strong>{workspaceSummary.totalFiles}</strong>
-            <p>Derived from the latest upload or code-analysis response.</p>
-          </article>
-          <article className="dashboard-card">
-            <span className="dashboard-label">Saved at</span>
-            <strong>{workspaceSummary.savedAt ? new Date(workspaceSummary.savedAt).toLocaleString() : "n/a"}</strong>
-            <p>Persisted in browser local storage.</p>
-          </article>
-        </div>
-      </section>
-
-      <section className="learning-section">
-        <div className="section-heading learning-heading">
-          <div>
-            <h2>Learning paths</h2>
-            <p>Public course structure from the backend, surfaced here as the next self-contained migration step.</p>
-          </div>
-        </div>
-
-        <div className="learning-grid">
-          {learningPathsLoading ? (
-            <div className="learning-card learning-card-empty">Loading learning paths...</div>
-          ) : learningPaths.length ? (
-            learningPaths.map((path) => (
-              <article key={path.id} className="learning-card">
-                <div className="learning-card-top">
-                  <span className="learning-icon">{path.icon || "📘"}</span>
-                  <span className="learning-difficulty">{path.difficulty}</span>
-                </div>
-                <h3>{path.title}</h3>
-                <p>{path.description || "Structured lessons for this path are available in the backend."}</p>
-                <div className="learning-meta">
-                  <span>{path.estimated_hours} hours</span>
-                  <span>Order {path.order_index}</span>
-                </div>
-              </article>
-            ))
-          ) : (
-            <div className="learning-card learning-card-empty">No learning paths available.</div>
-          )}
-        </div>
-      </section>
-
-      <section className="workspace" id="workspace">
-        <div className="workspace-card">
-          <div className="section-heading">
-            <h2>Project workspace</h2>
-            <p>Upload a folder, clone from GitHub, or analyze a saved project by name.</p>
-          </div>
-
-          <div className="form-row">
-            <label htmlFor="github-url">GitHub URL</label>
-            <input
-              id="github-url"
-              type="url"
-              placeholder="https://github.com/owner/repo"
-              value={githubUrl}
-              onChange={(event) => setGithubUrl(event.target.value)}
-            />
-          </div>
-
-          <div className="form-row">
-            <label htmlFor="project-name">Project Name</label>
-            <input
-              id="project-name"
-              type="text"
-              placeholder="upload-project-20260403123456-ab12cd34"
-              value={projectName}
-              onChange={(event) => setProjectName(event.target.value)}
-            />
-          </div>
-
-          <div className="upload-card">
-            <input
-              ref={fileInputRef}
-              id="project-file"
-              type="file"
-              className="hidden-file-input"
-              multiple
-              onChange={(event) => setProjectFiles(Array.from(event.target.files ?? []))}
-            />
-
-            <button type="button" className="upload-picker" onClick={openFilePicker}>
-              <span className="upload-plus" aria-hidden="true">
-                +
-              </span>
-              <span>{projectFiles.length ? "Change project folder" : "Choose project folder"}</span>
-            </button>
-
-            <p className="file-selection">
-              {projectFiles.length ? `Selected files: ${projectFiles.length}` : "No folder selected yet"}
-            </p>
-          </div>
-
-          <div className="action-row">
-            <button onClick={handleUpload} disabled={loadingUpload}>
-              {loadingUpload ? "Uploading..." : "Upload"}
-            </button>
-
-            <button onClick={handleClone} disabled={loadingClone}>
-              {loadingClone ? "Cloning..." : "Clone"}
-            </button>
-
-            <button onClick={handleAnalyzeProject} disabled={loadingAnalyze}>
-              {loadingAnalyze ? "Analyzing..." : "Analyze Project"}
-            </button>
-
-            <button onClick={analyzeCode} disabled={loadingAnalyze} className="secondary-button">
-              {loadingAnalyze ? "Analyzing..." : "Analyze Code"}
-            </button>
-          </div>
-
-          {error ? <div className="error">{error}</div> : null}
-        </div>
-
-        <aside className="workspace-card result-card">
-          <div className="section-heading">
-            <h2>Latest output</h2>
-            <p>Results are shown here after upload, clone, analyze, or code analysis.</p>
-          </div>
-          {payloadPreview ? (
-            <pre>{JSON.stringify(payloadPreview, null, 2)}</pre>
-          ) : (
-            <div className="empty-state">
-              <FolderOpen className="icon-lg" />
-              <p>No output yet. Run one of the actions to load project data.</p>
-            </div>
-          )}
-        </aside>
-      </section>
-
-      <section className="tutor-section">
-        <div className="section-heading tutor-heading">
-          <div>
-            <h2>AI tutor</h2>
-            <p>Code explanation is still powered by FastAPI, now surfaced directly in the Vite app.</p>
-          </div>
-        </div>
-
-        <div className="tutor-grid">
-          <div className="workspace-card">
-            <div className="form-row">
-              <label htmlFor="tutor-language">Language</label>
-              <input id="tutor-language" value={tutorLanguage} onChange={(event) => setTutorLanguage(event.target.value)} />
-            </div>
-
-            <div className="form-row">
-              <label htmlFor="tutor-question">Question</label>
-              <input
-                id="tutor-question"
-                placeholder="What is this function doing?"
-                value={tutorQuestion}
-                onChange={(event) => setTutorQuestion(event.target.value)}
-              />
-            </div>
-
-            <div className="form-row">
-              <label htmlFor="tutor-code">Code</label>
-              <textarea
-                id="tutor-code"
-                className="code-editor"
-                value={tutorCode}
-                onChange={(event) => setTutorCode(event.target.value)}
-              />
-            </div>
-
-            <div className="action-row">
-              <button onClick={handleExplainCode} disabled={loadingTutor}>
-                {loadingTutor ? "Explaining..." : "Explain Code"}
-              </button>
-              <button onClick={() => setTutorCode(SAMPLE_CODE)} className="secondary-button" type="button">
-                Load sample
-              </button>
-            </div>
-          </div>
-
-          <div className="workspace-card result-card">
-            <div className="section-heading">
-              <h2>Explanation</h2>
-              <p>FastAPI output appears here and can be copied for later use.</p>
-            </div>
-
-            {tutorResponse ? (
-              <div className="tutor-output">
-                <div className="tutor-output-bar">
-                  <div>
-                    <strong>{tutorResponse.language ?? "Unknown"}</strong>
-                    <span>{tutorResponse.pipeline ?? "pipeline"}</span>
+            <span className="dashboard-label">Repository footprint</span>
+            <div className="dashboard-bar-list">
+              {footprint.map((item) => (
+                <div key={item.label} className="dashboard-bar-item">
+                  <div className="dashboard-bar-head">
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
                   </div>
-                  <button type="button" className="secondary-button" onClick={copyTutorExplanation}>
-                    Copy
-                  </button>
+                  <div className="dashboard-bar-track">
+                    <div
+                      className="dashboard-bar-fill"
+                      style={{ width: `${Math.max((item.value / maxFootprint) * 100, item.value > 0 ? 8 : 0)}%` }}
+                    />
+                  </div>
                 </div>
-                <pre>{tutorResponse.explanation}</pre>
-              </div>
-            ) : (
-              <div className="empty-state">
-                <Brain className="icon-lg" />
-                <p>Run the explanation pipeline to view the result here.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+              ))}
+            </div>
+          </article>
 
-      <footer className="footer-note">
-        <Code2 className="icon-sm" />
-        <span>Frontend migration continues in small, safe steps.</span>
-      </footer>
+          <article className="dashboard-card">
+            <span className="dashboard-label">Severity mix</span>
+            <div className="severity-list">
+              {severityMix.map((item) => (
+                <div key={item.label} className="severity-row">
+                  <span className={`severity-dot severity-${item.tone}`} aria-hidden="true" />
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                </div>
+              ))}
+            </div>
+          </article>
+        </section>
+
+        <section className="dashboard-visual-grid dashboard-visual-grid-2">
+          <article className="dashboard-card">
+            <span className="dashboard-label">Backend summaries</span>
+            <div className="dashboard-summary-stack">
+              <p>{projectSummary ?? "No project summary available yet."}</p>
+              <p>{architectureSummary ?? "No architecture summary available yet."}</p>
+              <p>{executionSummary ?? "No execution flow summary available yet."}</p>
+            </div>
+          </article>
+
+          <article className="dashboard-card">
+            <span className="dashboard-label">Flow path</span>
+            <div className="flow-path-list">
+              {flowPath.length ? (
+                flowPath.slice(0, 8).map((node, index) => (
+                  <div key={`${node}-${index}`} className="flow-path-item">
+                    <span className="flow-index">{index + 1}</span>
+                    <span>{node}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="flow-empty">No flow path available in the saved analysis.</p>
+              )}
+            </div>
+          </article>
+        </section>
+      </main>
     </div>
   );
 }
+
+function DashboardMetricTile({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number | string;
+}) {
+  return (
+    <div className="dashboard-metric-tile">
+      <div className="dashboard-metric-title">
+        <Icon className="icon-sm" />
+        <span>{label}</span>
+      </div>
+      <div className="dashboard-metric-value">{value}</div>
+    </div>
+  );
+}
+
+function AiTutorView({ navigate }: { navigate: NavigateFn }) {
+  const [code, setCode] = useState(SAMPLE_CODE);
+  const [language, setLanguage] = useState("typescript");
+  const [question, setQuestion] = useState("");
+  const [response, setResponse] = useState<AIExplanationResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleExplain = async () => {
+    if (!code.trim()) {
+      setError("Paste or type code first.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await explainCode(code, language, question.trim() || undefined);
+      setResponse(data);
+    } catch (requestError) {
+      const message = requestError instanceof Error ? requestError.message : "Failed to explain code";
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const copyExplanation = async () => {
+    if (!response?.explanation) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(response.explanation);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1200);
+  };
+
+  return (
+    <div className="app-shell">
+      <MainNav navigate={navigate} />
+
+      <main className="ai-shell">
+        <section className="ai-hero-grid">
+          <article className="ai-hero-card">
+            <div className="eyebrow">
+              <Sparkles className="icon-sm" /> FastAPI explanation
+            </div>
+            <h1>Explain code with the Python pipeline.</h1>
+            <p>
+              This page sends code to the FastAPI explanation endpoint and renders returned summary,
+              model metadata, complexity score, and key concepts.
+            </p>
+
+            <div className="ai-form-stack">
+              <div className="form-row">
+                <label htmlFor="ai-language">Language</label>
+                <input id="ai-language" value={language} onChange={(event) => setLanguage(event.target.value)} />
+              </div>
+              <div className="form-row">
+                <label htmlFor="ai-question">Question, if any</label>
+                <input
+                  id="ai-question"
+                  placeholder="What is this function doing?"
+                  value={question}
+                  onChange={(event) => setQuestion(event.target.value)}
+                />
+              </div>
+              <div className="form-row">
+                <label htmlFor="ai-code">Code</label>
+                <textarea
+                  id="ai-code"
+                  className="code-editor"
+                  value={code}
+                  onChange={(event) => setCode(event.target.value)}
+                />
+              </div>
+              <div className="action-row">
+                <button onClick={handleExplain} disabled={isLoading}>
+                  {isLoading ? <Loader2 className="icon-sm spinning" /> : <Brain className="icon-sm" />} 
+                  {isLoading ? "Generating..." : "Explain with FastAPI"}
+                </button>
+                <button type="button" className="secondary-button" onClick={() => setCode(SAMPLE_CODE)}>
+                  Load sample
+                </button>
+              </div>
+              {error ? <div className="error">{error}</div> : null}
+            </div>
+          </article>
+
+          <div className="ai-meta-stack">
+            <article className="ai-meta-card">
+              <h2>Pipeline metadata</h2>
+              <p>What the backend returns alongside explanation text.</p>
+              <div className="ai-meta-grid">
+                <AiMetaTile label="Pipeline" value={response?.pipeline ?? "n/a"} />
+                <AiMetaTile label="Model" value={response?.model ?? "n/a"} />
+                <AiMetaTile label="Complexity" value={response?.complexity_score?.toFixed(2) ?? "n/a"} />
+                <AiMetaTile label="Concepts" value={response?.key_concepts?.length ?? 0} />
+              </div>
+            </article>
+            <article className="ai-meta-card">
+              <h2>Quick tips</h2>
+              <p>Prompts that work well with the explanation backend.</p>
+              <div className="ai-tip-list">
+                <p>Ask for flow, side effects, and data transformations.</p>
+                <p>Use a real snippet from your repository for best response quality.</p>
+                <p>Pair this page with Analyze to jump from findings to explanation.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section className="ai-main-grid">
+          <article className="workspace-card result-card">
+            <div className="section-heading ai-output-heading">
+              <div>
+                <h2>Explanation</h2>
+                <p>Rendered output from the Python AI pipeline.</p>
+              </div>
+              <button
+                type="button"
+                className="secondary-button ai-copy-button"
+                onClick={copyExplanation}
+                disabled={!response?.explanation}
+              >
+                <ClipboardCopy className="icon-sm" /> {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+
+            {response ? (
+              <div className="tutor-output">
+                <div className="tutor-output-bar">
+                  <div>
+                    <strong>{response.language ?? "Unknown"}</strong>
+                    <span>
+                      {response.pipeline ?? "pipeline"}
+                      {response.model ? ` · ${response.model}` : ""}
+                    </span>
+                  </div>
+                </div>
+                <pre>{response.explanation}</pre>
+
+                {response.key_concepts?.length ? (
+                  <div className="ai-concept-chips">
+                    {response.key_concepts.map((concept) => (
+                      <span key={concept} className="ai-concept-chip">
+                        {concept}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <BookOpen className="icon-lg" />
+                <p>Run the explanation pipeline to view the result here.</p>
+              </div>
+            )}
+          </article>
+
+          <article className="workspace-card">
+            <div className="section-heading">
+              <h2>How it works</h2>
+              <p>The backend uses deterministic AI explanation with structured metadata.</p>
+            </div>
+            <div className="ai-tip-list">
+              <p>1. Prompt is built from snippet, language, and optional question.</p>
+              <p>2. Key concepts and complexity signals are extracted in Python.</p>
+              <p>3. Explanation text and metadata are returned to the frontend.</p>
+              <p>4. Output remains usable even when advanced models are unavailable.</p>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function AiMetaTile({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="ai-meta-tile">
+      <div className="ai-meta-label">{label}</div>
+      <div className="ai-meta-value">{value}</div>
+    </div>
+  );
+}
+
+export default App;

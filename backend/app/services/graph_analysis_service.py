@@ -42,6 +42,30 @@ def _ranked(metric: dict[str, float], labels: dict[str, str], top_n: int = 10) -
     ]
 
 
+def _dfs(g: nx.DiGraph, start: str | None, top_limit: int = 100) -> TraversalResult:
+    if g.number_of_nodes() == 0:
+        return TraversalResult(start_node=None, dfs_order=[], bfs_order=[])
+
+    chosen = start if start and start in g.nodes else next(iter(g.nodes))
+    visited: set[str] = set()
+    stack: list[str] = [chosen]
+    order: list[str] = []
+
+    while stack and len(order) < top_limit:
+        node = stack.pop()
+        if node in visited:
+            continue
+        visited.add(node)
+        order.append(node)
+
+        neighbors = list(g.neighbors(node))
+        for neighbor in reversed(neighbors):
+            if neighbor not in visited:
+                stack.append(neighbor)
+
+    return TraversalResult(start_node=chosen, dfs_order=order, bfs_order=[])
+
+
 def _impact_rank(g: nx.DiGraph, labels: dict[str, str], top_n: int = 10) -> list[RankedNode]:
     degree = nx.degree_centrality(g) if g.number_of_nodes() else {}
     betweenness = nx.betweenness_centrality(g) if g.number_of_nodes() else {}
@@ -54,7 +78,7 @@ def _impact_rank(g: nx.DiGraph, labels: dict[str, str], top_n: int = 10) -> list
 
 def _bfs(g: nx.DiGraph, start: str | None, top_limit: int = 100) -> TraversalResult:
     if g.number_of_nodes() == 0:
-        return TraversalResult(start_node=None, bfs_order=[])
+        return TraversalResult(start_node=None, dfs_order=[], bfs_order=[])
 
     chosen = start if start and start in g.nodes else next(iter(g.nodes))
     visited: set[str] = set()
@@ -71,7 +95,7 @@ def _bfs(g: nx.DiGraph, start: str | None, top_limit: int = 100) -> TraversalRes
             if neighbor not in visited:
                 queue.append(neighbor)
 
-    return TraversalResult(start_node=chosen, bfs_order=order)
+    return TraversalResult(start_node=chosen, dfs_order=[], bfs_order=order)
 
 
 def analyze_graph(
@@ -106,11 +130,18 @@ def analyze_graph(
         connected_components=components,
     )
 
+    dfs_result = _dfs(g, traversal_start)
+    bfs_result = _bfs(g, traversal_start)
+
     return GraphAnalysisResponse(
         graph_type=normalized,
         metrics=metrics,
         top_degree_centrality=_ranked(degree, labels),
         top_betweenness_centrality=_ranked(betweenness, labels),
         top_impact_rank=_impact_rank(g, labels),
-        traversal=_bfs(g, traversal_start),
+        traversal=TraversalResult(
+            start_node=dfs_result.start_node or bfs_result.start_node,
+            dfs_order=dfs_result.dfs_order,
+            bfs_order=bfs_result.bfs_order,
+        ),
     )

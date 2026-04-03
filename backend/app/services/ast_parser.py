@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ast
 import os
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +16,13 @@ class ImportInfo:
 
 
 @dataclass(frozen=True)
+class FunctionCallInfo:
+    """Represents a function call within another function."""
+    called_name: str
+    call_line: int
+
+
+@dataclass(frozen=True)
 class FunctionInfo:
     name: str
     line: int
@@ -25,6 +32,7 @@ class FunctionInfo:
     decorators: list[str]
     is_async: bool
     parent_class: str | None
+    calls: list[FunctionCallInfo] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -54,6 +62,7 @@ class _PythonAstVisitor(ast.NodeVisitor):
         self.classes: list[ClassInfo] = []
         self.functions: list[FunctionInfo] = []
         self._class_stack: list[str] = []
+        self._function_stack: list[tuple[int, list[FunctionCallInfo]]] = []  # (func_index, calls_list)
 
     def visit_Import(self, node: ast.Import) -> None:  # noqa: N802
         for alias in node.names:
@@ -107,6 +116,15 @@ class _PythonAstVisitor(ast.NodeVisitor):
         self._add_function(node=node, is_async=True)
         self.generic_visit(node)
 
+    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
+        """Track function calls within the current function."""
+        if self._function_stack:
+            _, calls_list = self._function_stack[-1]
+            called_name = self._extract_call_name(node.func)
+            if called_name:
+                calls_list.append(FunctionCallInfo(called_name=called_name, call_line=node.lineno))
+        self.generic_visit(node)
+
     def _add_function(self, node: ast.FunctionDef | ast.AsyncFunctionDef, is_async: bool) -> None:
         arguments = [arg.arg for arg in node.args.posonlyargs]
         arguments.extend(arg.arg for arg in node.args.args)
@@ -115,6 +133,15 @@ class _PythonAstVisitor(ast.NodeVisitor):
         arguments.extend(arg.arg for arg in node.args.kwonlyargs)
         if node.args.kwarg:
             arguments.append(f"**{node.args.kwarg.arg}")
+
+        calls_list: list[FunctionCallInfo] = []
+        self._function_stack.append((len(self.functions), calls_list))
+
+        # Visit function body to collect calls
+        for child in node.body:
+            self.visit(child)
+
+        self._function_stack.pop()
 
         info = FunctionInfo(
             name=node.name,
@@ -125,8 +152,17 @@ class _PythonAstVisitor(ast.NodeVisitor):
             decorators=[_expr_to_text(decorator) for decorator in node.decorator_list],
             is_async=is_async,
             parent_class=self._class_stack[-1] if self._class_stack else None,
+            calls=calls_list,
         )
         self.functions.append(info)
+
+    def _extract_call_name(self, func: ast.AST) -> str | None:
+        """Extract the name of the called function/method."""
+        if isinstance(func, ast.Name):
+            return func.id
+        if isinstance(func, ast.Attribute):
+            return func.attr
+        return None
 
 
 def _expr_to_text(expression: ast.AST | None) -> str:

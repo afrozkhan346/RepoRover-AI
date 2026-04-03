@@ -8,6 +8,7 @@ import os
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.services.ast_parser import parse_project_code
+from app.services.graph_builder import analyze_graph, build_graph
 from app.services.parser import parse_project
 from app.services.repository_loader import clone_repository
 
@@ -126,3 +127,21 @@ def analyze_code(project_name: str) -> list[dict]:
         return parse_project_code(str(path))
     except ValueError as error:
         raise HTTPException(status_code=400, detail={"detail": str(error), "code": "CODE_ANALYSIS_FAILED"}) from error
+
+
+@router.get("/graph/{project_name}")
+def get_graph(project_name: str) -> dict[str, int]:
+    safe_name = Path(project_name).name
+    if safe_name != project_name or safe_name in {"", ".", ".."}:
+        raise HTTPException(status_code=400, detail={"detail": "Invalid project name", "code": "INVALID_PROJECT"})
+
+    path = _projects_root() / safe_name
+    if not path.exists() or not path.is_dir():
+        raise HTTPException(status_code=404, detail={"detail": "Project not found", "code": "PROJECT_NOT_FOUND"})
+
+    try:
+        ast_data = parse_project_code(str(path))
+        graph, call_edge_info = build_graph(ast_data)
+        return analyze_graph(graph, call_edge_info)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail={"detail": str(error), "code": "GRAPH_BUILD_FAILED"}) from error

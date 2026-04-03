@@ -1,137 +1,21 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Navigation } from "@/components/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { useSession } from "@/lib/auth-client";
-import { 
-  BookOpen, Clock, Award, ArrowLeft, CheckCircle2, XCircle, 
-  Lightbulb, Trophy, ChevronRight 
-} from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
-
-interface Lesson {
-  id: number;
-  learningPathId: number;
-  title: string;
-  description: string;
-  content: string;
-  difficulty: string;
-  xpReward: number;
-  estimatedMinutes: number;
-  orderIndex: number;
-}
-
-interface Quiz {
-  id: number;
-  lessonId: number;
-  question: string;
-  options: string;
-  correctAnswer: string;
-  explanation: string;
-  difficulty: string;
-  xpReward: number;
-}
-
-interface QuizAttempt {
-  quizId: number;
-  selectedAnswer: string;
-  isCorrect: boolean | null;
-  showExplanation: boolean;
-}
-
 export default function LessonPage() {
-  const params = useParams();
-  const router = useRouter();
-  const { data: session, isPending: sessionLoading } = useSession();
-  const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [quizAttempts, setQuizAttempts] = useState<Record<number, QuizAttempt>>({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lessonCompleted, setLessonCompleted] = useState(false);
-
-  const lessonId = params.id as string;
-
-  useEffect(() => {
-    if (!sessionLoading && !session?.user) {
-      router.push(`/login?redirect=/lessons/${lessonId}`);
-    }
-  }, [session, sessionLoading, router, lessonId]);
-
-  useEffect(() => {
-    const fetchLesson = async () => {
-      const token = localStorage.getItem("bearer_token");
-      try {
-        const response = await fetch(`/api/lessons?id=${lessonId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!response.ok) throw new Error("Failed to fetch lesson");
-        const data = await response.json();
-        setLesson(data);
-      } catch (error) {
-        toast.error("Failed to load lesson");
-        console.error(error);
-      }
-    };
-
-    const fetchQuizzes = async () => {
-      const token = localStorage.getItem("bearer_token");
-      try {
-        const response = await fetch(`/api/quizzes?lessonId=${lessonId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!response.ok) throw new Error("Failed to fetch quizzes");
-        const data = await response.json();
-        setQuizzes(data);
-        
-        // Initialize quiz attempts
-        const initialAttempts: Record<number, QuizAttempt> = {};
-        data.forEach((quiz: Quiz) => {
-          initialAttempts[quiz.id] = {
-            quizId: quiz.id,
-            selectedAnswer: "",
-            isCorrect: null,
-            showExplanation: false,
-          };
-        });
-        setQuizAttempts(initialAttempts);
-      } catch (error) {
-        toast.error("Failed to load quizzes");
-        console.error(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (lessonId) {
-      fetchLesson();
-      fetchQuizzes();
-    }
-  }, [lessonId]);
-
-  const handleAnswerSelect = (quizId: number, answer: string) => {
-    setQuizAttempts((prev) => ({
-      ...prev,
-      [quizId]: {
-        ...prev[quizId],
-        selectedAnswer: answer,
-      },
-    }));
-  };
-
-  const handleSubmitQuiz = async (quiz: Quiz) => {
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_35%),linear-gradient(180deg,_rgba(2,6,23,0.04),_transparent_40%)] p-6">
+      <section className="max-w-2xl rounded-3xl border bg-white/85 p-8 shadow-2xl backdrop-blur">
+        <div className="space-y-4 text-left">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-700">Migration notice</p>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Lesson details have moved.</h1>
+          <p className="text-base leading-7 text-slate-600">
+            Detailed lesson content is now available in the Vite app at <span className="font-semibold">frontend/</span>.
+          </p>
+          <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+            Run <span className="font-semibold">npm run dev</span> to view all lessons in the Vite interface.
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
     const attempt = quizAttempts[quiz.id];
     if (!attempt.selectedAnswer) {
       toast.error("Please select an answer");
