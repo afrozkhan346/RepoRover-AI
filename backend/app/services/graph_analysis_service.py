@@ -66,6 +66,16 @@ def _dfs(g: nx.DiGraph, start: str | None, top_limit: int = 100) -> TraversalRes
     return TraversalResult(start_node=chosen, dfs_order=order, bfs_order=[])
 
 
+def dfs_traversal(g: nx.DiGraph, start: str | None, top_limit: int = 100) -> list[str]:
+    """Return DFS order for the supplied graph."""
+    return _dfs(g, start, top_limit=top_limit).dfs_order
+
+
+def bfs_traversal(g: nx.DiGraph, start: str | None, top_limit: int = 100) -> list[str]:
+    """Return BFS order for the supplied graph."""
+    return _bfs(g, start, top_limit=top_limit).bfs_order
+
+
 def _impact_rank(g: nx.DiGraph, labels: dict[str, str], top_n: int = 10) -> list[RankedNode]:
     degree = nx.degree_centrality(g) if g.number_of_nodes() else {}
     betweenness = nx.betweenness_centrality(g) if g.number_of_nodes() else {}
