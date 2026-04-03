@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.project import router as project_router
 from app.api.router import api_router
 from app.core.config import settings
 from app.db.connection import create_tables, get_database_info
@@ -22,6 +23,7 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.api_prefix)
+app.include_router(project_router, prefix="/project", tags=["project"])
 
 
 @app.on_event("startup")

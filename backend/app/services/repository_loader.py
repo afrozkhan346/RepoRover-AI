@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import shutil
-import tempfile
 import zipfile
 from collections import Counter
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+from uuid import uuid4
 
 from git import InvalidGitRepositoryError, Repo
 
@@ -78,8 +79,22 @@ def _repo_identity_from_path(path: Path) -> tuple[str, str]:
     return repo_name, repo_name
 
 
+def _projects_root() -> Path:
+    projects_dir = Path(__file__).resolve().parents[2] / "projects"
+    projects_dir.mkdir(parents=True, exist_ok=True)
+    return projects_dir
+
+
+def _create_project_directory(prefix: str) -> Path:
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    unique = uuid4().hex[:8]
+    target = _projects_root() / f"{prefix}-{timestamp}-{unique}"
+    target.mkdir(parents=True, exist_ok=False)
+    return target
+
+
 def clone_repository(source_url: str) -> tuple[Repo, Path]:
-    temp_dir = Path(tempfile.mkdtemp(prefix="repoorover-"))
+    temp_dir = _create_project_directory("clone")
     try:
         repo = Repo.clone_from(source_url, temp_dir, depth=1)
         return repo, temp_dir
@@ -206,16 +221,13 @@ def _find_project_root(extract_root: Path) -> Path:
 def load_repository_from_url(source_url: str) -> RepositoryLoadResult:
     _, local_path = clone_repository(source_url)
     repo_name, full_name = _repo_identity_from_source_url(source_url)
-    try:
-        root = Path(local_path)
-        return _build_load_result(
-            source_url=source_url,
-            root=root,
-            repo_name=repo_name,
-            full_name=full_name,
-        )
-    finally:
-        shutil.rmtree(local_path, ignore_errors=True)
+    root = Path(local_path)
+    return _build_load_result(
+        source_url=source_url,
+        root=root,
+        repo_name=repo_name,
+        full_name=full_name,
+    )
 
 
 def load_repository_from_path(local_path: str) -> RepositoryLoadResult:
@@ -238,7 +250,7 @@ def load_repository_from_zip(zip_bytes: bytes, archive_name: str = "uploaded.zip
     if not zip_bytes:
         raise ValueError("ZIP archive is empty")
 
-    temp_dir = Path(tempfile.mkdtemp(prefix="repoorover-zip-"))
+    temp_dir = _create_project_directory("upload")
     try:
         _safe_extract_zip(zip_bytes, temp_dir)
         root = _find_project_root(temp_dir)
@@ -252,5 +264,3 @@ def load_repository_from_zip(zip_bytes: bytes, archive_name: str = "uploaded.zip
         )
     except zipfile.BadZipFile as error:
         raise ValueError("Invalid ZIP archive") from error
-    finally:
-        shutil.rmtree(temp_dir, ignore_errors=True)

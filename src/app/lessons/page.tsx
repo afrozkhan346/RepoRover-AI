@@ -1,43 +1,22 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Navigation } from "@/components/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useSession } from "@/lib/auth-client";
-import { BookOpen, Clock, Award, ArrowRight, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
-
-interface LearningPath {
-  id: number;
-  title: string;
-  description: string;
-  difficulty: string;
-  estimatedHours: number;
-  icon: string;
-  orderIndex: number;
-}
-
-interface Lesson {
-  id: number;
-  learningPathId: number;
-  title: string;
-  description: string;
-  difficulty: string;
-  xpReward: number;
-  estimatedMinutes: number;
-  orderIndex: number;
-}
-
 export default function LessonsPage() {
-  const router = useRouter();
-  const { data: session, isPending: sessionLoading } = useSession();
-  const [learningPaths, setLearningPaths] = useState<LearningPath[]>([]);
-  const [lessons, setLessons] = useState<Record<number, Lesson[]>>({});
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.14),_transparent_35%),linear-gradient(180deg,_rgba(2,6,23,0.04),_transparent_40%)] p-6">
+      <section className="max-w-2xl rounded-3xl border bg-white/85 p-8 shadow-2xl backdrop-blur">
+        <div className="space-y-4 text-left">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-700">Migration notice</p>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Lessons have moved to the Vite app.</h1>
+          <p className="text-base leading-7 text-slate-600">
+            The lessons interface is now part of the Vite frontend in <span className="font-semibold">frontend/</span>. 
+            This provides better performance and a unified experience with the rest of the learning platform.
+          </p>
+          <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+            Use <span className="font-semibold">npm run dev</span> from the repo root to start the Vite app.
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
   const [isLoading, setIsLoading] = useState(true);
   const [expandedPath, setExpandedPath] = useState<number | null>(null);
 

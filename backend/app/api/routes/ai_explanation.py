@@ -1,24 +1,23 @@
 from fastapi import APIRouter, HTTPException
 
+from app.engine.ai_nlp import AINLPEngine
+from app.engine.explanation_engine import ExplanationEngine
 from app.schemas.ai_explanation import AIExplanationRequest, AIExplanationResponse
 from app.schemas.explainability_traces import ExplainabilityTraceRequest, ExplainabilityTraceResponse
 from app.schemas.project_summaries import ProjectSummariesRequest, ProjectSummariesResponse
 from app.schemas.quality_analysis import QualityAnalysisRequest, QualityAnalysisResponse
 from app.schemas.risk_scoring import RiskScoringRequest, RiskScoringResponse
-from app.services.explainability_trace_service import build_explainability_traces
-from app.services.project_summary_service import summarize_project
-from app.services.quality_analysis_service import analyze_quality
-from app.services.risk_scoring_service import score_risk
-from app.services.ai_explanation import explain_code
 
 router = APIRouter()
+ai_nlp_engine = AINLPEngine()
+explanation_engine = ExplanationEngine()
 
 
 @router.post("/explain-code", response_model=AIExplanationResponse)
 def explain_code_route(payload: AIExplanationRequest) -> dict:
     if not payload.code.strip():
         raise HTTPException(status_code=400, detail={"detail": "Code is required", "code": "MISSING_CODE"})
-    return explain_code(payload.code, payload.language, payload.question)
+    return ai_nlp_engine.explain_code(payload.code, payload.language, payload.question)
 
 
 @router.get("/explain-code", response_model=AIExplanationResponse)
@@ -37,7 +36,7 @@ def ai_service_health() -> dict:
 @router.post("/project-summaries", response_model=ProjectSummariesResponse)
 def project_summaries_route(payload: ProjectSummariesRequest) -> ProjectSummariesResponse:
     try:
-        return summarize_project(payload.local_path, payload.max_files)
+        return ai_nlp_engine.project_summaries(payload.local_path, payload.max_files)
     except ValueError as error:
         raise HTTPException(status_code=400, detail={"detail": str(error), "code": "PROJECT_SUMMARY_ERROR"}) from error
 
@@ -45,7 +44,7 @@ def project_summaries_route(payload: ProjectSummariesRequest) -> ProjectSummarie
 @router.post("/quality-analysis", response_model=QualityAnalysisResponse)
 def quality_analysis_route(payload: QualityAnalysisRequest) -> QualityAnalysisResponse:
     try:
-        return analyze_quality(payload.local_path, payload.max_files)
+        return ai_nlp_engine.quality_analysis(payload.local_path, payload.max_files)
     except ValueError as error:
         raise HTTPException(status_code=400, detail={"detail": str(error), "code": "QUALITY_ANALYSIS_ERROR"}) from error
 
@@ -53,7 +52,7 @@ def quality_analysis_route(payload: QualityAnalysisRequest) -> QualityAnalysisRe
 @router.post("/risk-scoring", response_model=RiskScoringResponse)
 def risk_scoring_route(payload: RiskScoringRequest) -> RiskScoringResponse:
     try:
-        return score_risk(payload.local_path, payload.max_files)
+        return ai_nlp_engine.risk_scoring(payload.local_path, payload.max_files)
     except ValueError as error:
         raise HTTPException(status_code=400, detail={"detail": str(error), "code": "RISK_SCORING_ERROR"}) from error
 
@@ -61,7 +60,7 @@ def risk_scoring_route(payload: RiskScoringRequest) -> RiskScoringResponse:
 @router.post("/explainability-traces", response_model=ExplainabilityTraceResponse)
 def explainability_traces_route(payload: ExplainabilityTraceRequest) -> ExplainabilityTraceResponse:
     try:
-        return build_explainability_traces(
+        return explanation_engine.explainability_traces(
             local_path=payload.local_path,
             max_files=payload.max_files,
             focus_file=payload.focus_file,

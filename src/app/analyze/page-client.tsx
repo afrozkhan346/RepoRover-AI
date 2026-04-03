@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -9,6 +10,7 @@ import {
   fetchProjectSummaries,
   fetchQualityAnalysis,
   fetchRiskScoring,
+  uploadProjectFiles,
   type ExplainabilityTraceResponse,
   type GraphAnalysisResponse,
   type ProjectSummariesResponse,
@@ -59,10 +61,15 @@ function buildMermaidDefinition(flowPath: string[]) {
 }
 
 export default function AnalyzePageClient() {
+  const folderInputRef = useRef<HTMLInputElement | null>(null);
   const [localPath, setLocalPath] = useState("");
+  const [codeProjectName, setCodeProjectName] = useState("your_project_name");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [graphType, setGraphType] = useState("call");
   const [focusFile, setFocusFile] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isAnalyzingCode, setIsAnalyzingCode] = useState(false);
+  const [isUploadingProject, setIsUploadingProject] = useState(false);
   const [bundle, setBundle] = useState<AnalysisBundle | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +84,15 @@ export default function AnalyzePageClient() {
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
     }
+  }, []);
+
+  useEffect(() => {
+    if (!folderInputRef.current) {
+      return;
+    }
+
+    folderInputRef.current.setAttribute("webkitdirectory", "");
+    folderInputRef.current.setAttribute("directory", "");
   }, []);
 
   const mermaidDefinition = useMemo(
@@ -115,6 +131,57 @@ export default function AnalyzePageClient() {
     }
   };
 
+  const openFolderPicker = () => {
+    folderInputRef.current?.click();
+  };
+
+  const handleProjectUpload = async () => {
+    if (!selectedFiles.length) {
+      toast.error("Choose a local project folder first.");
+      return;
+    }
+
+    setIsUploadingProject(true);
+    setError(null);
+
+    try {
+      const response = await uploadProjectFiles(selectedFiles);
+      setLocalPath(response.project_path);
+      toast.success(`Project uploaded (${response.files_saved} files).`);
+    } catch (uploadError) {
+      const message = uploadError instanceof Error ? uploadError.message : "Upload failed";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsUploadingProject(false);
+    }
+  };
+
+  const analyzeCode = async () => {
+    if (!codeProjectName.trim()) {
+      toast.error("Enter a project name first.");
+      return;
+    }
+
+    setIsAnalyzingCode(true);
+    setError(null);
+
+    try {
+      const res = await axios.get(
+        `http://127.0.0.1:8000/project/code-analysis/${encodeURIComponent(codeProjectName.trim())}`,
+      );
+
+      console.log(res.data);
+      toast.success("Code analysis loaded. Check the console.");
+    } catch (analysisError) {
+      const message = analysisError instanceof Error ? analysisError.message : "Code analysis failed";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsAnalyzingCode(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_35%),linear-gradient(180deg,_rgba(2,6,23,0.04),_transparent_40%)]">
       <Navigation />
@@ -142,6 +209,9 @@ export default function AnalyzePageClient() {
                   value={localPath}
                   onChange={(event) => setLocalPath(event.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  You can paste a path, or upload a local folder with the plus button below.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="graphType">Graph type</Label>
@@ -164,10 +234,52 @@ export default function AnalyzePageClient() {
                   onChange={(event) => setFocusFile(event.target.value)}
                 />
               </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="codeProjectName">Project name for code analysis</Label>
+                <Input
+                  id="codeProjectName"
+                  placeholder="your_project_name"
+                  value={codeProjectName}
+                  onChange={(event) => setCodeProjectName(event.target.value)}
+                />
+              </div>
+              <div className="md:col-span-2 rounded-xl border bg-muted/20 p-3">
+                <input
+                  ref={folderInputRef}
+                  id="project-folder-input"
+                  type="file"
+                  className="hidden"
+                  multiple
+                  onChange={(event) => setSelectedFiles(Array.from(event.target.files ?? []))}
+                />
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button type="button" variant="outline" onClick={openFolderPicker} className="gap-2">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                      +
+                    </span>
+                    {selectedFiles.length ? "Change project folder" : "Choose project folder"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleProjectUpload}
+                    disabled={isUploadingProject || !selectedFiles.length}
+                  >
+                    {isUploadingProject ? "Uploading folder..." : "Upload selected folder"}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {selectedFiles.length ? `${selectedFiles.length} files selected` : "No folder selected"}
+                  </span>
+                </div>
+              </div>
               <div className="flex flex-wrap gap-3 md:col-span-2">
                 <Button onClick={handleAnalyze} disabled={isLoading} className="gap-2">
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
                   {isLoading ? "Analyzing..." : "Run FastAPI analysis"}
+                </Button>
+                <Button onClick={analyzeCode} disabled={isAnalyzingCode} variant="secondary" className="gap-2">
+                  {isAnalyzingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : <Code2 className="h-4 w-4" />}
+                  {isAnalyzingCode ? "Analyzing code..." : "Analyze Code"}
                 </Button>
                 <Button variant="outline" asChild>
                   <Link href="/dashboard">Open dashboard</Link>

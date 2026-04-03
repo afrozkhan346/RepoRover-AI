@@ -1,15 +1,16 @@
 from fastapi import APIRouter, HTTPException
 
+from app.engine.parser import ParserEngine
 from app.schemas.tokens import TokenizeRequest, TokenizeResponse
-from app.services.token_service import tokenize_source
 
 router = APIRouter()
+parser_engine = ParserEngine()
 
 
 @router.post("/preview", response_model=TokenizeResponse)
 def tokenize_preview(payload: TokenizeRequest) -> TokenizeResponse:
     try:
-        result = tokenize_source(
+        result = parser_engine.extract_tokens(
             payload.source_code,
             language=payload.language,
             file_extension=payload.file_extension,

@@ -13,6 +13,84 @@ An AI-powered learning platform that revolutionizes coding education through int
 
 ---
 
+## 🧭 Overall Architecture (IMPORTANT)
+
+RepoRover AI is organized around this flow:
+
+Frontend (React + Vite)
+   ↓
+Backend API (FastAPI)
+   ↓
+Core Engine
+ ├── Parser (AST)
+ ├── Graph Builder
+ ├── AI/NLP Layer
+ └── Explanation Engine
+   ↓
+Database (optional)
+
+### Core Engine module map
+
+- `backend/app/engine/parser` - AST preview, AST structure, and token extraction wrappers
+- `backend/app/engine/graph_builder` - dependency graph, call graph, and graph analytics wrappers
+- `backend/app/engine/ai_nlp` - AI explanation, project summaries, quality analysis, and risk scoring
+- `backend/app/engine/explanation_engine` - explainability trace generation
+- `backend/app/engine/orchestrator.py` - unified orchestration entrypoint for end-to-end repository analysis
+
+This engine layer isolates core analysis capabilities from transport concerns (FastAPI routes) so frontend clients can evolve independently.
+
+### Migration status
+
+- **Active UI**: The Vite frontend in `frontend/` is now the primary interface for all major features.
+- **Pages migrated to Vite**:
+  - Landing / Home
+  - Dashboard (with project analysis summaries)
+  - Learning Paths (with path browsing and lesson listing)
+  - Lessons (browse and view lesson details)
+  - AI Tutor (interactive code explanation and tutoring)
+  - Authentication (Login, Register, Profile)  
+  - Achievements (user progress and badges)
+  - Code Analysis (project upload, clone, and analysis workflows)
+- **Legacy Next.js pages**: All remaining Next.js pages are now minimal handoff screens that redirect to the Vite app.
+- **Backend**: FastAPI provides all data via RESTful endpoints. Auth, achievements, lessons, and learning paths are seeded in memory for rapid iteration.
+- **Startup**: `npm run dev` from the repo root starts the Vite frontend on `http://localhost:5173`. The FastAPI backend runs on `http://localhost:8000`.
+
+---
+
+## Project Parsing Engine Milestone
+
+The backend now includes a project parsing engine that can:
+
+- Scan local or cloned projects
+- Extract folder and file structure
+- Detect project language from discovered file extensions
+- Produce structured metadata ready for AST parsing
+
+### Example Output
+
+```json
+{
+   "language": "Python",
+   "total_files": 25,
+   "files": [
+      {
+         "name": "main.py",
+         "path": "backend/projects/demo/main.py",
+         "extension": "py"
+      }
+   ]
+}
+```
+
+### What You Achieved
+
+- Project scanning engine
+- Language detection
+- File metadata extraction
+- Ready for AST parsing
+
+---
+
 ## 🌟 Features
 
 ### 🎓 Interactive Learning Platform
