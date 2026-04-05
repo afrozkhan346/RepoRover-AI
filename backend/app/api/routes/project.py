@@ -8,13 +8,41 @@ import os
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.services.ast_parser import parse_project_code
+from app.services.gap_detector import analyze_gaps
 from app.services.graph_analysis_service import dfs_traversal
-from app.services.graph_builder import analyze_graph, build_graph
+from app.services.graph_builder import analyze_graph, build_graph, build_system_graph
 from app.services.parser import parse_project
+from app.services.priority_engine import generate_priority
 from app.services.repository_loader import clone_repository
 from app.services.understanding import understand_project
+from app.services.risk_analyzer import analyze_risks
 
 router = APIRouter()
+
+
+def graph_to_json(graph) -> dict[str, list[dict[str, object]]]:
+    nodes: list[dict[str, object]] = []
+    edges: list[dict[str, object]] = []
+
+    for node in graph.nodes:
+        nodes.append(
+            {
+                "id": str(node),
+                "data": {"label": str(node)},
+            }
+        )
+
+    for source, target, data in graph.edges(data=True):
+        edges.append(
+            {
+                "id": f"{source}-{target}",
+                "source": str(source),
+                "target": str(target),
+                "label": str(data.get("relation", "")),
+            }
+        )
+
+    return {"nodes": nodes, "edges": edges}
 
 
 def _projects_root() -> Path:
@@ -132,7 +160,7 @@ def analyze_code(project_name: str) -> list[dict]:
 
 
 @router.get("/graph/{project_name}")
-def get_graph(project_name: str) -> dict[str, int]:
+def get_graph(project_name: str) -> dict[str, object]:
     safe_name = Path(project_name).name
     if safe_name != project_name or safe_name in {"", ".", ".."}:
         raise HTTPException(status_code=400, detail={"detail": "Invalid project name", "code": "INVALID_PROJECT"})
@@ -144,7 +172,30 @@ def get_graph(project_name: str) -> dict[str, int]:
     try:
         ast_data = parse_project_code(str(path))
         graph, call_edge_info = build_graph(ast_data)
-        return analyze_graph(graph, call_edge_info)
+        summary = analyze_graph(graph, call_edge_info)
+        full_graph = build_system_graph(str(path))
+        return {
+            **summary,
+            "graph": full_graph,
+        }
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail={"detail": str(error), "code": "GRAPH_BUILD_FAILED"}) from error
+
+
+@router.get("/graph-full/{project_name}")
+def full_graph(project_name: str) -> dict[str, list[dict[str, object]]]:
+    safe_name = Path(project_name).name
+    if safe_name != project_name or safe_name in {"", ".", ".."}:
+        raise HTTPException(status_code=400, detail={"detail": "Invalid project name", "code": "INVALID_PROJECT"})
+
+    path = _projects_root() / safe_name
+    if not path.exists() or not path.is_dir():
+        raise HTTPException(status_code=404, detail={"detail": "Project not found", "code": "PROJECT_NOT_FOUND"})
+
+    try:
+        ast_data = parse_project_code(str(path))
+        graph, _ = build_graph(ast_data)
+        return graph_to_json(graph)
     except ValueError as error:
         raise HTTPException(status_code=400, detail={"detail": str(error), "code": "GRAPH_BUILD_FAILED"}) from error
 
@@ -183,3 +234,59 @@ def understand(project_name: str) -> dict:
         return understand_project(str(path))
     except ValueError as error:
         raise HTTPException(status_code=400, detail={"detail": str(error), "code": "UNDERSTAND_FAILED"}) from error
+
+
+@router.get("/gaps/{project_name}")
+def get_gaps(project_name: str) -> dict[str, list[dict[str, str]]]:
+    safe_name = Path(project_name).name
+    if safe_name != project_name or safe_name in {"", ".", ".."}:
+        raise HTTPException(status_code=400, detail={"detail": "Invalid project name", "code": "INVALID_PROJECT"})
+
+    path = _projects_root() / safe_name
+    if not path.exists() or not path.is_dir():
+        raise HTTPException(status_code=404, detail={"detail": "Project not found", "code": "PROJECT_NOT_FOUND"})
+
+    try:
+        ast_data = parse_project_code(str(path))
+        gaps = analyze_gaps(str(path), ast_data)
+        return {"gaps": gaps}
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail={"detail": str(error), "code": "GAP_ANALYSIS_FAILED"}) from error
+
+
+@router.get("/risk/{project_name}")
+def get_risk(project_name: str) -> dict[str, list[dict[str, object]]]:
+    safe_name = Path(project_name).name
+    if safe_name != project_name or safe_name in {"", ".", ".."}:
+        raise HTTPException(status_code=400, detail={"detail": "Invalid project name", "code": "INVALID_PROJECT"})
+
+    path = _projects_root() / safe_name
+    if not path.exists() or not path.is_dir():
+        raise HTTPException(status_code=404, detail={"detail": "Project not found", "code": "PROJECT_NOT_FOUND"})
+
+    try:
+        ast_data = parse_project_code(str(path))
+        graph, _ = build_graph(ast_data)
+        risks = analyze_risks(ast_data, graph)
+        return {"risks": risks}
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail={"detail": str(error), "code": "RISK_ANALYSIS_FAILED"}) from error
+
+
+@router.get("/priority/{project_name}")
+def get_priority(project_name: str) -> dict[str, object]:
+    safe_name = Path(project_name).name
+    if safe_name != project_name or safe_name in {"", ".", ".."}:
+        raise HTTPException(status_code=400, detail={"detail": "Invalid project name", "code": "INVALID_PROJECT"})
+
+    path = _projects_root() / safe_name
+    if not path.exists() or not path.is_dir():
+        raise HTTPException(status_code=404, detail={"detail": "Project not found", "code": "PROJECT_NOT_FOUND"})
+
+    try:
+        ast_data = parse_project_code(str(path))
+        graph, _ = build_graph(ast_data)
+        risks = analyze_risks(ast_data, graph)
+        return generate_priority(ast_data, graph, risks)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail={"detail": str(error), "code": "PRIORITY_ANALYSIS_FAILED"}) from error

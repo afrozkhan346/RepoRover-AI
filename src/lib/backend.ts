@@ -144,6 +144,12 @@ export type ProjectUploadResponse = {
   total_size: number;
 };
 
+export type ProjectCloneResponse = {
+  message: string;
+  repo_url: string;
+  project_path: string;
+};
+
 export async function fetchProjectSummaries(localPath: string, maxFiles = 1000) {
   return backendFetch<ProjectSummariesResponse>("/ai/project-summaries", {
     method: "POST",
@@ -224,4 +230,29 @@ export async function uploadProjectFiles(files: File[]) {
   }
 
   return (await response.json()) as ProjectUploadResponse;
+}
+
+export async function cloneProjectFromGithub(repoUrl: string) {
+  const formData = new FormData();
+  formData.append("repo_url", repoUrl);
+
+  const response = await fetch(`${BACKEND_ROOT_BASE}/project/clone`, {
+    method: "POST",
+    body: formData,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    let errorPayload: ApiErrorPayload | null = null;
+    try {
+      errorPayload = (await response.json()) as ApiErrorPayload;
+    } catch {
+      errorPayload = null;
+    }
+
+    const message = errorPayload?.detail || `Request failed with status ${response.status}`;
+    throw new Error(message);
+  }
+
+  return (await response.json()) as ProjectCloneResponse;
 }

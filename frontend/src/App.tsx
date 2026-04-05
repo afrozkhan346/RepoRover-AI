@@ -35,6 +35,8 @@ import {
 } from "lucide-react";
 
 import "./App.css";
+import { GraphVisualizer } from "./components/analysis/graph-visualizer";
+import GraphView from "./components/analysis/GraphView";
 import {
   analyzeProjectByName,
   cloneProjectFromGithub,
@@ -49,6 +51,9 @@ import {
   logoutUser,
   registerUser,
   fetchProjectFlow,
+  fetchProjectGaps,
+  fetchProjectPriority,
+  fetchProjectRisk,
   uploadProjectFiles,
   type AIExplanationResponse,
   type AuthUser,
@@ -57,10 +62,21 @@ import {
   type ProjectAnalyzeResponse,
   type ProjectCloneResponse,
   type ProjectFlowResponse,
+  type ProjectGapsResponse,
+  type ProjectPriorityResponse,
+  type ProjectRiskResponse,
   type ProjectUploadResponse,
 } from "./api";
 
-type ResultPayload = ProjectUploadResponse | ProjectCloneResponse | ProjectAnalyzeResponse | ProjectFlowResponse | null;
+type ResultPayload =
+  | ProjectUploadResponse
+  | ProjectCloneResponse
+  | ProjectAnalyzeResponse
+  | ProjectFlowResponse
+  | ProjectGapsResponse
+  | ProjectPriorityResponse
+  | ProjectRiskResponse
+  | null;
 
 type SavedWorkspaceState = {
   projectName: string;
@@ -98,6 +114,20 @@ type UserAchievement = {
   earned_at: string;
   created_at: string;
 };
+
+function readSavedWorkspaceState(): SavedWorkspaceState | null {
+  const saved = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
+  if (!saved) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(saved) as SavedWorkspaceState;
+  } catch {
+    window.localStorage.removeItem(WORKSPACE_STORAGE_KEY);
+    return null;
+  }
+}
 
 function MainNav({
   navigate,
@@ -1053,10 +1083,13 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
   const [loadingFlow, setLoadingFlow] = useState(false);
   const [loadingUnderstanding, setLoadingUnderstanding] = useState(false);
   const [loadingExplanation, setLoadingExplanation] = useState(false);
+  const [loadingGaps, setLoadingGaps] = useState(false);
+  const [loadingPriority, setLoadingPriority] = useState(false);
+  const [loadingRisk, setLoadingRisk] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payload, setPayload] = useState<ResultPayload>(null);
   const [analysisResult, setAnalysisResult] = useState<unknown>(null);
-  const [savedWorkspace, setSavedWorkspace] = useState<SavedWorkspaceState | null>(null);
+  const [savedWorkspace, setSavedWorkspace] = useState<SavedWorkspaceState | null>(() => readSavedWorkspaceState());
 
   useEffect(() => {
     if (!fileInputRef.current) {
@@ -1065,19 +1098,6 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
 
     fileInputRef.current.setAttribute("webkitdirectory", "");
     fileInputRef.current.setAttribute("directory", "");
-  }, []);
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
-    if (!saved) {
-      return;
-    }
-
-    try {
-      setSavedWorkspace(JSON.parse(saved) as SavedWorkspaceState);
-    } catch {
-      window.localStorage.removeItem(WORKSPACE_STORAGE_KEY);
-    }
   }, []);
 
   const persistWorkspace = (
@@ -1131,6 +1151,44 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
     const normalized = projectPath.replace(/\\/g, "/").replace(/\/+$/, "");
     const parts = normalized.split("/").filter(Boolean);
     return parts.length ? parts[parts.length - 1] : "";
+  };
+
+  const projectNameFromPayload = (value: ResultPayload | SavedWorkspaceState["payload"]): string => {
+    if (!value || typeof value !== "object") {
+      return "";
+    }
+
+    if ("project_path" in value && typeof value.project_path === "string") {
+      return deriveProjectNameFromPath(value.project_path);
+    }
+
+    return "";
+  };
+
+  const getEffectiveProjectName = (): string => {
+    const direct = projectName.trim();
+    if (direct) {
+      return direct;
+    }
+
+    const fromPayload = projectNameFromPayload(payload);
+    if (fromPayload) {
+      return fromPayload;
+    }
+
+    if (savedWorkspace) {
+      const fromSaved = savedWorkspace.projectName.trim();
+      if (fromSaved) {
+        return fromSaved;
+      }
+
+      const fromSavedPayload = projectNameFromPayload(savedWorkspace.payload);
+      if (fromSavedPayload) {
+        return fromSavedPayload;
+      }
+    }
+
+    return "";
   };
 
   const openFilePicker = () => {
@@ -1190,19 +1248,36 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
   };
 
   const handleAnalyzeProject = async () => {
-    if (!projectName.trim()) {
-      setError("Enter a project name first.");
-      return;
-    }
-
     setLoadingAnalyze(true);
     setError(null);
 
     try {
-      const response = await analyzeProjectByName(projectName.trim());
+      let effectiveProjectName = getEffectiveProjectName();
+
+      if (!effectiveProjectName && githubUrl.trim()) {
+        const cloneResponse = await cloneProjectFromGithub(githubUrl.trim());
+        const clonedProjectName = deriveProjectNameFromPath(cloneResponse.project_path);
+
+        if (clonedProjectName) {
+          setProjectName(clonedProjectName);
+          setPayload(cloneResponse);
+          persistWorkspace(cloneResponse, null, "clone", clonedProjectName);
+          effectiveProjectName = clonedProjectName;
+        }
+      }
+
+      if (!effectiveProjectName) {
+        setError("Upload or clone a project first, then Analyze will run automatically.");
+        return;
+      }
+
+      const response = await analyzeProjectByName(effectiveProjectName);
+      if (!projectName.trim()) {
+        setProjectName(effectiveProjectName);
+      }
       setPayload(response);
       setAnalysisResult(response);
-      persistWorkspace(response, response, "project-analysis");
+      persistWorkspace(response, response, "project-analysis", effectiveProjectName);
     } catch (requestError) {
       const message = formatApiError(requestError, "Unable to analyze project");
       setError(message);
@@ -1212,8 +1287,9 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
   };
 
   const analyzeCode = async () => {
-    if (!projectName.trim()) {
-      setError("Enter a project name first.");
+    const effectiveProjectName = getEffectiveProjectName();
+    if (!effectiveProjectName) {
+      setError("Upload or clone a project first, then Analyze Code can run.");
       return;
     }
 
@@ -1221,7 +1297,10 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
     setError(null);
 
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/project/code-analysis/${encodeURIComponent(projectName.trim())}`);
+      if (!projectName.trim()) {
+        setProjectName(effectiveProjectName);
+      }
+      const res = await axios.get(`http://127.0.0.1:8000/project/code-analysis/${encodeURIComponent(effectiveProjectName)}`);
       setAnalysisResult(res.data);
       persistWorkspace(payload, res.data, "code-analysis");
     } catch (requestError) {
@@ -1233,8 +1312,9 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
   };
 
   const getGraph = async () => {
-    if (!projectName.trim()) {
-      setError("Enter a project name first.");
+    const effectiveProjectName = getEffectiveProjectName();
+    if (!effectiveProjectName) {
+      setError("Upload or clone a project first, then Build Graph can run.");
       return;
     }
 
@@ -1242,7 +1322,10 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
     setError(null);
 
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/project/graph/${encodeURIComponent(projectName.trim())}`);
+      if (!projectName.trim()) {
+        setProjectName(effectiveProjectName);
+      }
+      const res = await axios.get(`http://127.0.0.1:8000/project/graph/${encodeURIComponent(effectiveProjectName)}`);
       console.log("📊 Graph Data with Call Relationships:", res.data);
       
       // Enhance the display with insights
@@ -1269,8 +1352,9 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
   };
 
   const getFlow = async () => {
-    if (!projectName.trim()) {
-      setError("Enter a project name first.");
+    const effectiveProjectName = getEffectiveProjectName();
+    if (!effectiveProjectName) {
+      setError("Upload or clone a project first, then Flow Test can run.");
       return;
     }
 
@@ -1278,7 +1362,10 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
     setError(null);
 
     try {
-      const res = await fetchProjectFlow(projectName.trim());
+      if (!projectName.trim()) {
+        setProjectName(effectiveProjectName);
+      }
+      const res = await fetchProjectFlow(effectiveProjectName);
       console.log("Execution flow:", res);
       setAnalysisResult(res);
       persistWorkspace(res, res, "flow");
@@ -1291,8 +1378,9 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
   };
 
   const getUnderstanding = async () => {
-    if (!projectName.trim()) {
-      setError("Enter a project name first.");
+    const effectiveProjectName = getEffectiveProjectName();
+    if (!effectiveProjectName) {
+      setError("Upload or clone a project first, then Understanding Test can run.");
       return;
     }
 
@@ -1300,7 +1388,10 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
     setError(null);
 
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/project/understand/${encodeURIComponent(projectName.trim())}`);
+      if (!projectName.trim()) {
+        setProjectName(effectiveProjectName);
+      }
+      const res = await axios.get(`http://127.0.0.1:8000/project/understand/${encodeURIComponent(effectiveProjectName)}`);
       console.log(res.data);
       setAnalysisResult(res.data);
       persistWorkspace(payload, res.data, "understanding");
@@ -1313,8 +1404,9 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
   };
 
   const getAIExplanation = async () => {
-    if (!projectName.trim()) {
-      setError("Enter a project name first.");
+    const effectiveProjectName = getEffectiveProjectName();
+    if (!effectiveProjectName) {
+      setError("Upload or clone a project first, then AI Explanation can run.");
       return;
     }
 
@@ -1322,7 +1414,10 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
     setError(null);
 
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/project/understand/${encodeURIComponent(projectName.trim())}`);
+      if (!projectName.trim()) {
+        setProjectName(effectiveProjectName);
+      }
+      const res = await axios.get(`http://127.0.0.1:8000/project/understand/${encodeURIComponent(effectiveProjectName)}`);
       console.log(res.data.summary);
       console.log(res.data.explanations);
       const aiExplanationPayload = {
@@ -1339,6 +1434,85 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
     }
   };
 
+  const getGaps = async () => {
+    const effectiveProjectName = getEffectiveProjectName();
+    if (!effectiveProjectName) {
+      setError("Upload or clone a project first, then Get Gaps can run.");
+      return;
+    }
+
+    setLoadingGaps(true);
+    setError(null);
+
+    try {
+      if (!projectName.trim()) {
+        setProjectName(effectiveProjectName);
+      }
+
+      const res = await fetchProjectGaps(effectiveProjectName);
+      setAnalysisResult(res);
+      persistWorkspace(payload, res, "gaps", effectiveProjectName);
+    } catch (requestError) {
+      const message = formatApiError(requestError, "Unable to detect design gaps");
+      setError(message);
+    } finally {
+      setLoadingGaps(false);
+    }
+  };
+
+  const getRisk = async () => {
+    const effectiveProjectName = getEffectiveProjectName();
+    if (!effectiveProjectName) {
+      setError("Upload or clone a project first, then Risk Analysis can run.");
+      return;
+    }
+
+    setLoadingRisk(true);
+    setError(null);
+
+    try {
+      if (!projectName.trim()) {
+        setProjectName(effectiveProjectName);
+      }
+
+      const res = await fetchProjectRisk(effectiveProjectName);
+      setAnalysisResult(res);
+      persistWorkspace(payload, res, "risk", effectiveProjectName);
+    } catch (requestError) {
+      const message = formatApiError(requestError, "Unable to analyze risk");
+      setError(message);
+    } finally {
+      setLoadingRisk(false);
+    }
+  };
+
+  const getPriority = async () => {
+    const effectiveProjectName = getEffectiveProjectName();
+    if (!effectiveProjectName) {
+      setError("Upload or clone a project first, then Priority Analysis can run.");
+      return;
+    }
+
+    setLoadingPriority(true);
+    setError(null);
+
+    try {
+      if (!projectName.trim()) {
+        setProjectName(effectiveProjectName);
+      }
+
+      const res = await fetchProjectPriority(effectiveProjectName);
+      console.log(res);
+      setAnalysisResult(res);
+      persistWorkspace(payload, res, "priority", effectiveProjectName);
+    } catch (requestError) {
+      const message = formatApiError(requestError, "Unable to calculate priority");
+      setError(message);
+    } finally {
+      setLoadingPriority(false);
+    }
+  };
+
   const payloadPreview = analysisResult ?? payload;
 
   const filesScanned =
@@ -1351,6 +1525,266 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
           "files_saved" in savedWorkspace.payload
         ? Number((savedWorkspace.payload as ProjectUploadResponse).files_saved)
         : 0;
+
+  const getPriorityLevel = (score: number): "High" | "Medium" | "Low" => {
+    if (score >= 8) {
+      return "High";
+    }
+    if (score >= 5) {
+      return "Medium";
+    }
+    return "Low";
+  };
+
+  const getPriorityClassName = (score: number): string => {
+    const level = getPriorityLevel(score);
+    if (level === "High") {
+      return "priority-pill priority-high";
+    }
+    if (level === "Medium") {
+      return "priority-pill priority-medium";
+    }
+    return "priority-pill priority-low";
+  };
+
+  const renderResultsPanel = () => {
+    if (!payloadPreview) {
+      return (
+        <div className="empty-state">
+          <Sparkles className="icon-lg" />
+          <p>No results yet. Run an action from the controls panel.</p>
+        </div>
+      );
+    }
+
+    if (Array.isArray(payloadPreview)) {
+      return (
+        <div className="dashboard-summary-stack">
+          <p>Code analysis returned {payloadPreview.length} file summaries.</p>
+          {payloadPreview.slice(0, 8).map((item, index) => {
+            const entry = item as Record<string, unknown>;
+            const fileName = typeof entry.file === "string" ? entry.file : `file-${index + 1}`;
+            return (
+              <div key={`${fileName}-${index}`} className="dashboard-detail-row">
+                <strong>{index + 1}.</strong>
+                <span>{fileName}</span>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    const panelData = payloadPreview as Record<string, unknown>;
+
+    if ("graph" in panelData && panelData.graph && typeof panelData.graph === "object") {
+      const effectiveProjectName = getEffectiveProjectName();
+      const rawGraphData = panelData.graph as {
+        nodes?: Array<{ id: string; node_type: string; label: string; file_path?: string | null }>;
+        edges?: Array<{ source: string; target: string; edge_type: string }>;
+        summary?: Record<string, unknown>;
+      };
+
+      if (Array.isArray(rawGraphData.nodes) && Array.isArray(rawGraphData.edges)) {
+        const graphData = {
+          nodes: rawGraphData.nodes,
+          edges: rawGraphData.edges,
+          summary: rawGraphData.summary,
+        };
+
+        return (
+          <div className="dashboard-summary-stack">
+            <div className="analyze-signal-grid">
+              <AnalyzeStatTile icon={GitBranch} label="Nodes" value={String(graphData.nodes.length)} />
+              <AnalyzeStatTile icon={Route} label="Edges" value={String(graphData.edges.length)} />
+              <AnalyzeStatTile icon={FolderOpen} label="Files" value={String(graphData.summary?.file_nodes ?? 0)} />
+              <AnalyzeStatTile icon={Code2} label="Functions" value={String(graphData.summary?.function_nodes ?? 0)} />
+            </div>
+
+            <section className="dashboard-summary-stack">
+              <h1>Project Visualization</h1>
+              <GraphView projectName={effectiveProjectName || null} title="Interactive Graph" />
+            </section>
+          </div>
+        );
+      }
+    }
+
+    if ("language" in panelData && "total_files" in panelData && Array.isArray(panelData.files)) {
+      const files = panelData.files as Array<Record<string, unknown>>;
+      const scanned = typeof panelData.total_files_scanned === "number" ? panelData.total_files_scanned : panelData.total_files;
+
+      return (
+        <div className="dashboard-summary-stack">
+          <div className="analyze-signal-grid">
+            <AnalyzeStatTile icon={Code2} label="Language" value={String(panelData.language)} />
+            <AnalyzeStatTile icon={FileText} label="Code files" value={String(panelData.total_files)} />
+            <AnalyzeStatTile icon={FolderOpen} label="Files scanned" value={String(scanned)} />
+            <AnalyzeStatTile icon={Sparkles} label="Preview" value={`${Math.min(files.length, 8)} shown`} />
+          </div>
+          {files.slice(0, 8).map((file, index) => (
+            <div key={`${String(file.path)}-${index}`} className="dashboard-detail-row">
+              <strong>{String(file.extension || "-")}</strong>
+              <span>{String(file.path || file.name || "unknown file")}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if ("total_nodes" in panelData && "total_edges" in panelData) {
+      return (
+        <div className="analyze-signal-grid">
+          <AnalyzeStatTile icon={GitBranch} label="Nodes" value={String(panelData.total_nodes)} />
+          <AnalyzeStatTile icon={Route} label="Edges" value={String(panelData.total_edges)} />
+          <AnalyzeStatTile icon={Code2} label="Call edges" value={String(panelData.call_edges ?? 0)} />
+          <AnalyzeStatTile icon={FileText} label="Import edges" value={String(panelData.import_edges ?? 0)} />
+        </div>
+      );
+    }
+
+    if ("execution_flow" in panelData && Array.isArray(panelData.execution_flow)) {
+      const flow = panelData.execution_flow as string[];
+      return (
+        <div className="dashboard-summary-stack">
+          <div className="analyze-signal-grid analyze-signal-grid-3">
+            <AnalyzeStatTile icon={Route} label="Steps" value={String(flow.length)} />
+            <AnalyzeStatTile icon={GitBranch} label="Path" value={flow.length ? "Ready" : "Empty"} />
+            <AnalyzeStatTile icon={Sparkles} label="Mode" value="Execution flow" />
+          </div>
+
+          <GraphVisualizer
+            title="Execution Flow"
+            description="Sequential path rendered as an interactive flow diagram."
+            flowPath={flow}
+          />
+        </div>
+      );
+    }
+
+    if ("summary" in panelData && "explanations" in panelData) {
+      const explanations = (panelData.explanations || {}) as Record<string, unknown>;
+      return (
+        <div className="dashboard-summary-stack">
+          <p>{String(panelData.summary || "No summary available")}</p>
+          {typeof explanations.beginner === "string" ? <p><strong>Beginner:</strong> {explanations.beginner}</p> : null}
+          {typeof explanations.intermediate === "string" ? <p><strong>Intermediate:</strong> {explanations.intermediate}</p> : null}
+          {typeof explanations.advanced === "string" ? <p><strong>Advanced:</strong> {explanations.advanced}</p> : null}
+        </div>
+      );
+    }
+
+    if ("gaps" in panelData && Array.isArray(panelData.gaps)) {
+      const gaps = panelData.gaps as Array<Record<string, unknown>>;
+      const high = gaps.filter((gap) => String(gap.severity || "").toLowerCase() === "high").length;
+      const medium = gaps.filter((gap) => String(gap.severity || "").toLowerCase() === "medium").length;
+      const low = gaps.filter((gap) => String(gap.severity || "").toLowerCase() === "low").length;
+
+      return (
+        <div className="dashboard-summary-stack">
+          <div className="analyze-signal-grid analyze-signal-grid-3">
+            <AnalyzeStatTile icon={TriangleAlert} label="High" value={String(high)} />
+            <AnalyzeStatTile icon={Activity} label="Medium" value={String(medium)} />
+            <AnalyzeStatTile icon={FileText} label="Low" value={String(low)} />
+          </div>
+
+          {gaps.length ? (
+            gaps.slice(0, 12).map((gap, index) => (
+              <div key={`${String(gap.file)}-${index}`} className="dashboard-detail-row">
+                <strong>{String(gap.severity || "unknown")}</strong>
+                <span>{String(gap.file || "unknown file")}: {String(gap.issue || "No issue text")}</span>
+              </div>
+            ))
+          ) : (
+            <p>No design gaps detected.</p>
+          )}
+        </div>
+      );
+    }
+
+    if ("risks" in panelData && Array.isArray(panelData.risks)) {
+      const risks = panelData.risks as Array<Record<string, unknown>>;
+      const high = risks.filter((risk) => Number(risk.score || 0) >= 8).length;
+      const medium = risks.filter((risk) => Number(risk.score || 0) >= 5 && Number(risk.score || 0) < 8).length;
+      const low = risks.filter((risk) => Number(risk.score || 0) < 5).length;
+
+      return (
+        <div className="dashboard-summary-stack">
+          <div className="analyze-signal-grid analyze-signal-grid-3">
+            <AnalyzeStatTile icon={TriangleAlert} label="High" value={String(high)} />
+            <AnalyzeStatTile icon={Activity} label="Medium" value={String(medium)} />
+            <AnalyzeStatTile icon={FileText} label="Low" value={String(low)} />
+          </div>
+
+          {risks.slice(0, 12).map((risk, index) => {
+            const label = String(risk.file || risk.node || `risk-${index + 1}`);
+            return (
+              <div key={`${label}-${index}`} className="dashboard-detail-row">
+                <strong>{String(risk.score ?? 0)}</strong>
+                <span>{label}: {String(risk.risk || "Risk")}</span>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    if ("top_risks" in panelData && Array.isArray(panelData.top_risks) && "important_functions" in panelData && Array.isArray(panelData.important_functions)) {
+      const topRisks = panelData.top_risks as Array<Record<string, unknown>>;
+      const importantFunctions = panelData.important_functions as Array<unknown>;
+
+      return (
+        <div className="dashboard-summary-stack">
+          <div className="analyze-signal-grid analyze-signal-grid-3">
+            <AnalyzeStatTile icon={Target} label="Top risks" value={String(topRisks.length)} />
+            <AnalyzeStatTile icon={TrendingUp} label="Important functions" value={String(importantFunctions.length)} />
+            <AnalyzeStatTile icon={Sparkles} label="Mode" value="Priority" />
+          </div>
+
+          <h3>Top Risks</h3>
+          {topRisks.length ? (
+            topRisks.slice(0, 5).map((risk, index) => {
+              const score = Number(risk.score || 0);
+              const label = String(risk.file || `risk-${index + 1}`);
+              return (
+                <div key={`${label}-${index}`} className="dashboard-detail-row">
+                  <strong>{score.toFixed(2)}</strong>
+                  <span>{label}: {String(risk.risk || "Risk signal")}</span>
+                  <span className={getPriorityClassName(score)}>{getPriorityLevel(score)}</span>
+                </div>
+              );
+            })
+          ) : (
+            <p>No priority risks found.</p>
+          )}
+
+          <h3>Important Functions</h3>
+          {importantFunctions.length ? (
+            importantFunctions.slice(0, 5).map((entry, index) => {
+              const tuple = Array.isArray(entry) ? entry : [];
+              const functionName = String(tuple[0] || `function-${index + 1}`);
+              const centralityScore = Number(tuple[1] || 0);
+
+              return (
+                <div key={`${functionName}-${index}`} className="dashboard-detail-row">
+                  <strong>{centralityScore.toFixed(4)}</strong>
+                  <span>{functionName}</span>
+                </div>
+              );
+            })
+          ) : (
+            <p>No important functions found.</p>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="dashboard-summary-stack">
+        <p>Showing raw response because this action returned a custom payload shape.</p>
+      </div>
+    );
+  };
 
   return (
     <div className="app-shell">
@@ -1479,6 +1913,15 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
               <button onClick={getAIExplanation} disabled={loadingExplanation} className="secondary-button">
                 {loadingExplanation ? <Loader2 className="icon-sm spinning" /> : <BookOpen className="icon-sm" />} AI Explanation Test
               </button>
+              <button onClick={getGaps} disabled={loadingGaps} className="secondary-button">
+                {loadingGaps ? <Loader2 className="icon-sm spinning" /> : <TriangleAlert className="icon-sm" />} Get Gaps
+              </button>
+              <button onClick={getRisk} disabled={loadingRisk} className="secondary-button">
+                {loadingRisk ? <Loader2 className="icon-sm spinning" /> : <Target className="icon-sm" />} Risk Analysis
+              </button>
+              <button onClick={getPriority} disabled={loadingPriority} className="secondary-button">
+                {loadingPriority ? <Loader2 className="icon-sm spinning" /> : <TrendingUp className="icon-sm" />} Priority Engine
+              </button>
             </div>
 
             {error ? <div className="error">{error}</div> : null}
@@ -1488,18 +1931,17 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
               <h2>
                 <BarChart3 className="icon-sm" /> Results panel
               </h2>
-              <p>Latest backend payload or code analysis output.</p>
+              <p>Visualized analysis output with optional raw payload details.</p>
             </div>
 
             <div className="result-card">
+              {renderResultsPanel()}
               {payloadPreview ? (
-                <pre>{JSON.stringify(payloadPreview, null, 2)}</pre>
-              ) : (
-                <div className="empty-state">
-                  <Sparkles className="icon-lg" />
-                  <p>No results yet. Run an action from the controls panel.</p>
-                </div>
-              )}
+                <details style={{ marginTop: "1rem" }}>
+                  <summary>Raw JSON details</summary>
+                  <pre>{JSON.stringify(payloadPreview, null, 2)}</pre>
+                </details>
+              ) : null}
             </div>
           </article>
         </section>
@@ -1529,20 +1971,7 @@ function AnalyzeStatTile({
 }
 
 function DashboardView({ navigate }: { navigate: NavigateFn }) {
-  const [savedWorkspace, setSavedWorkspace] = useState<SavedWorkspaceState | null>(null);
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
-    if (!saved) {
-      return;
-    }
-
-    try {
-      setSavedWorkspace(JSON.parse(saved) as SavedWorkspaceState);
-    } catch {
-      window.localStorage.removeItem(WORKSPACE_STORAGE_KEY);
-    }
-  }, []);
+  const [savedWorkspace] = useState<SavedWorkspaceState | null>(() => readSavedWorkspaceState());
 
   const workspaceSummary = useMemo(() => {
     const latest = savedWorkspace ?? {
@@ -1565,6 +1994,109 @@ function DashboardView({ navigate }: { navigate: NavigateFn }) {
       totalFiles,
     };
   }, [savedWorkspace]);
+
+  const [dashboardData, setDashboardData] = useState<Record<string, unknown> | null>(null);
+  const [dashboardRisks, setDashboardRisks] = useState<Array<Record<string, unknown>>>([]);
+  const [priority, setPriority] = useState<Record<string, unknown> | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+
+  const dashboardProjectName = workspaceSummary.projectName || "your_project_name";
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDashboard = async () => {
+      setDashboardLoading(true);
+      setDashboardError(null);
+
+      try {
+        const [understandRes, riskRes, priorityRes] = await Promise.all([
+          axios.get(`http://127.0.0.1:8000/project/understand/${encodeURIComponent(dashboardProjectName)}`),
+          axios.get(`http://127.0.0.1:8000/project/risk/${encodeURIComponent(dashboardProjectName)}`),
+          axios.get(`http://127.0.0.1:8000/project/priority/${encodeURIComponent(dashboardProjectName)}`),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const understandData =
+          understandRes.data && typeof understandRes.data === "object"
+            ? (understandRes.data as Record<string, unknown>)
+            : null;
+        const riskData =
+          riskRes.data && typeof riskRes.data === "object"
+            ? (riskRes.data as Record<string, unknown>)
+            : null;
+        const priorityData =
+          priorityRes.data && typeof priorityRes.data === "object"
+            ? (priorityRes.data as Record<string, unknown>)
+            : null;
+
+        setDashboardData(understandData);
+        setDashboardRisks(Array.isArray(riskData?.risks) ? (riskData?.risks as Array<Record<string, unknown>>) : []);
+        setPriority(priorityData);
+      } catch (requestError) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message = axios.isAxiosError(requestError)
+          ? requestError.response?.data?.detail || requestError.message || "Unable to load dashboard"
+          : requestError instanceof Error
+            ? requestError.message
+            : "Unable to load dashboard";
+        setDashboardError(String(message));
+      } finally {
+        if (isMounted) {
+          setDashboardLoading(false);
+        }
+      }
+    };
+
+    void loadDashboard();
+    return () => {
+      isMounted = false;
+    };
+  }, [dashboardProjectName]);
+
+  const dashboardSummary = typeof dashboardData?.summary === "string" ? dashboardData.summary : null;
+  const dashboardExplanations =
+    dashboardData && typeof dashboardData.explanations === "object" && dashboardData.explanations !== null
+      ? (dashboardData.explanations as Record<string, unknown>)
+      : null;
+
+  const priorityTopRisks =
+    priority && Array.isArray(priority.top_risks)
+      ? (priority.top_risks as Array<Record<string, unknown>>)
+      : [];
+
+  const priorityImportantFunctions =
+    priority && Array.isArray(priority.important_functions)
+      ? (priority.important_functions as Array<unknown>)
+      : [];
+
+  const getRiskLevel = (score: number): "High" | "Medium" | "Low" => {
+    if (score >= 8) {
+      return "High";
+    }
+    if (score >= 5) {
+      return "Medium";
+    }
+    return "Low";
+  };
+
+  const getRiskBadgeClass = (score: number): string => {
+    const level = getRiskLevel(score);
+    if (level === "High") {
+      return "priority-pill priority-high";
+    }
+    if (level === "Medium") {
+      return "priority-pill priority-medium";
+    }
+    return "priority-pill priority-low";
+  };
 
   const analysis =
     workspaceSummary.analysisResult && typeof workspaceSummary.analysisResult === "object"
@@ -1636,10 +2168,10 @@ function DashboardView({ navigate }: { navigate: NavigateFn }) {
           </div>
         </section>
 
-        <section className="dashboard-metric-section">
-          <article className="dashboard-card">
-            <span className="dashboard-label">Workspace signals</span>
-            <div className="dashboard-metric-grid">
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <article className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Workspace signals</span>
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <DashboardMetricTile icon={Activity} label="Loaded" value={savedWorkspace ? "Yes" : "No"} />
               <DashboardMetricTile icon={GitBranch} label="Graph type" value={graphType} />
               <DashboardMetricTile icon={TriangleAlert} label="Risk" value={riskScore} />
@@ -1647,22 +2179,22 @@ function DashboardView({ navigate }: { navigate: NavigateFn }) {
             </div>
           </article>
 
-          <article className="dashboard-card">
-            <span className="dashboard-label">Snapshot details</span>
-            <div className="dashboard-detail-stack">
-              <div className="dashboard-detail-row">
+          <article className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Snapshot details</span>
+            <div className="mt-3 grid gap-2">
+              <div className="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2 text-sm">
                 <strong>Project name</strong>
                 <span>{workspaceSummary.projectName || "n/a"}</span>
               </div>
-              <div className="dashboard-detail-row">
+              <div className="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2 text-sm">
                 <strong>File count</strong>
                 <span>{workspaceSummary.totalFiles}</span>
               </div>
-              <div className="dashboard-detail-row">
+              <div className="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2 text-sm">
                 <strong>Last action</strong>
                 <span>{workspaceSummary.lastAction || "none"}</span>
               </div>
-              <div className="dashboard-detail-row">
+              <div className="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2 text-sm">
                 <strong>Saved at</strong>
                 <span>{workspaceSummary.savedAt ? new Date(workspaceSummary.savedAt).toLocaleString() : "n/a"}</span>
               </div>
@@ -1670,19 +2202,126 @@ function DashboardView({ navigate }: { navigate: NavigateFn }) {
           </article>
         </section>
 
-        <section className="dashboard-visual-grid">
-          <article className="dashboard-card">
-            <span className="dashboard-label">Repository footprint</span>
-            <div className="dashboard-bar-list">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <article className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Project dashboard</span>
+            {dashboardLoading ? (
+              <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">Loading...</p>
+            ) : (
+              <div className="space-y-3">
+                {dashboardError ? <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{dashboardError}</div> : null}
+
+                <h2 className="mb-2 text-lg font-semibold text-slate-900">Summary</h2>
+                <p className="text-sm leading-6 text-slate-700">{dashboardSummary ?? "No summary available."}</p>
+
+                <h2 className="mb-2 text-lg font-semibold text-slate-900">Explanations</h2>
+                <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-800"><span className="font-semibold text-slate-900">Beginner:</span> {String(dashboardExplanations?.beginner || "n/a")}</p>
+                <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-800"><span className="font-semibold text-slate-900">Intermediate:</span> {String(dashboardExplanations?.intermediate || "n/a")}</p>
+                <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-800"><span className="font-semibold text-slate-900">Advanced:</span> {String(dashboardExplanations?.advanced || "n/a")}</p>
+              </div>
+            )}
+          </article>
+
+          <article className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Risks</span>
+            {dashboardLoading ? (
+              <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">Loading...</p>
+            ) : dashboardRisks.length ? (
+              <div className="space-y-2">
+                {dashboardRisks.slice(0, 12).map((risk, index) => {
+                  const score = Number(risk.score || 0);
+                  const label = String(risk.file || risk.node || `risk-${index + 1}`);
+                  return (
+                    <div key={`${label}-${index}`} className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-800">
+                      <strong className="mr-2">{score.toFixed(2)}</strong>
+                      <span>{label} - {String(risk.risk || "Risk")}</span>
+                      <span className={`${getRiskBadgeClass(score)} ml-2`}>{getRiskLevel(score)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">No risk items available.</p>
+            )}
+          </article>
+        </section>
+
+        <section className="grid grid-cols-1 gap-4">
+          <article className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Graph</span>
+            <GraphView projectName={dashboardProjectName} title="Project Graph" />
+          </article>
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <article className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Priority panel</span>
+            {dashboardLoading ? (
+              <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">Loading...</p>
+            ) : (
+              <>
+                <h2 className="mb-3 text-lg font-semibold text-slate-900">Top Risks</h2>
+                <ul className="space-y-2">
+                  {priorityTopRisks.length ? (
+                    priorityTopRisks.slice(0, 5).map((risk, index) => {
+                      const score = Number(risk.score || 0);
+                      return (
+                        <li key={`priority-risk-${index}`} className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-800">
+                          {String(risk.file || "unknown")} - {String(risk.risk || "Risk signal")}
+                          <span className={`${getRiskBadgeClass(score)} ml-2`}>{getRiskLevel(score)}</span>
+                        </li>
+                      );
+                    })
+                  ) : (
+                    <li className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">No priority risk data available.</li>
+                  )}
+                </ul>
+              </>
+            )}
+          </article>
+
+          <article className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Function importance</span>
+            {dashboardLoading ? (
+              <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">Loading...</p>
+            ) : (
+              <>
+                <h2 className="mb-3 text-lg font-semibold text-slate-900">Important Functions</h2>
+                <ul className="space-y-2">
+                  {priorityImportantFunctions.length ? (
+                    priorityImportantFunctions.slice(0, 5).map((entry, index) => {
+                      const tuple = Array.isArray(entry) ? entry : [];
+                      const functionName = String(tuple[0] || `function-${index + 1}`);
+                      const score = Number(tuple[1] || 0);
+
+                      return (
+                        <li key={`priority-function-${index}`} className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-800">
+                          {functionName} (Score: {score.toFixed(4)})
+                        </li>
+                      );
+                    })
+                  ) : (
+                    <li className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">No important functions data available.</li>
+                  )}
+                </ul>
+              </>
+            )}
+          </article>
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <article className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Repository footprint</span>
+            <div className="mt-3 grid gap-3">
               {footprint.map((item) => (
-                <div key={item.label} className="dashboard-bar-item">
-                  <div className="dashboard-bar-head">
-                    <span>{item.label}</span>
-                    <strong>{item.value}</strong>
+                <div key={item.label} className="grid gap-2">
+                  <div className="flex items-center justify-between gap-3 text-sm text-slate-700">
+                    <span className="font-medium">{item.label}</span>
+                    <strong className="text-slate-900">{item.value}</strong>
                   </div>
-                  <div className="dashboard-bar-track">
+                  <div className="h-2 rounded-full bg-slate-200">
                     <div
-                      className="dashboard-bar-fill"
+                      className="h-2 rounded-full bg-sky-500"
                       style={{ width: `${Math.max((item.value / maxFootprint) * 100, item.value > 0 ? 8 : 0)}%` }}
                     />
                   </div>
@@ -1691,42 +2330,42 @@ function DashboardView({ navigate }: { navigate: NavigateFn }) {
             </div>
           </article>
 
-          <article className="dashboard-card">
-            <span className="dashboard-label">Severity mix</span>
-            <div className="severity-list">
+          <article className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Severity mix</span>
+            <div className="mt-3 grid gap-2">
               {severityMix.map((item) => (
-                <div key={item.label} className="severity-row">
+                <div key={item.label} className="flex items-center gap-3 rounded-md bg-slate-50 px-3 py-2 text-sm">
                   <span className={`severity-dot severity-${item.tone}`} aria-hidden="true" />
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
+                  <span className="text-slate-700">{item.label}</span>
+                  <strong className="ml-auto text-slate-900">{item.value}</strong>
                 </div>
               ))}
             </div>
           </article>
         </section>
 
-        <section className="dashboard-visual-grid dashboard-visual-grid-2">
-          <article className="dashboard-card">
-            <span className="dashboard-label">Backend summaries</span>
-            <div className="dashboard-summary-stack">
-              <p>{projectSummary ?? "No project summary available yet."}</p>
-              <p>{architectureSummary ?? "No architecture summary available yet."}</p>
-              <p>{executionSummary ?? "No execution flow summary available yet."}</p>
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <article className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Backend summaries</span>
+            <div className="mt-3 space-y-2">
+              <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">{projectSummary ?? "No project summary available yet."}</p>
+              <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">{architectureSummary ?? "No architecture summary available yet."}</p>
+              <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">{executionSummary ?? "No execution flow summary available yet."}</p>
             </div>
           </article>
 
-          <article className="dashboard-card">
-            <span className="dashboard-label">Flow path</span>
-            <div className="flow-path-list">
+          <article className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Flow path</span>
+            <div className="mt-3 grid gap-2">
               {flowPath.length ? (
                 flowPath.slice(0, 8).map((node, index) => (
-                  <div key={`${node}-${index}`} className="flow-path-item">
-                    <span className="flow-index">{index + 1}</span>
-                    <span>{node}</span>
+                  <div key={`${node}-${index}`} className="flex items-center gap-3 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-100 text-xs font-semibold text-sky-700">{index + 1}</span>
+                    <span className="truncate">{node}</span>
                   </div>
                 ))
               ) : (
-                <p className="flow-empty">No flow path available in the saved analysis.</p>
+                <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">No flow path available in the saved analysis.</p>
               )}
             </div>
           </article>
@@ -1746,12 +2385,12 @@ function DashboardMetricTile({
   value: number | string;
 }) {
   return (
-    <div className="dashboard-metric-tile">
-      <div className="dashboard-metric-title">
+    <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+      <div className="inline-flex items-center gap-2 text-xs text-slate-500">
         <Icon className="icon-sm" />
         <span>{label}</span>
       </div>
-      <div className="dashboard-metric-value">{value}</div>
+      <div className="mt-1 text-lg font-semibold text-slate-900">{value}</div>
     </div>
   );
 }

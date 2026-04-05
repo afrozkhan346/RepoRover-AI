@@ -421,6 +421,87 @@ button:active:not(:disabled),
   margin-top: 14px;
 }
 
+.graph-visualizer-shell {
+  display: grid;
+  gap: 14px;
+}
+
+.graph-visualizer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.graph-visualizer-header h3 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+
+.graph-visualizer-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.graph-visualizer-meta {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.graph-visualizer-meta span {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.9);
+  padding: 6px 10px;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.graph-visualizer-canvas {
+  height: 460px;
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.92), rgba(255, 255, 255, 0.96));
+}
+
+.graph-visualizer-empty {
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  background: rgba(248, 250, 252, 0.75);
+  color: #64748b;
+}
+
+.graph-visualizer-summary {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.8);
+  padding: 10px 12px;
+}
+
+.graph-visualizer-summary summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.graph-visualizer-summary pre {
+  margin: 10px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
 .analyze-hero-card h1 {
   margin: 12px 0 10px;
   font-size: clamp(2rem, 4vw, 3rem);
@@ -605,6 +686,49 @@ button:active:not(:disabled),
   font-size: 0.88rem;
   color: #0f172a;
   text-align: right;
+}
+
+.dashboard-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-list li {
+  color: #0f172a;
+  line-height: 1.45;
+}
+
+.priority-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+
+.priority-high {
+  color: #991b1b;
+  background: rgba(254, 226, 226, 0.95);
+  border-color: rgba(220, 38, 38, 0.35);
+}
+
+.priority-medium {
+  color: #854d0e;
+  background: rgba(254, 249, 195, 0.95);
+  border-color: rgba(202, 138, 4, 0.35);
+}
+
+.priority-low {
+  color: #166534;
+  background: rgba(220, 252, 231, 0.95);
+  border-color: rgba(22, 163, 74, 0.35);
 }
 
 .dashboard-visual-grid {

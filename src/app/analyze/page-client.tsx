@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
+  cloneProjectFromGithub,
   fetchExplainabilityTraces,
   fetchGraphAnalysis,
   fetchProjectSummaries,
@@ -62,8 +63,9 @@ function buildMermaidDefinition(flowPath: string[]) {
 
 export default function AnalyzePageClient() {
   const folderInputRef = useRef<HTMLInputElement | null>(null);
+  const [githubUrl, setGithubUrl] = useState("");
   const [localPath, setLocalPath] = useState("");
-  const [codeProjectName, setCodeProjectName] = useState("your_project_name");
+  const [codeProjectName, setCodeProjectName] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [graphType, setGraphType] = useState("call");
   const [focusFile, setFocusFile] = useState("");
@@ -100,9 +102,15 @@ export default function AnalyzePageClient() {
     [bundle],
   );
 
+  const deriveProjectNameFromPath = (projectPath: string) => {
+    const normalized = projectPath.replace(/\\/g, "/").replace(/\/+$/, "");
+    const segments = normalized.split("/").filter(Boolean);
+    return segments.length ? segments[segments.length - 1] : "";
+  };
+
   const handleAnalyze = async () => {
-    if (!localPath.trim()) {
-      toast.error("Enter a local project path first.");
+    if (!localPath.trim() && !githubUrl.trim()) {
+      toast.error("Enter a local path or GitHub URL first.");
       return;
     }
 
@@ -110,12 +118,27 @@ export default function AnalyzePageClient() {
     setError(null);
 
     try {
+      let analysisPath = localPath.trim();
+
+      if (!analysisPath && githubUrl.trim()) {
+        const cloneResponse = await cloneProjectFromGithub(githubUrl.trim());
+        analysisPath = cloneResponse.project_path;
+        setLocalPath(analysisPath);
+
+        const inferredName = deriveProjectNameFromPath(analysisPath);
+        if (inferredName) {
+          setCodeProjectName(inferredName);
+        }
+
+        toast.success("Repository cloned. Running analysis...");
+      }
+
       const [project, quality, risk, graph, traces] = await Promise.all([
-        fetchProjectSummaries(localPath.trim(), 1000),
-        fetchQualityAnalysis(localPath.trim(), 1000),
-        fetchRiskScoring(localPath.trim(), 1000),
-        fetchGraphAnalysis(localPath.trim(), graphType, 1000),
-        fetchExplainabilityTraces(localPath.trim(), focusFile.trim() || undefined, graphType, 1000),
+        fetchProjectSummaries(analysisPath, 1000),
+        fetchQualityAnalysis(analysisPath, 1000),
+        fetchRiskScoring(analysisPath, 1000),
+        fetchGraphAnalysis(analysisPath, graphType, 1000),
+        fetchExplainabilityTraces(analysisPath, focusFile.trim() || undefined, graphType, 1000),
       ]);
 
       const nextBundle: AnalysisBundle = { project, quality, risk, graph, traces };
@@ -147,6 +170,10 @@ export default function AnalyzePageClient() {
     try {
       const response = await uploadProjectFiles(selectedFiles);
       setLocalPath(response.project_path);
+      const inferredName = deriveProjectNameFromPath(response.project_path);
+      if (inferredName) {
+        setCodeProjectName(inferredName);
+      }
       toast.success(`Project uploaded (${response.files_saved} files).`);
     } catch (uploadError) {
       const message = uploadError instanceof Error ? uploadError.message : "Upload failed";
@@ -158,18 +185,23 @@ export default function AnalyzePageClient() {
   };
 
   const analyzeCode = async () => {
-    if (!codeProjectName.trim()) {
-      toast.error("Enter a project name first.");
+    const inferredName = deriveProjectNameFromPath(localPath);
+    const projectName = codeProjectName.trim() || inferredName;
+
+    if (!projectName) {
+      toast.error("Upload/clone a project first so project name can be detected.");
       return;
+    }
+
+    if (!codeProjectName.trim() && inferredName) {
+      setCodeProjectName(inferredName);
     }
 
     setIsAnalyzingCode(true);
     setError(null);
 
     try {
-      const res = await axios.get(
-        `http://127.0.0.1:8000/project/code-analysis/${encodeURIComponent(codeProjectName.trim())}`,
-      );
+      const res = await axios.get(`http://127.0.0.1:8000/project/code-analysis/${encodeURIComponent(projectName)}`);
 
       console.log(res.data);
       toast.success("Code analysis loaded. Check the console.");
@@ -201,6 +233,15 @@ export default function AnalyzePageClient() {
               </div>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="githubUrl">GitHub URL (optional)</Label>
+                <Input
+                  id="githubUrl"
+                  placeholder="https://github.com/owner/repo"
+                  value={githubUrl}
+                  onChange={(event) => setGithubUrl(event.target.value)}
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="localPath">Local project path</Label>
                 <Input
@@ -238,7 +279,7 @@ export default function AnalyzePageClient() {
                 <Label htmlFor="codeProjectName">Project name for code analysis</Label>
                 <Input
                   id="codeProjectName"
-                  placeholder="your_project_name"
+                  placeholder="Auto-filled after upload/clone"
                   value={codeProjectName}
                   onChange={(event) => setCodeProjectName(event.target.value)}
                 />
