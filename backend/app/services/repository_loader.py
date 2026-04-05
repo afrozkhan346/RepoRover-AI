@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import re
 import shutil
 import zipfile
 from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,30 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 from git import InvalidGitRepositoryError, Repo
+
+from app.core.config import settings
+
+
+class RepositoryLoadError(ValueError):
+    def __init__(self, detail: str, code: str = "REPOSITORY_LOAD_ERROR"):
+        super().__init__(detail)
+        self.code = code
+
+
+@dataclass(frozen=True)
+class IngestionMetadata:
+    operation: str
+    workspace_path: str
+    workspace_policy: str
+    cleaned_entries: int
+    fetched_updates: bool
+
+
+@dataclass(frozen=True)
+class CloneResult:
+    repo: Repo
+    local_path: Path
+    metadata: IngestionMetadata
 
 
 @dataclass(frozen=True)
@@ -28,6 +53,7 @@ class RepositoryLoadResult:
     languages: dict[str, int]
     file_count: int
     size: int
+    ingestion: IngestionMetadata
 
 
 _README_NAMES = (
@@ -80,27 +106,181 @@ def _repo_identity_from_path(path: Path) -> tuple[str, str]:
 
 
 def _projects_root() -> Path:
-    projects_dir = Path(__file__).resolve().parents[2] / "projects"
+    configured = Path(settings.projects_workspace_path)
+    projects_dir = configured if configured.is_absolute() else (Path(__file__).resolve().parents[2] / configured)
     projects_dir.mkdir(parents=True, exist_ok=True)
     return projects_dir
 
 
-def _create_project_directory(prefix: str) -> Path:
+def _create_project_directory(prefix: str, parent: Path | None = None) -> Path:
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     unique = uuid4().hex[:8]
-    target = _projects_root() / f"{prefix}-{timestamp}-{unique}"
+    root = parent if parent is not None else _projects_root()
+    target = root / f"{prefix}-{timestamp}-{unique}"
     target.mkdir(parents=True, exist_ok=False)
     return target
 
 
-def clone_repository(source_url: str) -> tuple[Repo, Path]:
-    temp_dir = _create_project_directory("clone")
+def _sanitize_name(raw: str) -> str:
+    cleaned = re.sub(r"[^a-zA-Z0-9._-]+", "-", raw).strip("-")
+    return cleaned or "repository"
+
+
+def _workspace_policy_label() -> str:
+    return (
+        f"retention_days={settings.projects_retention_days};"
+        f"max_entries={settings.projects_max_entries};"
+        f"cleanup_enabled={str(settings.projects_cleanup_enabled).lower()}"
+    )
+
+
+def _cleanup_workspace_entries(root: Path) -> int:
+    if not settings.projects_cleanup_enabled:
+        return 0
+
+    cleaned = 0
+    now = datetime.now(timezone.utc)
+    max_age = timedelta(days=max(settings.projects_retention_days, 1))
+
+    entries = [entry for entry in root.iterdir() if entry.is_dir()]
+    for entry in entries:
+        try:
+            modified = datetime.fromtimestamp(entry.stat().st_mtime, tz=timezone.utc)
+        except OSError:
+            continue
+
+        if now - modified > max_age:
+            shutil.rmtree(entry, ignore_errors=True)
+            cleaned += 1
+
+    remaining = [entry for entry in root.iterdir() if entry.is_dir()]
+    overflow = max(0, len(remaining) - max(settings.projects_max_entries, 1))
+    if overflow > 0:
+        remaining.sort(key=lambda p: p.stat().st_mtime)
+        for entry in remaining[:overflow]:
+            shutil.rmtree(entry, ignore_errors=True)
+            cleaned += 1
+
+    return cleaned
+
+
+def _default_branch(repo: Repo) -> str:
     try:
-        repo = Repo.clone_from(source_url, temp_dir, depth=1)
-        return repo, temp_dir
+        return repo.remotes.origin.refs["HEAD"].reference.remote_head
     except Exception:
-        shutil.rmtree(temp_dir, ignore_errors=True)
-        raise
+        pass
+
+    try:
+        return repo.active_branch.name
+    except Exception:
+        return "main"
+
+
+def _clone_or_update_remote(source_url: str) -> CloneResult:
+    repo_name, full_name = _repo_identity_from_source_url(source_url)
+    owner = full_name.split("/")[0] if "/" in full_name else "unknown"
+    shared_root = _projects_root() / "github" / _sanitize_name(owner)
+    shared_root.mkdir(parents=True, exist_ok=True)
+    cleaned_entries = _cleanup_workspace_entries(shared_root)
+
+    target = shared_root / _sanitize_name(repo_name)
+    fetched_updates = False
+
+    if target.exists():
+        try:
+            repo = Repo(target)
+            if "origin" in [remote.name for remote in repo.remotes]:
+                repo.remotes.origin.fetch(prune=True)
+                branch = _default_branch(repo)
+                try:
+                    repo.git.checkout(branch)
+                except Exception:
+                    pass
+                try:
+                    repo.remotes.origin.pull("--ff-only", branch)
+                except Exception:
+                    # Non-fast-forward or detached HEAD should not hard-fail ingestion.
+                    pass
+                fetched_updates = True
+            return CloneResult(
+                repo=repo,
+                local_path=target,
+                metadata=IngestionMetadata(
+                    operation="updated",
+                    workspace_path=str(target),
+                    workspace_policy=_workspace_policy_label(),
+                    cleaned_entries=cleaned_entries,
+                    fetched_updates=fetched_updates,
+                ),
+            )
+        except InvalidGitRepositoryError:
+            shutil.rmtree(target, ignore_errors=True)
+
+    try:
+        repo = Repo.clone_from(source_url, target, depth=1)
+    except Exception as error:
+        raise RepositoryLoadError(f"Failed to clone repository: {error}", code="CLONE_FAILED") from error
+
+    return CloneResult(
+        repo=repo,
+        local_path=target,
+        metadata=IngestionMetadata(
+            operation="cloned",
+            workspace_path=str(target),
+            workspace_policy=_workspace_policy_label(),
+            cleaned_entries=cleaned_entries,
+            fetched_updates=False,
+        ),
+    )
+
+
+def _copy_local_into_workspace(local_candidate: Path) -> CloneResult:
+    workspace = _projects_root() / "local"
+    workspace.mkdir(parents=True, exist_ok=True)
+    cleaned_entries = _cleanup_workspace_entries(workspace)
+    target = _create_project_directory(f"local-{_sanitize_name(local_candidate.name)}", parent=workspace)
+    shutil.copytree(local_candidate, target, dirs_exist_ok=True)
+
+    try:
+        repo = Repo(target)
+    except InvalidGitRepositoryError:
+        repo = Repo.init(target)
+
+    return CloneResult(
+        repo=repo,
+        local_path=target,
+        metadata=IngestionMetadata(
+            operation="copied",
+            workspace_path=str(target),
+            workspace_policy=_workspace_policy_label(),
+            cleaned_entries=cleaned_entries,
+            fetched_updates=False,
+        ),
+    )
+
+
+def clone_repository_with_metadata(source_url: str) -> CloneResult:
+    source = source_url.strip()
+    if not source:
+        raise RepositoryLoadError("Repository source URL is required", code="MISSING_SOURCE_URL")
+
+    local_candidate = Path(source).expanduser()
+    if local_candidate.exists() and local_candidate.is_dir():
+        return _copy_local_into_workspace(local_candidate)
+
+    parsed = urlparse(source)
+    if parsed.scheme == "file":
+        local_path = Path(parsed.path.lstrip("/")).expanduser()
+        if not local_path.exists() or not local_path.is_dir():
+            raise RepositoryLoadError("Local file:// repository path does not exist", code="INVALID_LOCAL_PATH")
+        return _copy_local_into_workspace(local_path)
+
+    return _clone_or_update_remote(source)
+
+
+def clone_repository(source_url: str) -> tuple[Repo, Path]:
+    result = clone_repository_with_metadata(source_url)
+    return result.repo, result.local_path
 
 
 def _read_text_file(path: Path, limit: int = 5000) -> str:
@@ -179,6 +359,7 @@ def _build_load_result(
     root: Path,
     repo_name: str,
     full_name: str,
+    ingestion: IngestionMetadata,
 ) -> RepositoryLoadResult:
     readme = _read_readme(root)
     file_structure = _collect_file_structure(root)
@@ -199,6 +380,7 @@ def _build_load_result(
         languages=languages,
         file_count=len(file_structure),
         size=size,
+        ingestion=ingestion,
     )
 
 
@@ -219,38 +401,46 @@ def _find_project_root(extract_root: Path) -> Path:
 
 
 def load_repository_from_url(source_url: str) -> RepositoryLoadResult:
-    _, local_path = clone_repository(source_url)
+    clone_result = clone_repository_with_metadata(source_url)
     repo_name, full_name = _repo_identity_from_source_url(source_url)
-    root = Path(local_path)
+    root = Path(clone_result.local_path)
     return _build_load_result(
         source_url=source_url,
         root=root,
         repo_name=repo_name,
         full_name=full_name,
+        ingestion=clone_result.metadata,
     )
 
 
 def load_repository_from_path(local_path: str) -> RepositoryLoadResult:
     root = Path(local_path).expanduser().resolve()
     if not root.exists():
-        raise ValueError("Local path does not exist")
+        raise RepositoryLoadError("Local path does not exist", code="INVALID_LOCAL_PATH")
     if not root.is_dir():
-        raise ValueError("Local path must be a directory")
+        raise RepositoryLoadError("Local path must be a directory", code="INVALID_LOCAL_PATH")
 
-    repo_name, full_name = _repo_identity_from_path(root)
+    copied = _copy_local_into_workspace(root)
+    workspace_root = Path(copied.local_path)
+
+    repo_name, full_name = _repo_identity_from_path(workspace_root)
     return _build_load_result(
         source_url=str(root),
-        root=root,
+        root=workspace_root,
         repo_name=repo_name,
         full_name=full_name,
+        ingestion=copied.metadata,
     )
 
 
 def load_repository_from_zip(zip_bytes: bytes, archive_name: str = "uploaded.zip") -> RepositoryLoadResult:
     if not zip_bytes:
-        raise ValueError("ZIP archive is empty")
+        raise RepositoryLoadError("ZIP archive is empty", code="INVALID_ARCHIVE")
 
-    temp_dir = _create_project_directory("upload")
+    upload_root = _projects_root() / "upload"
+    upload_root.mkdir(parents=True, exist_ok=True)
+    cleaned_entries = _cleanup_workspace_entries(upload_root)
+    temp_dir = _create_project_directory("upload", parent=upload_root)
     try:
         _safe_extract_zip(zip_bytes, temp_dir)
         root = _find_project_root(temp_dir)
@@ -261,6 +451,13 @@ def load_repository_from_zip(zip_bytes: bytes, archive_name: str = "uploaded.zip
             root=root,
             repo_name=repo_name,
             full_name=full_name,
+            ingestion=IngestionMetadata(
+                operation="uploaded",
+                workspace_path=str(temp_dir),
+                workspace_policy=_workspace_policy_label(),
+                cleaned_entries=cleaned_entries,
+                fetched_updates=False,
+            ),
         )
     except zipfile.BadZipFile as error:
-        raise ValueError("Invalid ZIP archive") from error
+        raise RepositoryLoadError("Invalid ZIP archive", code="INVALID_ARCHIVE") from error

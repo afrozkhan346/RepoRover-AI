@@ -39,28 +39,14 @@ export default function RegisterPage() {
 
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
-    try {
-      await authClient.signIn.social({
-        provider: "google",
-        callbackURL: "/dashboard",
-      });
-    } catch (error) {
-      toast.error("Failed to sign up with Google");
-      setGoogleLoading(false);
-    }
+    toast.error("Google sign-up is not available yet in the FastAPI auth flow.");
+    setGoogleLoading(false);
   };
 
   const handleGithubSignup = async () => {
     setGithubLoading(true);
-    try {
-      await authClient.signIn.social({
-        provider: "github",
-        callbackURL: "/dashboard",
-      });
-    } catch (error) {
-      toast.error("Failed to sign up with GitHub");
-      setGithubLoading(false);
-    }
+    toast.error("GitHub sign-up is not available yet in the FastAPI auth flow.");
+    setGithubLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

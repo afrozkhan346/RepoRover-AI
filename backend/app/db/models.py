@@ -77,6 +77,9 @@ class UserProgress(Base):
 
 class LearningPath(Base):
     __tablename__ = "learning_paths"
+    __table_args__ = (
+        UniqueConstraint("title", name="uq_learning_paths_title"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
@@ -90,6 +93,9 @@ class LearningPath(Base):
 
 class Lesson(Base):
     __tablename__ = "lessons"
+    __table_args__ = (
+        UniqueConstraint("learning_path_id", "title", name="uq_lessons_learning_path_title"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     learning_path_id: Mapped[int] = mapped_column(ForeignKey("learning_paths.id", ondelete="CASCADE"), nullable=False)
@@ -118,6 +124,9 @@ class LessonProgress(Base):
 
 class Achievement(Base):
     __tablename__ = "achievements"
+    __table_args__ = (
+        UniqueConstraint("title", name="uq_achievements_title"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
@@ -141,6 +150,9 @@ class UserAchievement(Base):
 
 class Quiz(Base):
     __tablename__ = "quizzes"
+    __table_args__ = (
+        UniqueConstraint("lesson_id", "question", name="uq_quizzes_lesson_question"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     lesson_id: Mapped[int] = mapped_column(ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False)

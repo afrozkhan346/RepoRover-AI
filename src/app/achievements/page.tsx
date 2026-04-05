@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import { BACKEND_API_BASE } from "@/lib/backend";
 import { Navigation } from "@/components/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,14 +34,14 @@ export default function AchievementsPage() {
       const token = localStorage.getItem("bearer_token");
 
       // Fetch all achievements
-      const allRes = await fetch("/api/achievements", {
+      const allRes = await fetch(`${BACKEND_API_BASE}/achievements`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const allData = await allRes.json();
       setAllAchievements(allData.achievements || []);
 
       // Fetch user's unlocked achievements
-      const userRes = await fetch("/api/user-achievements", {
+      const userRes = await fetch(`${BACKEND_API_BASE}/achievements/user`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const userData = await userRes.json();

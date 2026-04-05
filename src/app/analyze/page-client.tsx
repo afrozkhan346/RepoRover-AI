@@ -74,6 +74,7 @@ export default function AnalyzePageClient() {
   const [isUploadingProject, setIsUploadingProject] = useState(false);
   const [bundle, setBundle] = useState<AnalysisBundle | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [level, setLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -99,6 +100,23 @@ export default function AnalyzePageClient() {
 
   const mermaidDefinition = useMemo(
     () => buildMermaidDefinition(bundle?.project.flow_path || bundle?.graph.traversal.bfs_order || []),
+    [bundle],
+  );
+
+  const explanationByLevel = useMemo(
+    () => ({
+      beginner: bundle?.project.project_summary || "No beginner explanation available.",
+      intermediate: bundle?.project.architecture_summary || "No intermediate explanation available.",
+      advanced: bundle?.project.execution_flow_summary || "No advanced explanation available.",
+    }),
+    [bundle],
+  );
+
+  const prioritizedSignals = useMemo(
+    () =>
+      [...(bundle?.risk.top_signals || [])]
+        .sort((left, right) => right.weight - left.weight)
+        .slice(0, 6),
     [bundle],
   );
 
@@ -363,6 +381,117 @@ export default function AnalyzePageClient() {
 
         {bundle ? (
           <section className="space-y-6">
+            <Card className="border-border/70 bg-card/95 shadow-sm">
+              <CardHeader>
+                <CardTitle>Project Dashboard</CardTitle>
+                <CardDescription>{"Upload project -> Analyze -> Show dashboard -> Explain results."}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2 text-xs">
+                <Badge variant="secondary">Upload project</Badge>
+                <Badge variant="secondary">Analyze</Badge>
+                <Badge variant="secondary">Show dashboard</Badge>
+                <Badge variant="secondary">Explain results</Badge>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/70 bg-card/95 shadow-sm">
+              <CardHeader>
+                <CardTitle>Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p className="text-foreground">{bundle.project.project_summary}</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-lg border p-4">Modules: {bundle.project.key_modules.length}</div>
+                  <div className="rounded-lg border p-4">Dependencies: {bundle.project.key_dependencies.length}</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/70 bg-card/95 shadow-sm">
+              <CardHeader>
+                <CardTitle>Explanation (Tabs)</CardTitle>
+                <CardDescription>Switch explanation depth for beginner, intermediate, and advanced audiences.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant={level === "beginner" ? "default" : "outline"}
+                    onClick={() => setLevel("beginner")}
+                  >
+                    Beginner
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={level === "intermediate" ? "default" : "outline"}
+                    onClick={() => setLevel("intermediate")}
+                  >
+                    Intermediate
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={level === "advanced" ? "default" : "outline"}
+                    onClick={() => setLevel("advanced")}
+                  >
+                    Advanced
+                  </Button>
+                </div>
+                <p className="rounded-xl border bg-muted/20 p-4 text-sm leading-6 text-foreground">{explanationByLevel[level]}</p>
+              </CardContent>
+            </Card>
+
+            <MermaidDiagram
+              title="Graph Visualization"
+              description="Execution graph from backend flow path rendered as a product-ready visual."
+              definition={mermaidDefinition}
+            />
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <Card className="border-border/70 bg-card/95 shadow-sm">
+                <CardHeader>
+                  <CardTitle>Risks</CardTitle>
+                  <CardDescription>Top reliability and quality risks detected by analysis.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {bundle.quality.issues.length ? (
+                    bundle.quality.issues.slice(0, 5).map((issue) => (
+                      <div key={`${issue.category}-${issue.detail}`} className="rounded-xl border bg-muted/20 p-3 text-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold text-foreground">{issue.category}</span>
+                          <Badge variant="outline">{issue.severity}</Badge>
+                        </div>
+                        <p className="mt-2 text-muted-foreground">{issue.detail}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No risk issues reported.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/70 bg-card/95 shadow-sm">
+                <CardHeader>
+                  <CardTitle>Priority</CardTitle>
+                  <CardDescription>Highest-impact risk signals ranked by backend weight.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {prioritizedSignals.length ? (
+                    prioritizedSignals.map((signal) => (
+                      <div key={`${signal.title}-${signal.detail}`} className="rounded-xl border bg-muted/20 p-3 text-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold text-foreground">{signal.title}</span>
+                          <Badge variant="outline">{signal.weight.toFixed(2)}</Badge>
+                        </div>
+                        <p className="mt-2 text-muted-foreground">{signal.detail}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No priority signals available.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="grid gap-6 xl:grid-cols-2">
               <MetricBarCard
                 title="Project size and edge footprint"
@@ -387,87 +516,6 @@ export default function AnalyzePageClient() {
                 ]}
                 colors={["#dc2626", "#f59e0b", "#16a34a"]}
               />
-            </div>
-
-            <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
-              <Card className="border-border/70 bg-card/95 shadow-sm">
-                <CardHeader>
-                  <CardTitle>FastAPI summaries</CardTitle>
-                  <CardDescription>Project, architecture, and execution-flow summaries generated by the backend.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
-                  <p className="text-foreground">{bundle.project.project_summary}</p>
-                  <p>{bundle.project.architecture_summary}</p>
-                  <p>{bundle.project.execution_flow_summary}</p>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {bundle.project.key_modules.slice(0, 6).map((module) => (
-                      <Badge key={module} variant="secondary">
-                        {module}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <MermaidDiagram
-                title="Execution flow diagram"
-                description="The backend flow path is rendered with Mermaid from the latest analysis response."
-                definition={mermaidDefinition}
-              />
-            </div>
-
-            <div className="grid gap-6 xl:grid-cols-2">
-              <Card className="border-border/70 bg-card/95 shadow-sm">
-                <CardHeader>
-                  <CardTitle>Quality issues</CardTitle>
-                  <CardDescription>Structured findings and suggested fixes from the quality pipeline.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {bundle.quality.issues.length ? (
-                    bundle.quality.issues.slice(0, 6).map((issue) => (
-                      <div key={`${issue.category}-${issue.detail}`} className="rounded-xl border bg-muted/20 p-3 text-sm">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-semibold text-foreground">{issue.category}</span>
-                          <Badge variant="outline">{issue.severity}</Badge>
-                        </div>
-                        <p className="mt-2 text-muted-foreground">{issue.detail}</p>
-                        <p className="mt-2 text-foreground">{issue.recommendation}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No issues reported by the backend pipeline.</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/70 bg-card/95 shadow-sm">
-                <CardHeader>
-                  <CardTitle>Explainability traces</CardTitle>
-                  <CardDescription>How findings are tied to code tokens, AST units, and graph paths.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {bundle.traces.findings.map((finding) => {
-                    const matchingTokens = bundle.traces.token_traces.filter((trace) => trace.finding_id === finding.finding_id).length;
-                    const matchingAst = bundle.traces.ast_traces.filter((trace) => trace.finding_id === finding.finding_id).length;
-                    const matchingPaths = bundle.traces.graph_traces.find((trace) => trace.finding_id === finding.finding_id)?.path.length ?? 0;
-
-                    return (
-                      <div key={finding.finding_id} className="rounded-xl border bg-muted/20 p-4 text-sm space-y-2">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-semibold text-foreground">{finding.title}</span>
-                          <Badge>{finding.severity}</Badge>
-                        </div>
-                        <p className="text-muted-foreground">{finding.evidence}</p>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="outline">{matchingTokens} token traces</Badge>
-                          <Badge variant="outline">{matchingAst} AST traces</Badge>
-                          <Badge variant="outline">{matchingPaths} graph steps</Badge>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
             </div>
           </section>
         ) : (

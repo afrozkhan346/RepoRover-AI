@@ -9,8 +9,31 @@
  * - Index usage recommendations
  */
 
-import { db } from './index';
+import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/libsql';
 import { sql } from 'drizzle-orm';
+import * as schema from '@/db/schema';
+
+const databaseUrl = process.env.TURSO_CONNECTION_URL;
+
+const dbUnavailable = new Proxy(
+  {},
+  {
+    get() {
+      throw new Error('TURSO_CONNECTION_URL is not configured');
+    },
+  },
+);
+
+const db = databaseUrl
+  ? drizzle(
+      createClient({
+        url: databaseUrl,
+        authToken: process.env.TURSO_AUTH_TOKEN ?? '',
+      }),
+      { schema },
+    )
+  : (dbUnavailable as unknown as ReturnType<typeof drizzle>);
 
 // Query performance tracker
 class QueryPerformanceMonitor {

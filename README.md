@@ -17,7 +17,7 @@ An AI-powered learning platform that revolutionizes coding education through int
 
 RepoRover AI is organized around this flow:
 
-Frontend (React + Vite)
+Frontend (Next.js)
    ↓
 Backend API (FastAPI)
    ↓
@@ -41,19 +41,18 @@ This engine layer isolates core analysis capabilities from transport concerns (F
 
 ### Migration status
 
-- **Active UI**: The Vite frontend in `frontend/` is now the primary interface for all major features.
-- **Pages migrated to Vite**:
-  - Landing / Home
-  - Dashboard (with project analysis summaries)
-  - Learning Paths (with path browsing and lesson listing)
-  - Lessons (browse and view lesson details)
-  - AI Tutor (interactive code explanation and tutoring)
-  - Authentication (Login, Register, Profile)  
-  - Achievements (user progress and badges)
-  - Code Analysis (project upload, clone, and analysis workflows)
-- **Legacy Next.js pages**: All remaining Next.js pages are now minimal handoff screens that redirect to the Vite app.
+- **Active UI**: The root Next.js app in `src/app/` is now the primary interface for all major features.
+- **Pages in Next.js**:
+   - Landing / Home
+   - Dashboard (with project analysis summaries)
+   - Learning Paths (with path browsing and lesson listing)
+   - Lessons (browse and view lesson details)
+   - AI Tutor (interactive code explanation and tutoring)
+   - Authentication (Login, Register, Profile)
+   - Achievements (user progress and badges)
+   - Code Analysis (project upload, clone, and analysis workflows)
 - **Backend**: FastAPI provides all data via RESTful endpoints. Auth, achievements, lessons, and learning paths are seeded in memory for rapid iteration.
-- **Startup**: `npm run dev` from the repo root starts the Vite frontend on `http://localhost:5173`. The FastAPI backend runs on `http://localhost:8000`.
+- **Startup**: `npm run dev` from the repo root starts the Next.js frontend on `http://localhost:3000`. The FastAPI backend runs on `http://localhost:8000`.
 
 ---
 
@@ -123,30 +122,31 @@ The backend now includes a project parsing engine that can:
 
 ## 🏗️ Tech Stack
 
-Current implementation details are listed below. The finalized target architecture is documented in docs/FINAL_TECH_STACK.md.
+This section is intentionally explicit to avoid ambiguity between old and new architecture decisions.
 
-### **Frontend**
-- **Framework**: Next.js 15.3.5 with App Router
-- **Language**: TypeScript 5.7.3
-- **Styling**: Tailwind CSS 4.0.9
-- **UI Components**: shadcn/ui with Radix UI primitives
-- **Animations**: Framer Motion 12.0.0
-- **State Management**: React 19 hooks and context
-- **Theme**: next-themes with dark mode support
+### New Tech Stack (added and intended)
 
-### **Backend & Database**
-- **Database**: Turso (SQLite/libSQL) with Drizzle ORM 0.44.6
-- **Authentication**: Better Auth 1.3.10 with OAuth (Google, GitHub) and email/password
-- **AI**: Google Gemini 2.0 Flash Experimental via @google/generative-ai 0.24.1
-- **Caching**: Redis with optimization utilities
-- **API**: RESTful endpoints with Next.js API routes
+- Frontend: React + Tailwind
+- Backend: FastAPI (Python)
+- AI/NLP: PyTorch + HuggingFace + spaCy
+- Graph: NetworkX
+- Database: SQLite for development, PostgreSQL for deployment
+- Parsing: Tree-sitter
+- Repo Handling: GitPython
+- Visualization: Chart.js + Mermaid
+- Deployment: Vercel + Render
+- Data Source: GitHub and Local Projects
 
-### **DevOps & Tools**
-- **Package Manager**: npm/bun
-- **Database Tools**: Drizzle Kit for migrations and schema management
-- **Code Quality**: ESLint with Next.js config
-- **Type Safety**: TypeScript strict mode
-- **Version Control**: Git with GitHub integration
+### Old Stack (historical)
+
+- Old stack means whatever this project had before the new stack above.
+- The legacy separate frontend workspace was removed during migration.
+
+### Current Repository Notes
+
+- The active app interface is in Next.js App Router under src/app (React + Tailwind implementation).
+- Backend services continue to run on FastAPI under backend/.
+- Database strategy is SQLite in development and PostgreSQL in deployment environments.
 
 ---
 
@@ -307,7 +307,7 @@ Earn badges for:
 
 ## 📚 Database Schema
 
-The app uses **Turso (SQLite)** with the following main tables:
+The app uses **SQLite/libSQL during development** and is designed to run on **PostgreSQL for deployment**, with the following main tables:
 
 - **users**: User accounts and profiles
 - **learning_paths**: Structured learning courses

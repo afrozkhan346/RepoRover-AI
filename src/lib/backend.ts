@@ -1,5 +1,9 @@
-export const BACKEND_API_BASE =
-  process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "http://localhost:8000/api";
+const resolvedBackendUrl =
+  (typeof import.meta !== "undefined" && (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_BACKEND_URL) ||
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) ||
+  "http://localhost:8000/api";
+
+export const BACKEND_API_BASE = resolvedBackendUrl.replace(/\/$/, "");
 
 export const BACKEND_ROOT_BASE = BACKEND_API_BASE.replace(/\/api$/, "");
 

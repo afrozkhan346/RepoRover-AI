@@ -13,7 +13,7 @@ from app.services.graph_analysis_service import dfs_traversal
 from app.services.graph_builder import analyze_graph, build_graph, build_system_graph
 from app.services.parser import parse_project
 from app.services.priority_engine import generate_priority
-from app.services.repository_loader import clone_repository
+from app.services.repository_loader import RepositoryLoadError, clone_repository_with_metadata
 from app.services.understanding import understand_project
 from app.services.risk_analyzer import analyze_risks
 
@@ -116,7 +116,10 @@ def clone_project(repo_url: str = Form(...)) -> dict:
         raise HTTPException(status_code=400, detail={"detail": "repo_url is required", "code": "MISSING_REPO_URL"})
 
     try:
-        _, local_path = clone_repository(repo_url.strip())
+        clone_result = clone_repository_with_metadata(repo_url.strip())
+        local_path = clone_result.local_path
+    except RepositoryLoadError as error:
+        raise HTTPException(status_code=400, detail={"detail": str(error), "code": error.code}) from error
     except Exception as error:
         raise HTTPException(status_code=400, detail={"detail": str(error), "code": "CLONE_FAILED"}) from error
 
@@ -124,6 +127,13 @@ def clone_project(repo_url: str = Form(...)) -> dict:
         "message": "Repo cloned",
         "repo_url": repo_url,
         "project_path": str(local_path),
+        "ingestion": {
+            "operation": clone_result.metadata.operation,
+            "workspace_path": clone_result.metadata.workspace_path,
+            "workspace_policy": clone_result.metadata.workspace_policy,
+            "cleaned_entries": clone_result.metadata.cleaned_entries,
+            "fetched_updates": clone_result.metadata.fetched_updates,
+        },
     }
 
 

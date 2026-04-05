@@ -20,8 +20,8 @@ class DatabaseInfo:
 
 @lru_cache
 def get_database_info() -> DatabaseInfo:
-    url = settings.database_url
-    backend = "postgresql" if url.startswith("postgresql") or url.startswith("postgres") else "sqlite"
+    url = settings.resolved_database_url
+    backend = settings.resolved_database_backend
     return DatabaseInfo(backend=backend, url=url)
 
 
@@ -35,6 +35,8 @@ def get_database_engine() -> Engine:
     else:
         engine_kwargs["pool_pre_ping"] = True
         engine_kwargs["pool_recycle"] = 1800
+        engine_kwargs["pool_size"] = settings.db_pool_size
+        engine_kwargs["max_overflow"] = settings.db_max_overflow
 
     return create_engine(database_info.url, **engine_kwargs)
 
