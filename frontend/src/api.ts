@@ -143,6 +143,40 @@ export type ProjectFlowResponse = {
   execution_flow: string[];
 };
 
+export type ProjectGapItem = {
+  file: string;
+  issue: string;
+  severity: string;
+};
+
+export type ProjectGapsResponse = {
+  gaps: ProjectGapItem[];
+};
+
+export type ProjectRiskItem = {
+  file?: string;
+  node?: string;
+  risk: string;
+  score: number;
+};
+
+export type ProjectRiskResponse = {
+  risks: ProjectRiskItem[];
+};
+
+export type ProjectPriorityRiskItem = {
+  file: string;
+  risk: string;
+  score: number;
+};
+
+export type ProjectPriorityFunctionItem = [string, number];
+
+export type ProjectPriorityResponse = {
+  top_risks: ProjectPriorityRiskItem[];
+  important_functions: ProjectPriorityFunctionItem[];
+};
+
 export type LearningPath = {
   id: number;
   title: string;
@@ -250,6 +284,21 @@ export async function analyzeProjectByName(projectName: string) {
 
 export async function fetchProjectFlow(projectName: string) {
   const { data } = await apiClient.get<ProjectFlowResponse>(`/project/flow/${encodeURIComponent(projectName)}`);
+  return data;
+}
+
+export async function fetchProjectGaps(projectName: string) {
+  const { data } = await apiClient.get<ProjectGapsResponse>(`/project/gaps/${encodeURIComponent(projectName)}`);
+  return data;
+}
+
+export async function fetchProjectRisk(projectName: string) {
+  const { data } = await apiClient.get<ProjectRiskResponse>(`/project/risk/${encodeURIComponent(projectName)}`);
+  return data;
+}
+
+export async function fetchProjectPriority(projectName: string) {
+  const { data } = await apiClient.get<ProjectPriorityResponse>(`/project/priority/${encodeURIComponent(projectName)}`);
   return data;
 }
 

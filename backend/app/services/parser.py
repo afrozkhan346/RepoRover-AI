@@ -263,12 +263,18 @@ def parse_project(project_path: str) -> dict[str, Any]:
     """Combine file scanning and language detection for parser entrypoint."""
 
     structure = scan_project(project_path)
-    language = detect_language(structure)
+    analyzable_extensions = {ext.lstrip(".") for ext in AST_SUPPORTED_EXTENSIONS}
+    analyzable_files = [entry for entry in structure if entry.get("extension", "") in analyzable_extensions]
+
+    # Prefer code-oriented files for primary language inference and UI output.
+    language_source = analyzable_files if analyzable_files else structure
+    language = detect_language(language_source)
 
     return {
         "language": language,
-        "total_files": len(structure),
-        "files": structure,
+        "total_files": len(language_source),
+        "total_files_scanned": len(structure),
+        "files": language_source,
     }
 
 
