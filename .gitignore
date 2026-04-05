@@ -167,4 +167,11 @@ temp/
 .env
 env
 
+# Python cache artifacts
+__pycache__/
+*.py[cod]
+
+# Uploaded project analysis data
+backend/projects/
+
 .git

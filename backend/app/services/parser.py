@@ -226,15 +226,18 @@ def scan_project(project_path: str) -> list[dict[str, str]]:
 
     structure: list[dict[str, str]] = []
 
-    for current_root, _, files in os.walk(root):
+    for current_root, dir_names, files in os.walk(root):
+        dir_names[:] = [name for name in dir_names if name not in IGNORED_DIRS]
+
         for file_name in files:
             file_path = Path(current_root) / file_name
+            relative_path = file_path.relative_to(root).as_posix()
             extension = file_name.rsplit(".", 1)[-1].lower() if "." in file_name else ""
 
             structure.append(
                 {
                     "name": file_name,
-                    "path": str(file_path),
+                    "path": relative_path,
                     "extension": extension,
                 }
             )

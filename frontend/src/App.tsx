@@ -1043,7 +1043,7 @@ function LessonDetailView({ navigate, lessonId }: { navigate: NavigateFn; lesson
 function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [githubUrl, setGithubUrl] = useState("");
-  const [projectName, setProjectName] = useState("your_project_name");
+  const [projectName, setProjectName] = useState("");
   const [projectFiles, setProjectFiles] = useState<File[]>([]);
   const [loadingUpload, setLoadingUpload] = useState(false);
   const [loadingClone, setLoadingClone] = useState(false);
@@ -1052,6 +1052,7 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
   const [loadingGraph, setLoadingGraph] = useState(false);
   const [loadingFlow, setLoadingFlow] = useState(false);
   const [loadingUnderstanding, setLoadingUnderstanding] = useState(false);
+  const [loadingExplanation, setLoadingExplanation] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [payload, setPayload] = useState<ResultPayload>(null);
   const [analysisResult, setAnalysisResult] = useState<unknown>(null);
@@ -1079,9 +1080,14 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
     }
   }, []);
 
-  const persistWorkspace = (nextPayload: ResultPayload, nextAnalysis: unknown, lastAction: string) => {
+  const persistWorkspace = (
+    nextPayload: ResultPayload,
+    nextAnalysis: unknown,
+    lastAction: string,
+    overrideProjectName?: string,
+  ) => {
     const nextState: SavedWorkspaceState = {
-      projectName,
+      projectName: overrideProjectName ?? projectName,
       lastAction,
       payload: nextPayload,
       analysisResult: nextAnalysis,
@@ -1090,6 +1096,41 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
 
     setSavedWorkspace(nextState);
     window.localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(nextState));
+  };
+
+  const formatApiError = (requestError: unknown, fallback: string): string => {
+    if (axios.isAxiosError(requestError)) {
+      const status = requestError.response?.status;
+      const detail = requestError.response?.data?.detail;
+
+      if (status === 404) {
+        return "Project not found. Upload or clone a project first, then use its exact project name.";
+      }
+
+      if (typeof detail === "string" && detail.trim()) {
+        return detail;
+      }
+
+      if (typeof detail === "object" && detail && typeof detail.detail === "string") {
+        return detail.detail;
+      }
+
+      if (requestError.message) {
+        return requestError.message;
+      }
+    }
+
+    if (requestError instanceof Error && requestError.message) {
+      return requestError.message;
+    }
+
+    return fallback;
+  };
+
+  const deriveProjectNameFromPath = (projectPath: string): string => {
+    const normalized = projectPath.replace(/\\/g, "/").replace(/\/+$/, "");
+    const parts = normalized.split("/").filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : "";
   };
 
   const openFilePicker = () => {
@@ -1107,9 +1148,13 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
 
     try {
       const response = await uploadProjectFiles(projectFiles);
+      const nextProjectName = deriveProjectNameFromPath(response.project_path);
+      if (nextProjectName) {
+        setProjectName(nextProjectName);
+      }
       setPayload(response);
       setAnalysisResult(null);
-      persistWorkspace(response, null, "upload");
+      persistWorkspace(response, null, "upload", nextProjectName);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : "Unable to reach backend";
       setError(message);
@@ -1129,9 +1174,13 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
 
     try {
       const response = await cloneProjectFromGithub(githubUrl.trim());
+      const nextProjectName = deriveProjectNameFromPath(response.project_path);
+      if (nextProjectName) {
+        setProjectName(nextProjectName);
+      }
       setPayload(response);
       setAnalysisResult(null);
-      persistWorkspace(response, null, "clone");
+      persistWorkspace(response, null, "clone", nextProjectName);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : "Unable to reach backend";
       setError(message);
@@ -1155,7 +1204,7 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
       setAnalysisResult(response);
       persistWorkspace(response, response, "project-analysis");
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : "Unable to analyze project";
+      const message = formatApiError(requestError, "Unable to analyze project");
       setError(message);
     } finally {
       setLoadingAnalyze(false);
@@ -1176,7 +1225,7 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
       setAnalysisResult(res.data);
       persistWorkspace(payload, res.data, "code-analysis");
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : "Unable to analyze code";
+      const message = formatApiError(requestError, "Unable to analyze code");
       setError(message);
     } finally {
       setLoadingCodeAnalyze(false);
@@ -1212,7 +1261,7 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
       setAnalysisResult(graphData);
       persistWorkspace(payload, graphData, "graph");
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : "Unable to build graph";
+      const message = formatApiError(requestError, "Unable to build graph");
       setError(message);
     } finally {
       setLoadingGraph(false);
@@ -1234,7 +1283,7 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
       setAnalysisResult(res);
       persistWorkspace(res, res, "flow");
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : "Unable to trace execution flow";
+      const message = formatApiError(requestError, "Unable to trace execution flow");
       setError(message);
     } finally {
       setLoadingFlow(false);
@@ -1256,10 +1305,37 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
       setAnalysisResult(res.data);
       persistWorkspace(payload, res.data, "understanding");
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : "Unable to understand project";
+      const message = formatApiError(requestError, "Unable to understand project");
       setError(message);
     } finally {
       setLoadingUnderstanding(false);
+    }
+  };
+
+  const getAIExplanation = async () => {
+    if (!projectName.trim()) {
+      setError("Enter a project name first.");
+      return;
+    }
+
+    setLoadingExplanation(true);
+    setError(null);
+
+    try {
+      const res = await axios.get(`http://127.0.0.1:8000/project/understand/${encodeURIComponent(projectName.trim())}`);
+      console.log(res.data.summary);
+      console.log(res.data.explanations);
+      const aiExplanationPayload = {
+        summary: res.data.summary,
+        explanations: res.data.explanations,
+      };
+      setAnalysisResult(aiExplanationPayload);
+      persistWorkspace(payload, aiExplanationPayload, "ai-explanations");
+    } catch (requestError) {
+      const message = formatApiError(requestError, "Unable to fetch explanations");
+      setError(message);
+    } finally {
+      setLoadingExplanation(false);
     }
   };
 
@@ -1399,6 +1475,9 @@ function AnalyzeView({ navigate }: { navigate: NavigateFn }) {
               </button>
               <button onClick={getUnderstanding} disabled={loadingUnderstanding} className="secondary-button">
                 {loadingUnderstanding ? <Loader2 className="icon-sm spinning" /> : <Brain className="icon-sm" />} Understanding Test
+              </button>
+              <button onClick={getAIExplanation} disabled={loadingExplanation} className="secondary-button">
+                {loadingExplanation ? <Loader2 className="icon-sm spinning" /> : <BookOpen className="icon-sm" />} AI Explanation Test
               </button>
             </div>
 
