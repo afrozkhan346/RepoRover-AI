@@ -86,9 +86,23 @@ PROJECTS_WORKSPACE_PATH=./projects
 PROJECTS_RETENTION_DAYS=14
 PROJECTS_MAX_ENTRIES=200
 PROJECTS_CLEANUP_ENABLED=true
+PROJECTS_MAX_FILE_COUNT=20000
+PROJECTS_MAX_TOTAL_SIZE_BYTES=268435456
+PROJECTS_MAX_ZIP_ENTRY_COUNT=50000
+PROJECTS_MAX_ZIP_UNCOMPRESSED_BYTES=536870912
+PROJECTS_ALLOWED_EXTENSIONS=
+PROJECTS_DISALLOW_SYMLINKS=true
 ```
 
 Ingestion responses now include metadata describing operation mode and workspace policy applied.
+
+Local and ZIP ingestion now enforce the same safety policy:
+
+- traversal-safe extraction only
+- optional extension allowlist
+- file count and total size limits
+- symlink rejection by default
+- ZIP entry count and uncompressed size limits
 
 ## Idempotent CSV Seeding (SQLAlchemy)
 

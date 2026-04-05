@@ -9,6 +9,7 @@ from app.schemas.explainability_traces import (
     ExplainabilityTraceResponse,
     FindingTrace,
     GraphTrace,
+    SourceEvidence,
     TokenTrace,
 )
 from app.services.call_graph_service import build_call_graph
@@ -49,6 +50,36 @@ def _read_text(path: Path) -> str:
         return path.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return ""
+
+
+def _line_excerpt(content: str, start_point: tuple[int, int], end_point: tuple[int, int], padding: int = 1) -> str:
+    lines = content.splitlines()
+    if not lines:
+        return ""
+
+    start_line = max(start_point[0] - padding, 0)
+    end_line = min(end_point[0] + padding, len(lines) - 1)
+    excerpt = "\n".join(lines[start_line : end_line + 1]).strip()
+    return excerpt[:800]
+
+
+def _source_evidence(
+    *,
+    content: str,
+    kind: str,
+    start_point: tuple[int, int],
+    end_point: tuple[int, int],
+    unit_type: str | None = None,
+    unit_name: str | None = None,
+) -> SourceEvidence:
+    return SourceEvidence(
+        kind=kind,
+        excerpt=_line_excerpt(content, start_point, end_point),
+        start_point=start_point,
+        end_point=end_point,
+        unit_type=unit_type,
+        unit_name=unit_name,
+    )
 
 
 def _resolve_focus_file(root: Path, files: list[Path], focus_file: str | None) -> Path:
@@ -115,6 +146,21 @@ def _extract_findings(content: str, focus_rel: str) -> list[FindingTrace]:
     return findings
 
 
+def _contains_span(container_start: tuple[int, int], container_end: tuple[int, int], item_start: tuple[int, int], item_end: tuple[int, int]) -> bool:
+    return container_start <= item_start and item_end <= container_end
+
+
+def _find_containing_unit(
+    start_point: tuple[int, int],
+    end_point: tuple[int, int],
+    units: list,
+) -> tuple[str | None, str | None]:
+    for unit in units:
+        if _contains_span(unit.start_point, unit.end_point, start_point, end_point):
+            return unit.unit_type, unit.name
+    return None, None
+
+
 def _token_traces(findings: list[FindingTrace], focus_rel: str, content: str, extension: str) -> list[TokenTrace]:
     token_result = tokenize_source(
         content,
@@ -131,9 +177,18 @@ def _token_traces(findings: list[FindingTrace], focus_rel: str, content: str, ex
     if not interesting_tokens:
         interesting_tokens = token_result.tokens[:20]
 
+    structure = parse_structure(
+        content,
+        file_extension=extension,
+        max_tree_nodes=400,
+        max_depth=8,
+    )
+    units = structure.imports + structure.classes + structure.functions
+
     traces: list[TokenTrace] = []
     for finding in findings:
         for token in interesting_tokens[:6]:
+            unit_type, unit_name = _find_containing_unit(token.start_point, token.end_point, units)
             traces.append(
                 TokenTrace(
                     finding_id=finding.finding_id,
@@ -142,6 +197,14 @@ def _token_traces(findings: list[FindingTrace], focus_rel: str, content: str, ex
                     lexeme=token.lexeme[:80],
                     start_point=token.start_point,
                     end_point=token.end_point,
+                    evidence=_source_evidence(
+                        content=content,
+                        kind="lexical-token",
+                        start_point=token.start_point,
+                        end_point=token.end_point,
+                        unit_type=unit_type,
+                        unit_name=unit_name,
+                    ),
                 )
             )
     return traces
@@ -177,6 +240,14 @@ def _ast_traces(findings: list[FindingTrace], focus_rel: str, content: str, exte
                     name=unit.name,
                     start_point=unit.start_point,
                     end_point=unit.end_point,
+                    evidence=_source_evidence(
+                        content=content,
+                        kind="ast-span",
+                        start_point=unit.start_point,
+                        end_point=unit.end_point,
+                        unit_type=unit.unit_type,
+                        unit_name=unit.name,
+                    ),
                 )
             )
     return traces

@@ -7,6 +7,7 @@ import os
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
+from app.core.config import settings
 from app.services.ast_parser import parse_project_code
 from app.services.gap_detector import analyze_gaps
 from app.services.graph_analysis_service import dfs_traversal
@@ -46,9 +47,38 @@ def graph_to_json(graph) -> dict[str, list[dict[str, object]]]:
 
 
 def _projects_root() -> Path:
-    root = Path(__file__).resolve().parents[3] / "projects"
+    configured = Path(settings.projects_workspace_path)
+    root = configured if configured.is_absolute() else (Path(__file__).resolve().parents[3] / configured)
     root.mkdir(parents=True, exist_ok=True)
     return root
+
+
+def _allowed_upload_extensions() -> set[str]:
+    return {extension.lower() for extension in settings.projects_allowed_extensions if extension}
+
+
+def _validate_upload_limits(*, file_count: int, total_size: int, path: Path) -> None:
+    if file_count > max(settings.projects_max_file_count, 1):
+        raise HTTPException(status_code=400, detail={"detail": "File count exceeds upload limit", "code": "TOO_MANY_FILES"})
+
+    if total_size > max(settings.projects_max_total_size_bytes, 1):
+        raise HTTPException(status_code=400, detail={"detail": "Upload exceeds size limit", "code": "PROJECT_TOO_LARGE"})
+
+    allowed_extensions = _allowed_upload_extensions()
+    if not allowed_extensions:
+        return
+
+    for uploaded_file in path.rglob("*"):
+        if not uploaded_file.is_file():
+            continue
+        if uploaded_file.suffix.lower() not in allowed_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "detail": f"File type not allowed: {uploaded_file.name}",
+                    "code": "UNSUPPORTED_FILE_EXTENSION",
+                },
+            )
 
 
 def _safe_relative_path(raw_path: str) -> Path:
@@ -91,9 +121,27 @@ async def upload_project(files: list[UploadFile] = File(...), relative_paths: li
         target_path = project_dir / safe_relative
         target_path.parent.mkdir(parents=True, exist_ok=True)
 
+        if saved_count + 1 > max(settings.projects_max_file_count, 1):
+            raise HTTPException(
+                status_code=400,
+                detail={"detail": "File count exceeds upload limit", "code": "TOO_MANY_FILES"},
+            )
+
         contents = await file.read()
         if not contents:
             continue
+
+        if settings.projects_allowed_extensions and safe_relative.suffix.lower() not in _allowed_upload_extensions():
+            raise HTTPException(
+                status_code=400,
+                detail={"detail": f"File type not allowed: {safe_relative.name}", "code": "UNSUPPORTED_FILE_EXTENSION"},
+            )
+
+        if total_bytes + len(contents) > max(settings.projects_max_total_size_bytes, 1):
+            raise HTTPException(
+                status_code=400,
+                detail={"detail": "Upload exceeds size limit", "code": "PROJECT_TOO_LARGE"},
+            )
 
         target_path.write_bytes(contents)
         saved_count += 1
@@ -101,6 +149,8 @@ async def upload_project(files: list[UploadFile] = File(...), relative_paths: li
 
     if saved_count == 0:
         raise HTTPException(status_code=400, detail={"detail": "No valid file content found", "code": "EMPTY_UPLOAD"})
+
+    _validate_upload_limits(file_count=saved_count, total_size=total_bytes, path=project_dir)
 
     return {
         "message": "Project uploaded",

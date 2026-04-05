@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { useSession } from "@/lib/auth-client";
 import { BACKEND_API_BASE } from "@/lib/backend";
 import { Navigation } from "@/components/navigation";
@@ -21,16 +21,16 @@ import {
 } from "lucide-react";
 
 export default function ProfilePage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { data: session, isPending } = useSession();
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!isPending && !session?.user) {
-      router.push("/login");
+      navigate("/login");
     }
-  }, [session, isPending, router]);
+  }, [session, isPending, navigate]);
 
   useEffect(() => {
     if (session?.user) {

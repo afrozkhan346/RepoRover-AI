@@ -13,6 +13,20 @@ class CallGraphNode(BaseModel):
     file_path: str | None = None
 
 
+class CallGraphRankedNode(BaseModel):
+    node_id: str
+    label: str
+    score: float
+
+
+class CallGraphAnalytics(BaseModel):
+    top_degree_centrality: list[CallGraphRankedNode]
+    top_betweenness_centrality: list[CallGraphRankedNode]
+    top_impact_rank: list[CallGraphRankedNode]
+    strongly_connected_components: int
+    cycle_count: int
+
+
 class CallGraphEdge(BaseModel):
     source: str
     target: str
@@ -33,3 +47,4 @@ class CallGraphResponse(BaseModel):
     nodes: list[CallGraphNode]
     edges: list[CallGraphEdge]
     summary: CallGraphSummary
+    analytics: CallGraphAnalytics | None = None

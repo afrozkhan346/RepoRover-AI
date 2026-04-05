@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { useSession } from "@/lib/auth-client";
 import { BACKEND_API_BASE } from "@/lib/backend";
 import { Navigation } from "@/components/navigation";
@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Trophy, Lock, Sparkles, Award } from "lucide-react";
 
 export default function AchievementsPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { data: session, isPending } = useSession();
   const [allAchievements, setAllAchievements] = useState<any[]>([]);
   const [userAchievements, setUserAchievements] = useState<any[]>([]);
@@ -19,9 +19,9 @@ export default function AchievementsPage() {
 
   useEffect(() => {
     if (!isPending && !session?.user) {
-      router.push("/login");
+      navigate("/login");
     }
-  }, [session, isPending, router]);
+  }, [session, isPending, navigate]);
 
   useEffect(() => {
     if (session?.user) {

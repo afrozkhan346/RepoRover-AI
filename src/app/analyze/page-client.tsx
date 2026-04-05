@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
   cloneProjectFromGithub,
@@ -56,7 +56,7 @@ function buildMermaidDefinition(flowPath: string[]) {
     return "flowchart LR\n  A[No flow path available]";
   }
 
-  const nodes = flowPath.map((label, index) => `  N${index}[\"${label.replace(/\"/g, "'")}\"]`).join("\n");
+  const nodes = flowPath.map((label, index) => `  N${index}["${label.replace(/"/g, "'")}"]`).join("\n");
   const edges = flowPath.slice(0, -1).map((_, index) => `  N${index} --> N${index + 1}`).join("\n");
   return `flowchart LR\n${nodes}\n${edges}`;
 }
@@ -119,6 +119,19 @@ export default function AnalyzePageClient() {
         .slice(0, 6),
     [bundle],
   );
+
+  const graphImpactNodes = useMemo(
+    () => (bundle?.graph.top_impact_rank || []).slice(0, 5),
+    [bundle],
+  );
+
+  const evidenceDistribution = useMemo(() => {
+    const tokenCount = bundle?.traces.token_traces.filter((trace) => trace.evidence?.kind === "token").length ?? 0;
+    const astCount = bundle?.traces.ast_traces.filter((trace) => trace.evidence?.kind === "ast").length ?? 0;
+    const graphCount = bundle?.traces.graph_traces.length ?? 0;
+
+    return { tokenCount, astCount, graphCount };
+  }, [bundle]);
 
   const deriveProjectNameFromPath = (projectPath: string) => {
     const normalized = projectPath.replace(/\\/g, "/").replace(/\/+$/, "");
@@ -341,7 +354,7 @@ export default function AnalyzePageClient() {
                   {isAnalyzingCode ? "Analyzing code..." : "Analyze Code"}
                 </Button>
                 <Button variant="outline" asChild>
-                  <Link href="/dashboard">Open dashboard</Link>
+                  <Link to="/dashboard">Open dashboard</Link>
                 </Button>
               </div>
               {error ? (
@@ -517,6 +530,27 @@ export default function AnalyzePageClient() {
                 colors={["#dc2626", "#f59e0b", "#16a34a"]}
               />
             </div>
+
+            <div className="grid gap-6 xl:grid-cols-2">
+              <MetricBarCard
+                title="Graph impact ranking"
+                description="Top nodes surfaced by the backend NetworkX analysis."
+                labels={graphImpactNodes.map((node) => node.label)}
+                values={graphImpactNodes.map((node) => Number(node.score.toFixed(3)))}
+                accent="rgba(13, 148, 136, 0.9)"
+              />
+              <SeverityDoughnutCard
+                title="Explainability evidence mix"
+                description="Token, AST, and graph traces returned by the explainability pipeline."
+                labels={["Token", "AST", "Graph"]}
+                values={[
+                  evidenceDistribution.tokenCount,
+                  evidenceDistribution.astCount,
+                  evidenceDistribution.graphCount,
+                ]}
+                colors={["#2563eb", "#7c3aed", "#0f766e"]}
+              />
+            </div>
           </section>
         ) : (
           <Card className="border-dashed border-border/70 bg-card/70 shadow-none">
@@ -556,3 +590,5 @@ function StatTile({
     </div>
   );
 }
+
+

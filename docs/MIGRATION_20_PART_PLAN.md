@@ -33,16 +33,16 @@ Target Stack:
 8. [x] Implement SQLite-first database layer with SQLAlchemy models and Alembic baseline.
 9. [x] Implement PostgreSQL readiness layer (settings, drivers, migration-safe config).
 10. [x] Implement GitHub ingestion with GitPython and shared repository workspace policy.
-11. [ ] Implement local project and ZIP ingestion with secure extraction and validation.
-12. [ ] Integrate Tree-sitter parser pipeline and normalized AST schema outputs.
-13. [ ] Implement token-level lexical extraction and AST evidence mapping.
-14. [ ] Implement dependency graph generation with NetworkX.
-15. [ ] Implement call graph + impact analysis + graph analytics endpoints.
-16. [ ] Implement AI/NLP pipeline using PyTorch + HuggingFace + spaCy services.
-17. [ ] Implement explanation pipeline tying AI findings to token/AST/graph evidence.
-18. [ ] Rewire frontend data layer to FastAPI endpoints and remove Next API route usage.
-19. [ ] Finalize visualization layer with Chart.js and Mermaid fed by backend analysis outputs.
-20. [ ] Production hardening: deployment split (Vercel frontend, Render backend), envs, CI checks, and final validation.
+11. [x] Implement local project and ZIP ingestion with secure extraction and validation.
+12. [x] Integrate Tree-sitter parser pipeline and normalized AST schema outputs.
+13. [x] Implement token-level lexical extraction and AST evidence mapping.
+14. [x] Implement dependency graph generation with NetworkX.
+15. [x] Implement call graph + impact analysis + graph analytics endpoints.
+16. [x] Implement AI/NLP pipeline using PyTorch + HuggingFace + spaCy services.
+17. [x] Implement explanation pipeline tying AI findings to token/AST/graph evidence.
+18. [x] Rewire frontend data layer to FastAPI endpoints and remove Next API route usage.
+19. [x] Finalize visualization layer with Chart.js and Mermaid fed by backend analysis outputs.
+20. [x] Production hardening: deployment split (Vercel frontend, Render backend), envs, CI checks, and final validation.
 
 ## Part 1 Completed Work (2026-04-06)
 
@@ -258,6 +258,52 @@ Part 11 deliverables:
 - Harden ZIP extraction and local path validation against traversal and unsafe content patterns.
 - Add ingestion constraints (size/file count/extension policy) with clear error codes.
 - Standardize upload ingestion audit metadata for local and archive sources.
+
+## Part 12 Completed Work (2026-04-06)
+
+Part 12 objective:
+- Integrate Tree-sitter parser pipeline and normalized AST schema outputs.
+
+What was completed:
+- Rewired `backend/app/services/ast_parser.py` to use Tree-sitter-backed parsing for supported source files.
+- Added a normalized project-AST schema layer in `backend/app/schemas/project_ast.py`.
+- Emitted per-file normalized AST payloads containing:
+	- preview nodes
+	- syntax tree root
+	- imports/classes/functions
+	- call-site evidence
+- Preserved legacy per-file `imports`, `classes`, and `functions` fields so existing graph/risk/priority consumers continue working.
+- Verified the new payload shape with a smoke test against the backend workspace.
+
+Exit criteria met:
+- Project AST extraction is Tree-sitter-backed.
+- Normalized AST outputs are serialized per file.
+- Existing downstream consumers retain compatibility.
+
+## Part 11 Completed Work (2026-04-06)
+
+Part 11 objective:
+- Implement local project and ZIP ingestion with secure extraction and validation.
+
+What was completed:
+- Added shared repository-tree validation in `backend/app/services/repository_loader.py` for:
+	- symlink rejection
+	- file-count limits
+	- total-size limits
+	- optional extension allowlist enforcement
+- Hardened ZIP extraction to block:
+	- traversal paths
+	- symlinks
+	- excessive entry counts
+	- excessive uncompressed size
+- Applied the same upload safety policy in `backend/app/api/routes/project.py` for direct file uploads.
+- Added new ingestion limit env knobs to `backend/.env.example` and documented them in `backend/README.md`.
+- Preserved normalized ingestion metadata on local/ZIP paths.
+
+Exit criteria met:
+- Local and ZIP ingestion are validation-hardened.
+- Upload constraints are enforced consistently.
+- Part 11 is complete and ready to hand off.
 
 ## Post-Part10 Integration Note (2026-04-06)
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import stat
 import zipfile
 from collections import Counter
 from dataclasses import dataclass
@@ -84,6 +85,77 @@ _LANGUAGE_MAP = {
     ".rb": "Ruby",
     ".php": "PHP",
 }
+
+
+def _allowed_extensions() -> set[str]:
+    return {extension.lower() for extension in settings.projects_allowed_extensions if extension}
+
+
+def _is_symlink(path: Path) -> bool:
+    try:
+        return path.is_symlink()
+    except OSError:
+        return False
+
+
+def _validate_repository_tree(root: Path, *, source_label: str) -> tuple[int, int]:
+    allowed_extensions = _allowed_extensions()
+    max_file_count = max(settings.projects_max_file_count, 1)
+    max_total_size = max(settings.projects_max_total_size_bytes, 1)
+
+    file_count = 0
+    total_size = 0
+
+    for file_path in root.rglob("*"):
+        if ".git" in file_path.parts:
+            continue
+
+        if _is_symlink(file_path):
+            if settings.projects_disallow_symlinks:
+                raise RepositoryLoadError(
+                    f"Symlinks are not allowed in {source_label}",
+                    code="UNSAFE_SYMLINK",
+                )
+            continue
+
+        if not file_path.is_file():
+            continue
+
+        if allowed_extensions and file_path.suffix.lower() not in allowed_extensions:
+            raise RepositoryLoadError(
+                f"File type not allowed in {source_label}: {file_path.name}",
+                code="UNSUPPORTED_FILE_EXTENSION",
+            )
+
+        try:
+            file_size = file_path.stat().st_size
+        except OSError as error:
+            raise RepositoryLoadError(
+                f"Unable to inspect file in {source_label}: {file_path.name}",
+                code="INVALID_LOCAL_PATH",
+            ) from error
+
+        file_count += 1
+        total_size += file_size
+
+        if file_count > max_file_count:
+            raise RepositoryLoadError(
+                f"File count exceeds limit for {source_label}",
+                code="TOO_MANY_FILES",
+            )
+
+        if total_size > max_total_size:
+            raise RepositoryLoadError(
+                f"Project size exceeds limit for {source_label}",
+                code="PROJECT_TOO_LARGE",
+            )
+
+    return file_count, total_size
+
+
+def _zip_member_is_symlink(member: zipfile.ZipInfo) -> bool:
+    mode = member.external_attr >> 16
+    return stat.S_ISLNK(mode)
 
 
 def _repo_identity_from_source_url(source_url: str) -> tuple[str, str]:
@@ -235,11 +307,14 @@ def _clone_or_update_remote(source_url: str) -> CloneResult:
 
 
 def _copy_local_into_workspace(local_candidate: Path) -> CloneResult:
+    _validate_repository_tree(local_candidate, source_label="local project")
+
     workspace = _projects_root() / "local"
     workspace.mkdir(parents=True, exist_ok=True)
     cleaned_entries = _cleanup_workspace_entries(workspace)
     target = _create_project_directory(f"local-{_sanitize_name(local_candidate.name)}", parent=workspace)
     shutil.copytree(local_candidate, target, dirs_exist_ok=True)
+    _validate_repository_tree(target, source_label="workspace copy")
 
     try:
         repo = Repo(target)
@@ -386,11 +461,30 @@ def _build_load_result(
 
 def _safe_extract_zip(zip_bytes: bytes, target_dir: Path) -> None:
     with zipfile.ZipFile(BytesIO(zip_bytes)) as archive:
+        if len(archive.infolist()) > max(settings.projects_max_zip_entry_count, 1):
+            raise RepositoryLoadError("ZIP archive contains too many entries", code="ZIP_TOO_LARGE")
+
+        total_uncompressed_size = 0
         for member in archive.infolist():
-            member_path = Path(member.filename)
+            member_path = Path(member.filename.replace("\\", "/"))
             if member_path.is_absolute() or ".." in member_path.parts:
-                raise ValueError("ZIP archive contains unsafe paths")
-        archive.extractall(target_dir)
+                raise RepositoryLoadError("ZIP archive contains unsafe paths", code="UNSAFE_PATH")
+
+            if _zip_member_is_symlink(member) and settings.projects_disallow_symlinks:
+                raise RepositoryLoadError("ZIP archive contains symlinks", code="UNSAFE_SYMLINK")
+
+            total_uncompressed_size += member.file_size
+            if total_uncompressed_size > max(settings.projects_max_zip_uncompressed_bytes, 1):
+                raise RepositoryLoadError("ZIP archive is too large when extracted", code="ZIP_TOO_LARGE")
+
+            destination = target_dir / member_path
+            if member.is_dir():
+                destination.mkdir(parents=True, exist_ok=True)
+                continue
+
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with archive.open(member, "r") as source, destination.open("wb") as target_file:
+                shutil.copyfileobj(source, target_file)
 
 
 def _find_project_root(extract_root: Path) -> Path:
@@ -444,6 +538,7 @@ def load_repository_from_zip(zip_bytes: bytes, archive_name: str = "uploaded.zip
     try:
         _safe_extract_zip(zip_bytes, temp_dir)
         root = _find_project_root(temp_dir)
+        _validate_repository_tree(root, source_label="ZIP archive")
         repo_name = Path(archive_name).stem or root.name or "uploaded-project"
         full_name = repo_name
         return _build_load_result(

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,12 +11,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Code2, Github, Mail } from "lucide-react";
-import Link from "next/link";
 import { toast } from "sonner";
 
 export default function LoginPageClient() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
@@ -61,7 +60,7 @@ export default function LoginPageClient() {
       }
 
       toast.success("Welcome back!");
-      router.push(redirectUrl);
+      navigate(redirectUrl);
     } catch (error) {
       toast.error("An unexpected error occurred. Please try again.");
       setIsLoading(false);
@@ -231,7 +230,7 @@ export default function LoginPageClient() {
           )}
 
           <div className="pt-2 text-center text-sm text-muted-foreground">
-            <Link href="/register" className="font-medium text-primary hover:underline">
+            <Link to="/register" className="font-medium text-primary hover:underline">
               Create an account
             </Link>
           </div>

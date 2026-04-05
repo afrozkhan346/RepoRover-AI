@@ -1,11 +1,11 @@
-import Link from "next/link";
+import { Link } from "react-router-dom";
 
 export default function LessonsPage() {
   const routes = [
     {
       href: "/analyze",
       title: "Analyze the current project",
-      description: "Run repository intelligence, risk detection, and priority scoring from the main Next.js app.",
+      description: "Run repository intelligence, risk detection, and priority scoring from the main workspace.",
     },
     {
       href: "/dashboard",
@@ -15,7 +15,7 @@ export default function LessonsPage() {
     {
       href: "/ai-tutor",
       title: "Use the AI tutor",
-      description: "Ask for code explanations and walkthroughs without leaving the Next.js workspace.",
+      description: "Ask for code explanations and walkthroughs without leaving the workspace.",
     },
   ];
 
@@ -24,10 +24,9 @@ export default function LessonsPage() {
       <section className="mx-auto w-full max-w-4xl rounded-[2rem] border border-slate-200/80 bg-white/90 p-8 shadow-2xl backdrop-blur">
         <div className="space-y-4">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-700">Lessons</p>
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Lessons are now part of the Next.js app.</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900">Lessons are part of the React workspace.</h1>
           <p className="max-w-2xl text-base leading-7 text-slate-600">
-            The old Vite workspace has been removed. Use the routes below to continue the learning flow inside the
-            Next.js frontend.
+            Use the routes below to continue the learning flow inside the current frontend.
           </p>
         </div>
 
@@ -35,7 +34,7 @@ export default function LessonsPage() {
           {routes.map((route) => (
             <Link
               key={route.href}
-              href={route.href}
+              to={route.href}
               className="group rounded-2xl border border-slate-200 bg-slate-50 p-5 transition hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-50"
             >
               <div className="space-y-2">

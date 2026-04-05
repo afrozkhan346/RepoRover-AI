@@ -16,6 +16,15 @@ class FindingTrace(BaseModel):
     evidence: str
 
 
+class SourceEvidence(BaseModel):
+    kind: str
+    excerpt: str
+    start_point: tuple[int, int]
+    end_point: tuple[int, int]
+    unit_type: str | None = None
+    unit_name: str | None = None
+
+
 class TokenTrace(BaseModel):
     finding_id: str
     file_path: str
@@ -23,6 +32,7 @@ class TokenTrace(BaseModel):
     lexeme: str
     start_point: tuple[int, int]
     end_point: tuple[int, int]
+    evidence: SourceEvidence | None = None
 
 
 class AstTrace(BaseModel):
@@ -32,6 +42,7 @@ class AstTrace(BaseModel):
     name: str | None
     start_point: tuple[int, int]
     end_point: tuple[int, int]
+    evidence: SourceEvidence | None = None
 
 
 class GraphTrace(BaseModel):
