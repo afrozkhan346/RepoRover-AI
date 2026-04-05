@@ -7,6 +7,13 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from tree_sitter import Node
+from tree_sitter_language_pack import get_parser
+
+from app.schemas.parsing import AstTreeNode, NormalizedAstNode, SyntaxUnit
+from app.schemas.project_ast import AstCallSite, ProjectAstSnapshot
+from app.services.parser_service import parse_source, parse_structure, resolve_language
+
 
 @dataclass(frozen=True)
 class ImportInfo:
@@ -299,23 +306,206 @@ def parse_python_file_basic(file_path: str) -> dict[str, Any]:
     }
 
 
+def _point_to_line(point: tuple[int, int]) -> int:
+    return max(point[0] + 1, 1)
+
+
+def _point_tuple(point: tuple[int, int]) -> tuple[int, int]:
+    return (point[0], point[1])
+
+
+def _named_text(node: Node | None, source_bytes: bytes) -> str | None:
+    if node is None:
+        return None
+
+    text = source_bytes[node.start_byte : node.end_byte].decode("utf-8", errors="ignore").strip()
+    return text or None
+
+
+def _extract_call_name(node: Node, source_bytes: bytes) -> str | None:
+    for field_name in ("function", "callee", "name", "target", "value"):
+        named_child = node.child_by_field_name(field_name)
+        text = _named_text(named_child, source_bytes)
+        if text:
+            return text
+
+    for child in node.children:
+        if child.is_named:
+            text = _named_text(child, source_bytes)
+            if text:
+                return text
+
+    return None
+
+
+def _collect_call_sites(root: Node, source_bytes: bytes, max_calls: int = 1000) -> list[AstCallSite]:
+    call_sites: list[AstCallSite] = []
+    stack = [root]
+
+    while stack:
+        current = stack.pop()
+        node_type = current.type.lower()
+
+        if (
+            node_type in {"call_expression", "call", "function_call", "invocation_expression", "method_invocation"}
+            or ("call" in node_type and node_type not in {"callback", "callable", "call_signature"})
+        ):
+            called_name = _extract_call_name(current, source_bytes)
+            if called_name:
+                call_sites.append(
+                    AstCallSite(
+                        called_name=called_name,
+                        call_line=_point_to_line((current.start_point[0], current.start_point[1])),
+                        call_type=current.type,
+                    )
+                )
+                if len(call_sites) >= max_calls:
+                    break
+
+        for child in reversed(current.children):
+            stack.append(child)
+
+    return call_sites
+
+
+def _syntax_unit_from_import(unit: SyntaxUnit) -> dict[str, Any]:
+    return {
+        "module": unit.name or "",
+        "name": None,
+        "alias": None,
+        "line": _point_to_line(unit.start_point),
+        "unit_type": unit.unit_type,
+        "start_point": _point_tuple(unit.start_point),
+        "end_point": _point_tuple(unit.end_point),
+    }
+
+
+def _syntax_unit_from_class(unit: SyntaxUnit) -> dict[str, Any]:
+    class_name = unit.name or "anonymous_class"
+    return {
+        "name": class_name,
+        "line": _point_to_line(unit.start_point),
+        "end_line": _point_to_line(unit.end_point),
+        "bases": [],
+        "decorators": [],
+        "methods": [],
+        "unit_type": unit.unit_type,
+        "start_point": _point_tuple(unit.start_point),
+        "end_point": _point_tuple(unit.end_point),
+    }
+
+
+def _syntax_unit_from_function(unit: SyntaxUnit, parent_class: str | None, calls: list[dict[str, Any]]) -> dict[str, Any]:
+    function_name = unit.name or "anonymous_function"
+    return {
+        "name": function_name,
+        "line": _point_to_line(unit.start_point),
+        "end_line": _point_to_line(unit.end_point),
+        "arguments": [],
+        "returns": None,
+        "decorators": [],
+        "is_async": unit.unit_type.startswith("async") or "async" in unit.unit_type,
+        "parent_class": parent_class,
+        "calls": calls,
+        "unit_type": unit.unit_type,
+        "start_point": _point_tuple(unit.start_point),
+        "end_point": _point_tuple(unit.end_point),
+    }
+
+
+def _enclosing_class(function_unit: SyntaxUnit, classes: list[SyntaxUnit]) -> str | None:
+    function_start = function_unit.start_point
+    for class_unit in classes:
+        if class_unit.start_point <= function_start <= class_unit.end_point:
+            return class_unit.name
+    return None
+
+
+def _calls_for_unit(function_unit: SyntaxUnit, call_sites: list[AstCallSite]) -> list[dict[str, Any]]:
+    start_line = function_unit.start_point[0]
+    end_line = function_unit.end_point[0]
+    calls: list[dict[str, Any]] = []
+
+    for call_site in call_sites:
+        call_line = call_site.call_line - 1
+        if start_line <= call_line <= end_line:
+            calls.append(
+                {
+                    "called_name": call_site.called_name,
+                    "call_line": call_site.call_line,
+                    "call_type": call_site.call_type,
+                }
+            )
+
+    return calls
+
+
+def _parse_source_file(file_path: Path) -> tuple[dict[str, Any], ProjectAstSnapshot]:
+    source = file_path.read_text(encoding="utf-8", errors="ignore")
+    resolved_language = resolve_language(None, file_path.suffix)
+
+    preview = parse_source(source, language=resolved_language, file_extension=file_path.suffix, max_nodes=500)
+    structure = parse_structure(source, language=resolved_language, file_extension=file_path.suffix, max_tree_nodes=500, max_depth=12)
+
+    parser = get_parser(resolved_language)
+    source_bytes = source.encode("utf-8")
+    tree = parser.parse(source_bytes)
+    call_sites = _collect_call_sites(tree.root_node, source_bytes)
+
+    imports = [_syntax_unit_from_import(unit) for unit in structure.imports]
+    classes = [_syntax_unit_from_class(unit) for unit in structure.classes]
+
+    function_units = structure.functions
+    functions = []
+    for function_unit in function_units:
+        parent_class = _enclosing_class(function_unit, structure.classes)
+        function_calls = _calls_for_unit(function_unit, call_sites)
+        functions.append(_syntax_unit_from_function(function_unit, parent_class=parent_class, calls=function_calls))
+
+    file_payload = {
+        "file_path": str(file_path),
+        "language": resolved_language,
+        "imports": imports,
+        "classes": classes,
+        "functions": functions,
+        "normalized_ast": {
+            "language": preview.language,
+            "total_nodes": preview.total_nodes,
+            "truncated": preview.truncated or structure.truncated,
+            "preview_nodes": [node.model_dump() for node in preview.nodes],
+            "tree_nodes_returned": structure.tree_nodes_returned,
+            "root": structure.root.model_dump(),
+            "imports": [unit.model_dump() for unit in structure.imports],
+            "classes": [unit.model_dump() for unit in structure.classes],
+            "functions": [unit.model_dump() for unit in structure.functions],
+            "calls": [call_site.model_dump() for call_site in call_sites],
+        },
+    }
+
+    snapshot = ProjectAstSnapshot(
+        language=preview.language,
+        total_nodes=preview.total_nodes,
+        truncated=preview.truncated or structure.truncated,
+        preview_nodes=preview.nodes,
+        tree_nodes_returned=structure.tree_nodes_returned,
+        root=structure.root,
+        imports=structure.imports,
+        classes=structure.classes,
+        functions=structure.functions,
+        calls=call_sites,
+    )
+
+    return file_payload, snapshot
+
+
 def parse_project_code(project_path: str) -> list[dict[str, Any]]:
-    """Parse supported source files in a project into a normalized AST-like payload."""
+    """Parse supported source files in a project into a normalized AST payload."""
 
     root = Path(project_path).expanduser().resolve()
     if not root.exists() or not root.is_dir():
         raise ValueError("project_path must be an existing directory")
 
     result: list[dict[str, Any]] = []
-
-    js_import_re = re.compile(
-        r"import\s+[^;]*?from\s+[\"']([^\"']+)[\"']|import\s+[\"']([^\"']+)[\"']|require\(\s*[\"']([^\"']+)[\"']\s*\)"
-    )
-    js_class_re = re.compile(r"\bclass\s+([a-zA-Z_$][a-zA-Z0-9_$]*)")
-    js_function_re = re.compile(
-        r"(?:function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(|const\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>|const\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:async\s*)?function\s*\()"
-    )
-    js_call_re = re.compile(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(")
     ignored_dirs = {".git", "node_modules", ".next", "dist", "build", "venv", ".venv", "__pycache__"}
 
     for current_root, dir_names, files in os.walk(root):
@@ -325,58 +515,12 @@ def parse_project_code(project_path: str) -> list[dict[str, Any]]:
             file_path = Path(current_root) / file_name
             ext = file_path.suffix.lower()
 
-            if ext == ".py":
-                data = parse_python_file(str(file_path))
-            elif ext in {".js", ".jsx", ".ts", ".tsx"}:
+            if ext in {".py", ".js", ".jsx", ".ts", ".tsx"}:
                 try:
-                    source = file_path.read_text(encoding="utf-8", errors="ignore")
-                except OSError:
+                    data, normalized_snapshot = _parse_source_file(file_path)
+                    data["normalized_ast"] = normalized_snapshot.model_dump()
+                except (OSError, ValueError):
                     continue
-
-                imports: list[dict[str, Any]] = []
-                for match in js_import_re.finditer(source):
-                    value = next((group for group in match.groups() if group), None)
-                    if value:
-                        imports.append({"module": value, "name": None, "alias": None, "line": 0})
-
-                classes = [
-                    {
-                        "name": match.group(1),
-                        "line": 0,
-                        "end_line": 0,
-                        "bases": [],
-                        "decorators": [],
-                        "methods": [],
-                    }
-                    for match in js_class_re.finditer(source)
-                ]
-
-                functions: list[dict[str, Any]] = []
-                for match in js_function_re.finditer(source):
-                    name = next((group for group in match.groups() if group), None)
-                    if not name:
-                        continue
-                    calls = [{"called_name": call.group(1), "call_line": 0} for call in js_call_re.finditer(source)]
-                    functions.append(
-                        {
-                            "name": name,
-                            "line": 0,
-                            "end_line": 0,
-                            "arguments": [],
-                            "returns": None,
-                            "decorators": [],
-                            "is_async": False,
-                            "parent_class": None,
-                            "calls": calls,
-                        }
-                    )
-
-                data = {
-                    "file_path": str(file_path),
-                    "imports": imports,
-                    "classes": classes,
-                    "functions": functions,
-                }
             else:
                 continue
 
@@ -386,6 +530,7 @@ def parse_project_code(project_path: str) -> list[dict[str, Any]]:
                 {
                     "file": relative_path,
                     "path": str(file_path),
+                    "language": data.get("language") or ("Python" if ext == ".py" else ext.lstrip(".").upper()),
                     "data": data,
                 }
             )

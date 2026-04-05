@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { authClient, useSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +18,9 @@ import { toast } from "sonner";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export function Navigation() {
-  const router = useRouter();
-  const pathname = usePathname();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
   const { data: session, isPending, refetch } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -31,7 +31,7 @@ export function Navigation() {
     } else {
       localStorage.removeItem("bearer_token");
       refetch();
-      router.push("/");
+      navigate("/");
       toast.success("Signed out successfully");
     }
   };
@@ -57,7 +57,7 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2">
             <div className="p-2 bg-primary/10 rounded-lg">
               <Code2 className="h-6 w-6 text-primary" />
             </div>
@@ -72,7 +72,7 @@ export function Navigation() {
               return (
                 <Link
                   key={link.href}
-                  href={link.href}
+                  to={link.href}
                   className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1.5 ${
                     pathname === link.href ? "text-primary" : "text-muted-foreground"
                   }`}
@@ -111,27 +111,27 @@ export function Navigation() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+                  <DropdownMenuItem onClick={() => navigate("/dashboard")}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     <span>Dashboard</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/lessons")}>
+                  <DropdownMenuItem onClick={() => navigate("/lessons")}>
                     <BookOpen className="mr-2 h-4 w-4" />
                     <span>My Lessons</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/analyze")}>
+                  <DropdownMenuItem onClick={() => navigate("/analyze")}>
                     <Github className="mr-2 h-4 w-4" />
                     <span>Analyze Repos</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/ai-tutor")}>
+                  <DropdownMenuItem onClick={() => navigate("/ai-tutor")}>
                     <Sparkles className="mr-2 h-4 w-4" />
                     <span>AI Tutor</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/achievements")}>
+                  <DropdownMenuItem onClick={() => navigate("/achievements")}>
                     <Trophy className="mr-2 h-4 w-4" />
                     <span>Achievements</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/profile")}>
+                  <DropdownMenuItem onClick={() => navigate("/profile")}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
@@ -144,10 +144,10 @@ export function Navigation() {
               </DropdownMenu>
             ) : (
               <div className="hidden md:flex items-center space-x-2">
-                <Button variant="ghost" onClick={() => router.push("/login")}>
+                <Button variant="ghost" onClick={() => navigate("/login")}>
                   Sign In
                 </Button>
-                <Button onClick={() => router.push("/register")}>Get Started</Button>
+                <Button onClick={() => navigate("/register")}>Get Started</Button>
               </div>
             )}
 
@@ -172,7 +172,7 @@ export function Navigation() {
               return (
                 <Link
                   key={link.href}
-                  href={link.href}
+                  to={link.href}
                   className={`block px-4 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-2 ${
                     pathname === link.href
                       ? "bg-primary/10 text-primary"
@@ -191,7 +191,7 @@ export function Navigation() {
                   variant="outline"
                   className="w-full"
                   onClick={() => {
-                    router.push("/login");
+                    navigate("/login");
                     setMobileMenuOpen(false);
                   }}
                 >
@@ -200,7 +200,7 @@ export function Navigation() {
                 <Button
                   className="w-full"
                   onClick={() => {
-                    router.push("/register");
+                    navigate("/register");
                     setMobileMenuOpen(false);
                   }}
                 >

@@ -3,7 +3,8 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Iterable
+
+import networkx as nx
 
 from app.schemas.dependency_graph import (
     DependencyEdge,
@@ -131,6 +132,34 @@ def _collect_declared_packages(root: Path) -> set[str]:
     return packages
 
 
+def _build_networkx_dependency_graph(root: Path, files: list[Path], max_files: int) -> nx.DiGraph:
+    graph = nx.DiGraph()
+
+    for file_path in files:
+        rel = file_path.relative_to(root).as_posix()
+        file_node_id = f"file:{rel}"
+        graph.add_node(file_node_id, node_type="file", label=rel)
+
+        text = _read_text(file_path)
+        for import_name in sorted(_extract_imports(file_path, text)):
+            import_node_id = f"import:{import_name}"
+            if import_node_id not in graph:
+                graph.add_node(import_node_id, node_type="import", label=import_name)
+            graph.add_edge(file_node_id, import_node_id, edge_type="imports")
+
+    declared_packages = _collect_declared_packages(root)
+    if declared_packages:
+        graph.add_node("manifest:dependencies", node_type="manifest", label="dependency-manifest")
+
+    for package_name in sorted(declared_packages):
+        pkg_node_id = f"package:{package_name}"
+        graph.add_node(pkg_node_id, node_type="package", label=package_name)
+        graph.add_edge("manifest:dependencies", pkg_node_id, edge_type="declares")
+
+    graph.graph["declared_packages"] = declared_packages
+    return graph
+
+
 def build_dependency_graph(local_path: str, max_files: int = 2000) -> DependencyGraphResponse:
     root = Path(local_path).expanduser().resolve()
     if not root.exists() or not root.is_dir():
@@ -138,62 +167,29 @@ def build_dependency_graph(local_path: str, max_files: int = 2000) -> Dependency
 
     files = _iter_source_files(root, max_files=max_files)
 
-    nodes: dict[str, DependencyNode] = {}
-    edges: list[DependencyEdge] = []
+    graph = _build_networkx_dependency_graph(root, files, max_files=max_files)
+    declared_packages = graph.graph.get("declared_packages", set())
 
-    for file_path in files:
-        rel = file_path.relative_to(root).as_posix()
-        file_node_id = f"file:{rel}"
-        nodes[file_node_id] = DependencyNode(id=file_node_id, node_type="file", label=rel)
-
-        text = _read_text(file_path)
-        imports = _extract_imports(file_path, text)
-        for import_name in sorted(imports):
-            import_node_id = f"import:{import_name}"
-            if import_node_id not in nodes:
-                nodes[import_node_id] = DependencyNode(
-                    id=import_node_id,
-                    node_type="import",
-                    label=import_name,
-                )
-            edges.append(
-                DependencyEdge(
-                    source=file_node_id,
-                    target=import_node_id,
-                    edge_type="imports",
-                )
-            )
-
-    declared_packages = _collect_declared_packages(root)
-    for package_name in sorted(declared_packages):
-        pkg_node_id = f"package:{package_name}"
-        nodes[pkg_node_id] = DependencyNode(id=pkg_node_id, node_type="package", label=package_name)
-        edges.append(
-            DependencyEdge(
-                source="manifest:dependencies",
-                target=pkg_node_id,
-                edge_type="declares",
-            )
-        )
-
-    if declared_packages:
-        nodes["manifest:dependencies"] = DependencyNode(
-            id="manifest:dependencies",
-            node_type="manifest",
-            label="dependency-manifest",
-        )
+    nodes = [
+        DependencyNode(id=node_id, node_type=data.get("node_type", "unknown"), label=data.get("label", node_id))
+        for node_id, data in graph.nodes(data=True)
+    ]
+    edges = [
+        DependencyEdge(source=source, target=target, edge_type=data.get("edge_type", "imports"))
+        for source, target, data in graph.edges(data=True)
+    ]
 
     summary = DependencyGraphSummary(
         files_scanned=len(files),
-        import_edges=sum(1 for edge in edges if edge.edge_type == "imports"),
-        package_nodes=len(declared_packages),
-        total_nodes=len(nodes),
-        total_edges=len(edges),
+        import_edges=sum(1 for _, _, data in graph.edges(data=True) if data.get("edge_type") == "imports"),
+        package_nodes=sum(1 for _, data in graph.nodes(data=True) if data.get("node_type") == "package") or len(declared_packages),
+        total_nodes=graph.number_of_nodes(),
+        total_edges=graph.number_of_edges(),
     )
 
     return DependencyGraphResponse(
         root=str(root),
-        nodes=list(nodes.values()),
+        nodes=nodes,
         edges=edges,
         summary=summary,
     )

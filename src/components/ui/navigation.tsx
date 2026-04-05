@@ -1,6 +1,5 @@
 "use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, useLocation } from "react-router-dom";
 
 const navItems = [
   { href: "/", label: "Gallery" },
@@ -20,7 +19,8 @@ const navItems = [
 ];
 
 export function Navigation() {
-  const pathname = usePathname();
+  const location = useLocation();
+  const pathname = location.pathname;
 
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
@@ -28,7 +28,7 @@ export function Navigation() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-1">
             <Link 
-              href="/" 
+              to="/" 
               className="text-xl font-bold text-gray-900 hover:text-gray-700 transition-colors"
             >
               Orchids
@@ -38,7 +38,7 @@ export function Navigation() {
             {navItems.map((item) => (
               <Link
                 key={item.href}
-                href={item.href}
+                to={item.href}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                   pathname === item.href
                     ? "bg-gray-900 text-white"

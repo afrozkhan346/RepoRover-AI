@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.project import router as project_router
 from app.api.router import api_router
 from app.core.config import settings
+from app.core.errors import register_exception_handlers
 from app.db.connection import create_tables, get_database_info
 
 app = FastAPI(
@@ -22,6 +23,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+register_exception_handlers(app)
+
 app.include_router(api_router, prefix=settings.api_prefix)
 app.include_router(project_router, prefix="/project", tags=["project"])
 
@@ -38,5 +41,7 @@ def root() -> dict[str, str]:
     return {
         "name": settings.app_name,
         "version": settings.app_version,
-        "status": "running",
+        "status": "ok",
+        "environment": settings.environment,
+        "api_prefix": settings.api_prefix,
     }

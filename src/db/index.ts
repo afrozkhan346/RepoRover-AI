@@ -3,22 +3,25 @@ import { drizzle } from 'drizzle-orm/libsql';
 import { createClient } from '@libsql/client';
 import * as schema from '@/db/schema';
 
-const client = createClient({
-  url: process.env.TURSO_CONNECTION_URL!,
-  authToken: process.env.TURSO_AUTH_TOKEN!,
-});
+const databaseUrl = process.env.TURSO_CONNECTION_URL;
 
-export const db = drizzle(client, { schema });
+const dbUnavailable = new Proxy(
+  {},
+  {
+    get() {
+      throw new Error('TURSO_CONNECTION_URL is not configured');
+    },
+  },
+);
+
+export const db = databaseUrl
+  ? drizzle(
+      createClient({
+        url: databaseUrl,
+        authToken: process.env.TURSO_AUTH_TOKEN ?? '',
+      }),
+      { schema },
+    )
+  : (dbUnavailable as unknown as ReturnType<typeof drizzle>);
 
 export type Database = typeof db;
-
-// Export optimization utilities
-export {
-  monitoredQuery,
-  queryMonitor,
-  connectionPool,
-  n1Detector,
-  dbAnalytics,
-  batchExecutor,
-  dbOptimization,
-} from './optimization';

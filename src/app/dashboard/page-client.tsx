@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { Navigation } from "@/components/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ function buildMermaidDefinition(flowPath: string[]) {
     return "flowchart LR\n  A[No analysis saved yet]";
   }
 
-  const nodes = flowPath.map((label, index) => `  N${index}[\"${label.replace(/\"/g, "'")}\"]`).join("\n");
+  const nodes = flowPath.map((label, index) => `  N${index}["${label.replace(/"/g, "'")}"]`).join("\n");
   const edges = flowPath.slice(0, -1).map((_, index) => `  N${index} --> N${index + 1}`).join("\n");
   return `flowchart LR\n${nodes}\n${edges}`;
 }
@@ -45,6 +45,19 @@ export default function DashboardPageClient() {
     [bundle],
   );
 
+  const graphImpactNodes = useMemo(
+    () => (bundle?.graph?.top_impact_rank || []).slice(0, 5),
+    [bundle],
+  );
+
+  const evidenceDistribution = useMemo(() => {
+    const tokenCount = bundle?.traces?.token_traces?.filter((trace: any) => trace?.evidence?.kind === "token").length ?? 0;
+    const astCount = bundle?.traces?.ast_traces?.filter((trace: any) => trace?.evidence?.kind === "ast").length ?? 0;
+    const graphCount = bundle?.traces?.graph_traces?.length ?? 0;
+
+    return { tokenCount, astCount, graphCount };
+  }, [bundle]);
+
   const isEmpty = !bundle;
 
   return (
@@ -67,10 +80,10 @@ export default function DashboardPageClient() {
             </CardHeader>
             <CardContent className="flex flex-wrap gap-3">
               <Button asChild>
-                <Link href="/analyze">Open analyzer <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link to="/analyze">Open analyzer <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/ai-tutor">Open AI tutor</Link>
+                <Link to="/ai-tutor">Open AI tutor</Link>
               </Button>
             </CardContent>
           </Card>
@@ -102,7 +115,7 @@ export default function DashboardPageClient() {
                 </p>
               </div>
               <Button asChild>
-                <Link href="/analyze">Run analysis now</Link>
+                <Link to="/analyze">Run analysis now</Link>
               </Button>
             </CardContent>
           </Card>
@@ -130,6 +143,27 @@ export default function DashboardPageClient() {
                   bundle.risk.severity_distribution.low,
                 ]}
                 colors={["#dc2626", "#f59e0b", "#16a34a"]}
+              />
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-2">
+              <MetricBarCard
+                title="Graph impact ranking"
+                description="Top nodes surfaced by the backend NetworkX analysis."
+                labels={graphImpactNodes.map((node: any) => node.label)}
+                values={graphImpactNodes.map((node: any) => Number(node.score.toFixed(3)))}
+                accent="rgba(13, 148, 136, 0.9)"
+              />
+              <SeverityDoughnutCard
+                title="Explainability evidence mix"
+                description="Token, AST, and graph traces from the last saved analysis."
+                labels={["Token", "AST", "Graph"]}
+                values={[
+                  evidenceDistribution.tokenCount,
+                  evidenceDistribution.astCount,
+                  evidenceDistribution.graphCount,
+                ]}
+                colors={["#2563eb", "#7c3aed", "#0f766e"]}
               />
             </div>
 
@@ -185,3 +219,5 @@ function StatTile({
     </div>
   );
 }
+
+

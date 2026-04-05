@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { useSession } from "@/lib/auth-client";
+import { BACKEND_API_BASE } from "@/lib/backend";
 import { Navigation } from "@/components/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { Trophy, Lock, Sparkles, Award } from "lucide-react";
 
 export default function AchievementsPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { data: session, isPending } = useSession();
   const [allAchievements, setAllAchievements] = useState<any[]>([]);
   const [userAchievements, setUserAchievements] = useState<any[]>([]);
@@ -18,9 +19,9 @@ export default function AchievementsPage() {
 
   useEffect(() => {
     if (!isPending && !session?.user) {
-      router.push("/login");
+      navigate("/login");
     }
-  }, [session, isPending, router]);
+  }, [session, isPending, navigate]);
 
   useEffect(() => {
     if (session?.user) {
@@ -33,14 +34,14 @@ export default function AchievementsPage() {
       const token = localStorage.getItem("bearer_token");
 
       // Fetch all achievements
-      const allRes = await fetch("/api/achievements", {
+      const allRes = await fetch(`${BACKEND_API_BASE}/achievements`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const allData = await allRes.json();
       setAllAchievements(allData.achievements || []);
 
       // Fetch user's unlocked achievements
-      const userRes = await fetch("/api/user-achievements", {
+      const userRes = await fetch(`${BACKEND_API_BASE}/achievements/user`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const userData = await userRes.json();

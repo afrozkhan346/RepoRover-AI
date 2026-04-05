@@ -22,6 +22,14 @@ class RecentCommitItem(BaseModel):
     date: str
 
 
+class IngestionMetadata(BaseModel):
+    operation: str
+    workspace_path: str
+    workspace_policy: str
+    cleaned_entries: int
+    fetched_updates: bool
+
+
 class GitHubAnalysisResponse(BaseModel):
     name: str
     full_name: str
@@ -43,3 +51,4 @@ class GitHubAnalysisResponse(BaseModel):
     recent_commits: list[RecentCommitItem]
     file_count: int
     file_structure: list[FileStructureItem]
+    ingestion: IngestionMetadata | None = None

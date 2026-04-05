@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Link, useNavigate } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Code2, Github, Mail } from "lucide-react";
-import Link from "next/link";
 import { toast } from "sonner";
 
 type ErrorTypes = Partial<Record<string, string>>;
@@ -25,7 +24,7 @@ const getErrorMessage = (code: string) => {
 };
 
 export default function RegisterPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
@@ -39,28 +38,14 @@ export default function RegisterPage() {
 
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
-    try {
-      await authClient.signIn.social({
-        provider: "google",
-        callbackURL: "/dashboard",
-      });
-    } catch (error) {
-      toast.error("Failed to sign up with Google");
-      setGoogleLoading(false);
-    }
+    toast.error("Google sign-up is not available yet in the FastAPI auth flow.");
+    setGoogleLoading(false);
   };
 
   const handleGithubSignup = async () => {
     setGithubLoading(true);
-    try {
-      await authClient.signIn.social({
-        provider: "github",
-        callbackURL: "/dashboard",
-      });
-    } catch (error) {
-      toast.error("Failed to sign up with GitHub");
-      setGithubLoading(false);
-    }
+    toast.error("GitHub sign-up is not available yet in the FastAPI auth flow.");
+    setGithubLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,7 +77,7 @@ export default function RegisterPage() {
       }
 
       toast.success("Account created successfully!");
-      router.push("/login?registered=true");
+      navigate("/login?registered=true");
     } catch (error) {
       toast.error("An unexpected error occurred. Please try again.");
       setIsLoading(false);
@@ -275,7 +260,7 @@ export default function RegisterPage() {
 
           <div className="mt-6 text-center text-sm">
             <span className="text-muted-foreground">Already have an account? </span>
-            <Link href="/login" className="text-primary hover:underline font-semibold">
+            <Link to="/login" className="text-primary hover:underline font-semibold">
               Sign in
             </Link>
           </div>

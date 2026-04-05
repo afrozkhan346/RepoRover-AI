@@ -3,11 +3,15 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import networkx as nx
+
 from app.schemas.call_graph import (
+    CallGraphAnalytics,
     CallGraphEdge,
     CallGraphNode,
     CallGraphResponse,
     CallGraphSummary,
+    CallGraphRankedNode,
 )
 
 SOURCE_EXTENSIONS = {".py", ".js", ".jsx", ".ts", ".tsx"}
@@ -99,16 +103,16 @@ def _extract_import_contexts(path: Path, text: str) -> set[str]:
     return {ctx.strip() for ctx in contexts if ctx.strip()}
 
 
-def build_call_graph(local_path: str, max_files: int = 2000) -> CallGraphResponse:
-    root = Path(local_path).expanduser().resolve()
-    if not root.exists() or not root.is_dir():
-        raise ValueError("local_path must be an existing directory")
+def _ranked(metric: dict[str, float], labels: dict[str, str], top_n: int = 10) -> list[CallGraphRankedNode]:
+    ordered = sorted(metric.items(), key=lambda item: item[1], reverse=True)[:top_n]
+    return [
+        CallGraphRankedNode(node_id=node_id, label=labels.get(node_id, node_id), score=float(score))
+        for node_id, score in ordered
+    ]
 
-    files = _iter_source_files(root, max_files=max_files)
 
-    nodes: dict[str, CallGraphNode] = {}
-    edges: list[CallGraphEdge] = []
-
+def _build_networkx_call_graph(root: Path, files: list[Path]) -> nx.DiGraph:
+    graph = nx.DiGraph()
     function_index: dict[str, list[str]] = {}
     file_functions: dict[str, set[str]] = {}
     file_calls: dict[str, list[str]] = {}
@@ -117,7 +121,7 @@ def build_call_graph(local_path: str, max_files: int = 2000) -> CallGraphRespons
     for file_path in files:
         rel = file_path.relative_to(root).as_posix()
         file_node_id = f"file:{rel}"
-        nodes[file_node_id] = CallGraphNode(id=file_node_id, node_type="file", label=rel, file_path=rel)
+        graph.add_node(file_node_id, node_type="file", label=rel, file_path=rel)
 
         text = _read_text(file_path)
         functions = _extract_functions(file_path, text)
@@ -130,17 +134,14 @@ def build_call_graph(local_path: str, max_files: int = 2000) -> CallGraphRespons
 
         for function_name in sorted(functions):
             function_node_id = f"function:{rel}:{function_name}"
-            nodes[function_node_id] = CallGraphNode(
-                id=function_node_id,
+            graph.add_node(
+                function_node_id,
                 node_type="function",
                 label=function_name,
                 file_path=rel,
             )
             function_index.setdefault(function_name, []).append(function_node_id)
-            edges.append(CallGraphEdge(source=file_node_id, target=function_node_id, edge_type="defines"))
-
-    call_edges = 0
-    import_context_edges = 0
+            graph.add_edge(file_node_id, function_node_id, edge_type="defines")
 
     for rel, calls in file_calls.items():
         caller_file_node = f"file:{rel}"
@@ -150,50 +151,104 @@ def build_call_graph(local_path: str, max_files: int = 2000) -> CallGraphRespons
         for call_name in calls:
             if call_name in {"if", "for", "while", "return", "print"}:
                 continue
+
             targets = function_index.get(call_name, [])
             if not targets:
                 external_id = f"external:{call_name}"
-                if external_id not in nodes:
-                    nodes[external_id] = CallGraphNode(
-                        id=external_id,
-                        node_type="external",
-                        label=call_name,
-                    )
-                edges.append(CallGraphEdge(source=caller_source, target=external_id, edge_type="calls"))
-                call_edges += 1
+                if external_id not in graph:
+                    graph.add_node(external_id, node_type="external", label=call_name)
+                graph.add_edge(caller_source, external_id, edge_type="calls")
                 continue
 
             for target_id in targets:
                 if target_id == caller_source:
                     continue
-                edges.append(CallGraphEdge(source=caller_source, target=target_id, edge_type="calls"))
-                call_edges += 1
+                graph.add_edge(caller_source, target_id, edge_type="calls")
 
     for rel, imports in file_imports.items():
         file_node_id = f"file:{rel}"
         for imported in sorted(imports):
             import_node_id = f"import-context:{imported}"
-            if import_node_id not in nodes:
-                nodes[import_node_id] = CallGraphNode(
-                    id=import_node_id,
-                    node_type="import-context",
-                    label=imported,
-                )
-            edges.append(CallGraphEdge(source=file_node_id, target=import_node_id, edge_type="imports-context"))
-            import_context_edges += 1
+            if import_node_id not in graph:
+                graph.add_node(import_node_id, node_type="import-context", label=imported)
+            graph.add_edge(file_node_id, import_node_id, edge_type="imports-context")
+
+    graph.graph["files_scanned"] = len(files)
+    graph.graph["functions_found"] = sum(len(items) for items in file_functions.values())
+    graph.graph["call_edges"] = sum(1 for _, _, data in graph.edges(data=True) if data.get("edge_type") == "calls")
+    graph.graph["import_context_edges"] = sum(
+        1 for _, _, data in graph.edges(data=True) if data.get("edge_type") == "imports-context"
+    )
+    return graph
+
+
+def _build_response(graph: nx.DiGraph, root: Path) -> CallGraphResponse:
+    nodes = [
+        CallGraphNode(
+            id=node_id,
+            node_type=data.get("node_type", "unknown"),
+            label=data.get("label", node_id),
+            file_path=data.get("file_path"),
+        )
+        for node_id, data in graph.nodes(data=True)
+    ]
+    edges = [
+        CallGraphEdge(source=source, target=target, edge_type=data.get("edge_type", "calls"))
+        for source, target, data in graph.edges(data=True)
+    ]
 
     summary = CallGraphSummary(
-        files_scanned=len(files),
-        functions_found=sum(len(items) for items in file_functions.values()),
-        call_edges=call_edges,
-        import_context_edges=import_context_edges,
-        total_nodes=len(nodes),
-        total_edges=len(edges),
+        files_scanned=int(graph.graph.get("files_scanned", 0)),
+        functions_found=int(graph.graph.get("functions_found", 0)),
+        call_edges=int(graph.graph.get("call_edges", 0)),
+        import_context_edges=int(graph.graph.get("import_context_edges", 0)),
+        total_nodes=graph.number_of_nodes(),
+        total_edges=graph.number_of_edges(),
     )
 
-    return CallGraphResponse(
-        root=str(root),
-        nodes=list(nodes.values()),
-        edges=edges,
-        summary=summary,
+    labels = {node_id: data.get("label", node_id) for node_id, data in graph.nodes(data=True)}
+    degree = nx.degree_centrality(graph) if graph.number_of_nodes() else {}
+    betweenness = nx.betweenness_centrality(graph) if graph.number_of_nodes() else {}
+    impact = {
+        node: float(degree.get(node, 0.0) * 0.45 + betweenness.get(node, 0.0) * 0.35 + graph.out_degree(node) * 0.2)
+        for node in graph.nodes
+    }
+
+    analytics = CallGraphAnalytics(
+        top_degree_centrality=_ranked(degree, labels),
+        top_betweenness_centrality=_ranked(betweenness, labels),
+        top_impact_rank=_ranked(impact, labels),
+        strongly_connected_components=nx.number_strongly_connected_components(graph) if graph.number_of_nodes() else 0,
+        cycle_count=sum(1 for _ in nx.simple_cycles(graph)) if graph.number_of_nodes() else 0,
     )
+
+    return CallGraphResponse(root=str(root), nodes=nodes, edges=edges, summary=summary, analytics=analytics)
+
+
+def build_call_graph(local_path: str, max_files: int = 2000) -> CallGraphResponse:
+    root = Path(local_path).expanduser().resolve()
+    if not root.exists() or not root.is_dir():
+        raise ValueError("local_path must be an existing directory")
+
+    files = _iter_source_files(root, max_files=max_files)
+    graph = _build_networkx_call_graph(root, files)
+    return _build_response(graph, root)
+
+
+def build_call_graph_analytics(local_path: str, max_files: int = 2000) -> CallGraphAnalytics:
+    root = Path(local_path).expanduser().resolve()
+    if not root.exists() or not root.is_dir():
+        raise ValueError("local_path must be an existing directory")
+
+    files = _iter_source_files(root, max_files=max_files)
+    graph = _build_networkx_call_graph(root, files)
+    response = _build_response(graph, root)
+    if response.analytics is None:
+        return CallGraphAnalytics(
+            top_degree_centrality=[],
+            top_betweenness_centrality=[],
+            top_impact_rank=[],
+            strongly_connected_components=0,
+            cycle_count=0,
+        )
+    return response.analytics

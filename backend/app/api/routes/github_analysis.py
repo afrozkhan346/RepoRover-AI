@@ -5,6 +5,7 @@ from app.schemas.github_analysis import (
     GitHubAnalysisResponse,
     LocalRepositoryAnalysisRequest,
 )
+from app.services.repository_loader import RepositoryLoadError
 from app.services.github_analysis import analyze_local_repository, analyze_repository, analyze_zip_repository
 
 router = APIRouter()
@@ -14,6 +15,8 @@ router = APIRouter()
 def analyze_github_repository(payload: GitHubAnalysisRequest) -> dict:
     try:
         return analyze_repository(payload.github_url)
+    except RepositoryLoadError as error:
+        raise HTTPException(status_code=400, detail={"detail": str(error), "code": error.code}) from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail={"detail": str(error), "code": "INVALID_INPUT"}) from error
     except RuntimeError as error:
@@ -24,6 +27,8 @@ def analyze_github_repository(payload: GitHubAnalysisRequest) -> dict:
 def analyze_local_folder(payload: LocalRepositoryAnalysisRequest) -> dict:
     try:
         return analyze_local_repository(payload.local_path)
+    except RepositoryLoadError as error:
+        raise HTTPException(status_code=400, detail={"detail": str(error), "code": error.code}) from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail={"detail": str(error), "code": "INVALID_LOCAL_PATH"}) from error
     except RuntimeError as error:
@@ -37,6 +42,8 @@ async def analyze_zip_archive(file: UploadFile = File(...)) -> dict:
             raise ValueError("Only ZIP archives are supported")
         archive_bytes = await file.read()
         return analyze_zip_repository(archive_bytes, file.filename)
+    except RepositoryLoadError as error:
+        raise HTTPException(status_code=400, detail={"detail": str(error), "code": error.code}) from error
     except ValueError as error:
         raise HTTPException(status_code=400, detail={"detail": str(error), "code": "INVALID_ARCHIVE"}) from error
     except RuntimeError as error:

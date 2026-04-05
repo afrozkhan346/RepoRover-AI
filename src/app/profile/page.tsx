@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { useSession } from "@/lib/auth-client";
+import { BACKEND_API_BASE } from "@/lib/backend";
 import { Navigation } from "@/components/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { 
-  User, 
+import {
   Mail, 
   Calendar, 
   Zap, 
@@ -21,16 +21,16 @@ import {
 } from "lucide-react";
 
 export default function ProfilePage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { data: session, isPending } = useSession();
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!isPending && !session?.user) {
-      router.push("/login");
+      navigate("/login");
     }
-  }, [session, isPending, router]);
+  }, [session, isPending, navigate]);
 
   useEffect(() => {
     if (session?.user) {
@@ -41,12 +41,39 @@ export default function ProfilePage() {
   const fetchUserStats = async () => {
     try {
       const token = localStorage.getItem("bearer_token");
-      
-      const res = await fetch("/api/user-progress", {
-        headers: { Authorization: `Bearer ${token}` }
+
+      const [allAchievementsRes, userAchievementsRes] = await Promise.all([
+        fetch(`${BACKEND_API_BASE}/achievements`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        }),
+        fetch(`${BACKEND_API_BASE}/achievements/user`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        }),
+      ]);
+
+      const allAchievementsPayload = await allAchievementsRes.json();
+      const userAchievementsPayload = await userAchievementsRes.json();
+
+      const allAchievements = Array.isArray(allAchievementsPayload?.achievements)
+        ? allAchievementsPayload.achievements
+        : [];
+      const userAchievements = Array.isArray(userAchievementsPayload?.achievements)
+        ? userAchievementsPayload.achievements
+        : [];
+
+      const unlockedIds = new Set(userAchievements.map((entry: { achievement_id: number }) => entry.achievement_id));
+      const totalXp = allAchievements
+        .filter((entry: { id: number }) => unlockedIds.has(entry.id))
+        .reduce((sum: number, entry: { xp_reward: number }) => sum + (entry.xp_reward || 0), 0);
+
+      setStats({
+        total_xp: totalXp,
+        lessons_completed: 0,
+        current_streak: 0,
+        longest_streak: 0,
       });
-      const data = await res.json();
-      setStats(data.progress?.[0] || null);
       setIsLoading(false);
     } catch (error) {
       console.error("Error fetching user stats:", error);

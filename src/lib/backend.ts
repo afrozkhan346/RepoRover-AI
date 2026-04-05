@@ -1,5 +1,9 @@
-export const BACKEND_API_BASE =
-  process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "http://localhost:8000/api";
+const resolvedBackendUrl =
+  (typeof import.meta !== "undefined" && (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_BACKEND_URL) ||
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) ||
+  "http://localhost:8000/api";
+
+export const BACKEND_API_BASE = resolvedBackendUrl.replace(/\/$/, "");
 
 export const BACKEND_ROOT_BASE = BACKEND_API_BASE.replace(/\/api$/, "");
 
@@ -109,6 +113,14 @@ export type ExplainabilityTraceResponse = {
     lexeme: string;
     start_point: [number, number];
     end_point: [number, number];
+    evidence?: {
+      kind: string;
+      excerpt: string;
+      start_point: [number, number];
+      end_point: [number, number];
+      unit_type?: string | null;
+      unit_name?: string | null;
+    } | null;
   }>;
   ast_traces: Array<{
     finding_id: string;
@@ -117,6 +129,14 @@ export type ExplainabilityTraceResponse = {
     name: string | null;
     start_point: [number, number];
     end_point: [number, number];
+    evidence?: {
+      kind: string;
+      excerpt: string;
+      start_point: [number, number];
+      end_point: [number, number];
+      unit_type?: string | null;
+      unit_name?: string | null;
+    } | null;
   }>;
   graph_traces: Array<{
     finding_id: string;
@@ -135,6 +155,16 @@ export type AIExplanationResponse = {
   model?: string | null;
   complexity_score?: number | null;
   key_concepts?: string[];
+  named_entities?: string[];
+  evidence?: Array<{
+    kind: string;
+    label: string;
+    excerpt: string;
+    start_point?: [number, number] | null;
+    end_point?: [number, number] | null;
+    related_symbols?: string[];
+    note?: string | null;
+  }>;
 };
 
 export type ProjectUploadResponse = {
