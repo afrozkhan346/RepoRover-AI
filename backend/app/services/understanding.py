@@ -14,6 +14,7 @@ from app.services.call_graph_service import build_call_graph
 from app.services.dependency_graph_service import build_dependency_graph
 from app.services.ast_parser import parse_project_code
 from app.services.graph_builder import build_graph
+from app.services.llm_service import llm_explanations, llm_project_summary
 from app.services.parser import parse_project
 from app.services.project_summary_service import summarize_project
 
@@ -124,14 +125,19 @@ def detect_entry_point(files: list[dict[str, str]]) -> str | None:
     Expected input shape:
     [{"name": "main.py"}, {"name": "src/index.ts"}, ...]
     """
+    entry_candidates = {name.lower() for name in ENTRY_FILE_NAMES}
+
     for file in files:
-        name = (file.get("name") or "").lower()
-        base = Path(name).name
+        path_value = file.get("path") or file.get("name") or ""
+        base = Path(path_value).name.lower()
 
-        if base in {"main.py", "app.py", "index.js", "server.js"}:
-            return file.get("name")
+        if base in entry_candidates:
+            return path_value or file.get("name")
 
-    return files[0].get("name") if files else None
+    first = files[0] if files else None
+    if not first:
+        return None
+    return first.get("path") or first.get("name")
 
 
 def find_core_functions(g: nx.Graph) -> list[str]:
@@ -416,10 +422,19 @@ def understand_project(local_path: str, max_files: int = 2000) -> dict[str, Any]
     core_funcs = find_core_functions(graph)
     project_type = infer_project_type(files)
     summary = generate_summary(entry, core_funcs, project_type)
+    llm_summary = llm_project_summary(entry, core_funcs, project_type)
+    if llm_summary:
+        summary = llm_summary
+    explanations = llm_explanations(entry, core_funcs, project_type)
+    if not explanations:
+        from app.services.explainer import generate_explanations
+
+        explanations = generate_explanations(summary, entry, core_funcs, project_type)
 
     return {
         "entry_point": entry,
         "core_functions": core_funcs,
         "project_type": project_type,
         "summary": summary,
+        "explanations": explanations,
     }

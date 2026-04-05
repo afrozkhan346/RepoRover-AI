@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import os
+import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -299,7 +300,7 @@ def parse_python_file_basic(file_path: str) -> dict[str, Any]:
 
 
 def parse_project_code(project_path: str) -> list[dict[str, Any]]:
-    """Parse every Python file in a project using parse_python_file."""
+    """Parse supported source files in a project into a normalized AST-like payload."""
 
     root = Path(project_path).expanduser().resolve()
     if not root.exists() or not root.is_dir():
@@ -307,17 +308,83 @@ def parse_project_code(project_path: str) -> list[dict[str, Any]]:
 
     result: list[dict[str, Any]] = []
 
-    for current_root, _, files in os.walk(root):
+    js_import_re = re.compile(
+        r"import\s+[^;]*?from\s+[\"']([^\"']+)[\"']|import\s+[\"']([^\"']+)[\"']|require\(\s*[\"']([^\"']+)[\"']\s*\)"
+    )
+    js_class_re = re.compile(r"\bclass\s+([a-zA-Z_$][a-zA-Z0-9_$]*)")
+    js_function_re = re.compile(
+        r"(?:function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(|const\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>|const\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(?:async\s*)?function\s*\()"
+    )
+    js_call_re = re.compile(r"([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(")
+    ignored_dirs = {".git", "node_modules", ".next", "dist", "build", "venv", ".venv", "__pycache__"}
+
+    for current_root, dir_names, files in os.walk(root):
+        dir_names[:] = [name for name in dir_names if name not in ignored_dirs]
+
         for file_name in files:
-            if not file_name.endswith(".py"):
+            file_path = Path(current_root) / file_name
+            ext = file_path.suffix.lower()
+
+            if ext == ".py":
+                data = parse_python_file(str(file_path))
+            elif ext in {".js", ".jsx", ".ts", ".tsx"}:
+                try:
+                    source = file_path.read_text(encoding="utf-8", errors="ignore")
+                except OSError:
+                    continue
+
+                imports: list[dict[str, Any]] = []
+                for match in js_import_re.finditer(source):
+                    value = next((group for group in match.groups() if group), None)
+                    if value:
+                        imports.append({"module": value, "name": None, "alias": None, "line": 0})
+
+                classes = [
+                    {
+                        "name": match.group(1),
+                        "line": 0,
+                        "end_line": 0,
+                        "bases": [],
+                        "decorators": [],
+                        "methods": [],
+                    }
+                    for match in js_class_re.finditer(source)
+                ]
+
+                functions: list[dict[str, Any]] = []
+                for match in js_function_re.finditer(source):
+                    name = next((group for group in match.groups() if group), None)
+                    if not name:
+                        continue
+                    calls = [{"called_name": call.group(1), "call_line": 0} for call in js_call_re.finditer(source)]
+                    functions.append(
+                        {
+                            "name": name,
+                            "line": 0,
+                            "end_line": 0,
+                            "arguments": [],
+                            "returns": None,
+                            "decorators": [],
+                            "is_async": False,
+                            "parent_class": None,
+                            "calls": calls,
+                        }
+                    )
+
+                data = {
+                    "file_path": str(file_path),
+                    "imports": imports,
+                    "classes": classes,
+                    "functions": functions,
+                }
+            else:
                 continue
 
-            file_path = Path(current_root) / file_name
-            data = parse_python_file(str(file_path))
+            relative_path = file_path.relative_to(root).as_posix()
 
             result.append(
                 {
-                    "file": file_name,
+                    "file": relative_path,
                     "path": str(file_path),
                     "data": data,
                 }
