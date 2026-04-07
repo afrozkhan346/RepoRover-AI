@@ -2,16 +2,16 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import ErrorReporter from "@/components/ErrorReporter";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import HomePageClient from "@/app/page-client";
-import DashboardPageClient from "@/app/dashboard/page-client";
-import AnalyzePageClient from "@/app/analyze/page-client";
-import AiTutorPageClient from "@/app/ai-tutor/page-client";
-import LessonsPage from "@/app/lessons/page";
-import LessonPage from "@/app/lessons/[id]/page";
-import AchievementsPage from "@/app/achievements/page";
-import ProfilePage from "@/app/profile/page";
-import LoginPage from "@/app/login/page";
-import RegisterPage from "@/app/register/page";
+import HomePageClient from "@/pages/page-client";
+import DashboardPageClient from "@/pages/dashboard/page-client";
+import AnalyzePageClient from "@/pages/analyze/page-client";
+import AiTutorPageClient from "@/pages/ai-tutor/page-client";
+import LessonsPage from "@/pages/lessons/page";
+import LessonPage from "@/pages/lessons/[id]/page";
+import AchievementsPage from "@/pages/achievements/page";
+import ProfilePage from "@/pages/profile/page";
+import LoginPage from "@/pages/login/page";
+import RegisterPage from "@/pages/register/page";
 
 export default function App() {
   return (

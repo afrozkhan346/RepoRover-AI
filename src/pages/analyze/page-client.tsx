@@ -1,4 +1,3 @@
-"use client";
 
 import axios from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";

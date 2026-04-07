@@ -1,4 +1,3 @@
-"use client";
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -40,15 +39,20 @@ export default function ProfilePage() {
 
   const fetchUserStats = async () => {
     try {
-      const token = localStorage.getItem("bearer_token");
+      const token = session?.token;
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+      const authHeaders = token ? { Authorization: `Bearer ${token}` } : undefined;
 
       const [allAchievementsRes, userAchievementsRes] = await Promise.all([
         fetch(`${BACKEND_API_BASE}/achievements`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: authHeaders,
           cache: "no-store",
         }),
         fetch(`${BACKEND_API_BASE}/achievements/user`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: authHeaders,
           cache: "no-store",
         }),
       ]);
