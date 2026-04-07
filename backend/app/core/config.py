@@ -1,4 +1,5 @@
 from functools import lru_cache
+import json
 from typing import Any
 from urllib.parse import quote_plus
 
@@ -121,7 +122,25 @@ class Settings(BaseSettings):
         if value is None:
             return []
         if isinstance(value, str):
-            parsed = [item.strip().lower() for item in value.split(",") if item.strip()]
+            stripped = value.strip()
+            if not stripped or stripped == "[]":
+                return []
+
+            if stripped.startswith("[") and stripped.endswith("]"):
+                try:
+                    loaded = json.loads(stripped)
+                except json.JSONDecodeError:
+                    loaded = None
+                if isinstance(loaded, list):
+                    normalized: list[str] = []
+                    for item in loaded:
+                        text = str(item).strip().lower()
+                        if not text:
+                            continue
+                        normalized.append(text if text.startswith(".") else f".{text}")
+                    return normalized
+
+            parsed = [item.strip().lower() for item in stripped.split(",") if item.strip()]
             normalized: list[str] = []
             for item in parsed:
                 normalized.append(item if item.startswith(".") else f".{item}")

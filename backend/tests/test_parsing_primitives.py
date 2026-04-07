@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from git import Repo
 
+from app.core.config import Settings
 from app.main import app
 from app.services.ast_parser import parse_project_code, parse_python_source
 from app.services.parser_service import parse_source, parse_structure
@@ -130,6 +131,15 @@ class ParsingPrimitivesTestCase(unittest.TestCase):
         self.assertEqual(sorted(preview_response.json().keys()), ["language", "nodes", "total_nodes", "truncated"])
         self.assertEqual(sorted(structure_response.json().keys()), ["classes", "functions", "imports", "language", "root", "total_nodes", "tree_nodes_returned", "truncated"])
         self.assertEqual(sorted(token_response.json().keys()), ["language", "tokens", "total_tokens", "truncated"])
+
+    def test_projects_allowed_extensions_accepts_json_and_csv_formats(self) -> None:
+        empty_settings = Settings(projects_allowed_extensions="[]")
+        json_settings = Settings(projects_allowed_extensions='["py", ".js", ""]')
+        csv_settings = Settings(projects_allowed_extensions="py, .ts, jsx")
+
+        self.assertEqual(empty_settings.projects_allowed_extensions, [])
+        self.assertEqual(json_settings.projects_allowed_extensions, [".py", ".js"])
+        self.assertEqual(csv_settings.projects_allowed_extensions, [".py", ".ts", ".jsx"])
 
     def test_github_analyze_repo_url_computes_file_count(self) -> None:
         source_root = Path(tempfile.mkdtemp(prefix="repo_rover_url_source_"))
