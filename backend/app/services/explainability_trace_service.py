@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from collections import Counter, deque
 from pathlib import Path
@@ -17,7 +18,7 @@ from app.services.dependency_graph_service import build_dependency_graph
 from app.services.parser_service import parse_structure
 from app.services.token_service import tokenize_source
 
-SOURCE_EXTENSIONS = {".py", ".js", ".jsx", ".ts", ".tsx"}
+SOURCE_EXTENSIONS = {".py", ".js", ".jsx", ".ts", ".tsx", ".ipynb"}
 IGNORED_DIRS = {
     ".git",
     "node_modules",
@@ -45,11 +46,67 @@ def _iter_source_files(root: Path, max_files: int) -> list[Path]:
     return files
 
 
+def _detected_extensions(root: Path, max_files: int) -> list[str]:
+    detected: set[str] = set()
+    scanned = 0
+
+    for path in root.rglob("*"):
+        if any(part in IGNORED_DIRS for part in path.parts):
+            continue
+        if not path.is_file():
+            continue
+
+        scanned += 1
+        suffix = path.suffix.lower()
+        detected.add(suffix if suffix else "<no-extension>")
+
+        if scanned >= max_files:
+            break
+
+    return sorted(detected)
+
+
 def _read_text(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         return ""
+
+
+def _read_notebook_source(path: Path) -> str:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8", errors="ignore"))
+    except (OSError, json.JSONDecodeError):
+        return ""
+
+    cells = payload.get("cells", [])
+    code_parts: list[str] = []
+    for cell in cells:
+        if not isinstance(cell, dict):
+            continue
+        if cell.get("cell_type") != "code":
+            continue
+
+        source = cell.get("source", [])
+        if isinstance(source, list):
+            text = "".join(part for part in source if isinstance(part, str))
+        elif isinstance(source, str):
+            text = source
+        else:
+            text = ""
+
+        stripped = text.strip()
+        if stripped:
+            code_parts.append(stripped)
+
+    return "\n\n".join(code_parts)
+
+
+def _load_focus_source(path: Path) -> tuple[str, str]:
+    extension = path.suffix.lower()
+    if extension == ".ipynb":
+        return _read_notebook_source(path), ".py"
+    return _read_text(path), extension
 
 
 def _line_excerpt(content: str, start_point: tuple[int, int], end_point: tuple[int, int], padding: int = 1) -> str:
@@ -87,7 +144,11 @@ def _resolve_focus_file(root: Path, files: list[Path], focus_file: str | None) -
         candidate = (root / focus_file).resolve()
         if candidate.exists() and candidate.is_file() and candidate.suffix.lower() in SOURCE_EXTENSIONS:
             return candidate
-        raise ValueError("focus_file must reference an existing source file under local_path")
+        supported = ", ".join(sorted(SOURCE_EXTENSIONS))
+        raise ValueError(
+            "focus_file must reference an existing source file under local_path "
+            f"with one of the supported extensions: {supported}"
+        )
 
     if not files:
         raise ValueError("No supported source files found for trace generation")
@@ -303,13 +364,26 @@ def build_explainability_traces(
         raise ValueError("local_path must be an existing directory")
 
     source_files = _iter_source_files(root, max_files=max_files)
+    if not source_files and not focus_file:
+        supported = ", ".join(sorted(SOURCE_EXTENSIONS))
+        detected = _detected_extensions(root, max_files=max_files)
+        detected_label = ", ".join(detected[:20]) if detected else "none"
+        raise ValueError(
+            "No supported source files found for trace generation. "
+            f"Supported extensions: {supported}. "
+            f"Detected extensions: {detected_label}."
+        )
+
     focus = _resolve_focus_file(root, source_files, focus_file)
     focus_rel = focus.relative_to(root).as_posix()
-    content = _read_text(focus)
+    content, parse_extension = _load_focus_source(focus)
+
+    if not content.strip():
+        raise ValueError(f"No parsable source content found in {focus_rel}")
 
     findings = _extract_findings(content, focus_rel)
-    token_traces = _token_traces(findings, focus_rel, content, focus.suffix.lower())
-    ast_traces = _ast_traces(findings, focus_rel, content, focus.suffix.lower())
+    token_traces = _token_traces(findings, focus_rel, content, parse_extension)
+    ast_traces = _ast_traces(findings, focus_rel, content, parse_extension)
 
     normalized_graph_type, graph_path = _graph_hotspot_and_path(str(root), graph_type, max_files)
     graph_traces = [

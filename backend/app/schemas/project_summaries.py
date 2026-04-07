@@ -7,6 +7,8 @@ class ProjectSummariesRequest(BaseModel):
 
 
 class SummaryMetrics(BaseModel):
+    total_files: int
+    analyzable_files: int
     files_scanned: int
     total_lines: int
     language_breakdown: dict[str, int]

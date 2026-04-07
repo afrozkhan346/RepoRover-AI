@@ -47,6 +47,8 @@ export type ProjectSummariesResponse = {
   key_dependencies: string[];
   flow_path: string[];
   metrics: {
+    total_files: number;
+    analyzable_files: number;
     files_scanned: number;
     total_lines: number;
     language_breakdown: Record<string, number>;

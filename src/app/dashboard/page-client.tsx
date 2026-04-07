@@ -125,9 +125,10 @@ export default function DashboardPageClient() {
               <MetricBarCard
                 title="Repository footprint"
                 description="Key metrics captured from the FastAPI project summary response."
-                labels={["Files", "Lines", "Dependency edges", "Call edges"]}
+                labels={["Total files", "Analyzable files", "Lines", "Dependency edges", "Call edges"]}
                 values={[
-                  bundle.project.metrics.files_scanned,
+                  bundle.project.metrics.total_files ?? bundle.project.metrics.files_scanned,
+                  bundle.project.metrics.analyzable_files ?? bundle.project.metrics.files_scanned,
                   bundle.project.metrics.total_lines,
                   bundle.project.metrics.dependency_edges,
                   bundle.project.metrics.call_edges,
