@@ -1,0 +1,2 @@
+def nested():
+    return 'ok'
