@@ -1,4 +1,3 @@
-"use client";
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -31,18 +30,23 @@ export default function AchievementsPage() {
 
   const fetchAchievements = async () => {
     try {
-      const token = localStorage.getItem("bearer_token");
+      const token = session?.token;
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+      const authHeaders = token ? { Authorization: `Bearer ${token}` } : undefined;
 
       // Fetch all achievements
       const allRes = await fetch(`${BACKEND_API_BASE}/achievements`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: authHeaders,
       });
       const allData = await allRes.json();
       setAllAchievements(allData.achievements || []);
 
       // Fetch user's unlocked achievements
       const userRes = await fetch(`${BACKEND_API_BASE}/achievements/user`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: authHeaders,
       });
       const userData = await userRes.json();
       setUserAchievements(userData.achievements || []);

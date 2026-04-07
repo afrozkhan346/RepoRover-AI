@@ -1,4 +1,3 @@
-"use client";
 
 import { useEffect, useState } from "react";
 import { BACKEND_API_BASE } from "@/lib/backend";
@@ -60,6 +59,13 @@ function getStoredToken(): string | null {
       return null;
    }
    return localStorage.getItem("bearer_token");
+}
+
+function clearStoredToken(): void {
+   if (typeof window === "undefined") {
+      return;
+   }
+   localStorage.removeItem("bearer_token");
 }
 
 async function parseApiError(response: Response): Promise<string> {
@@ -170,14 +176,10 @@ export const authClient = {
    signOut: async (): Promise<AuthResult<null>> => {
       try {
          await logoutBackendSession(getStoredToken());
-         if (typeof window !== "undefined") {
-            localStorage.removeItem("bearer_token");
-         }
+         clearStoredToken();
          return { data: null, error: null };
       } catch {
-         if (typeof window !== "undefined") {
-            localStorage.removeItem("bearer_token");
-         }
+         clearStoredToken();
          return { data: null, error: null };
       }
    },
