@@ -23,7 +23,7 @@ def analyze_github_repository(payload: GitHubAnalysisRequest) -> dict:
         raise HTTPException(status_code=502, detail={"detail": str(error), "code": "GITHUB_API_ERROR"}) from error
 
 
-@router.post("/analyze-local", response_model=GitHubAnalysisResponse)
+@router.post("/analyze-local", response_model=GitHubAnalysisResponse, include_in_schema=False)
 def analyze_local_folder(payload: LocalRepositoryAnalysisRequest) -> dict:
     try:
         return analyze_local_repository(payload.local_path)

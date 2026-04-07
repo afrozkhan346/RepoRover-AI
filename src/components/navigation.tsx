@@ -1,4 +1,3 @@
-"use client";
 
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -29,7 +28,6 @@ export function Navigation() {
     if (error?.code) {
       toast.error(error.code);
     } else {
-      localStorage.removeItem("bearer_token");
       refetch();
       navigate("/");
       toast.success("Signed out successfully");
