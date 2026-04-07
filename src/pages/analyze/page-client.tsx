@@ -76,19 +76,6 @@ export default function AnalyzePageClient() {
   const [level, setLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (!saved) {
-      return;
-    }
-
-    try {
-      setBundle(JSON.parse(saved) as AnalysisBundle);
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
-  }, []);
-
-  useEffect(() => {
     if (!folderInputRef.current) {
       return;
     }
@@ -140,7 +127,7 @@ export default function AnalyzePageClient() {
 
   const handleAnalyze = async () => {
     if (!localPath.trim() && !githubUrl.trim()) {
-      toast.error("Enter a local path or GitHub URL first.");
+      toast.error("Upload a project folder or enter a GitHub URL first.");
       return;
     }
 
@@ -257,7 +244,7 @@ export default function AnalyzePageClient() {
               <div className="space-y-2">
                 <CardTitle className="text-3xl md:text-4xl">Repository intelligence, rendered live.</CardTitle>
                 <CardDescription className="max-w-2xl text-base">
-                  Point the app at a local project path and the backend will return project summaries,
+                  Clone from GitHub or upload a project folder and the backend will return project summaries,
                   quality findings, graph analytics, explainability traces, and Mermaid-ready flow paths.
                 </CardDescription>
               </div>
@@ -273,15 +260,9 @@ export default function AnalyzePageClient() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="localPath">Local project path</Label>
-                <Input
-                  id="localPath"
-                  placeholder="D:/RepoRoverAI/RepoRover-AI"
-                  value={localPath}
-                  onChange={(event) => setLocalPath(event.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  You can paste a path, or upload a local folder with the plus button below.
+                <Label>Project source</Label>
+                <p className="text-sm text-muted-foreground">
+                  Local path input is disabled. Use GitHub URL clone or upload a project folder below.
                 </p>
               </div>
               <div className="space-y-2">
