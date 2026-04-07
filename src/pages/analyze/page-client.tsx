@@ -371,7 +371,16 @@ export default function AnalyzePageClient() {
                 <CardDescription>Metrics returned by the FastAPI analysis pipeline.</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-3 text-sm">
-                <StatTile icon={ChartColumnBig} label="Files" value={bundle?.project.metrics.files_scanned ?? 0} />
+                <StatTile
+                  icon={ChartColumnBig}
+                  label="Total files"
+                  value={bundle?.project.metrics.total_files ?? bundle?.project.metrics.files_scanned ?? 0}
+                />
+                <StatTile
+                  icon={FileText}
+                  label="Analyzable files"
+                  value={bundle?.project.metrics.analyzable_files ?? bundle?.project.metrics.files_scanned ?? 0}
+                />
                 <StatTile icon={GitBranch} label="Graph nodes" value={bundle?.graph.metrics.node_count ?? 0} />
                 <StatTile icon={TriangleAlert} label="Risk score" value={bundle?.risk.risk_score ?? 0} />
                 <StatTile icon={Brain} label="Reliability" value={bundle?.risk.reliability_score ?? 0} />
@@ -508,9 +517,10 @@ export default function AnalyzePageClient() {
               <MetricBarCard
                 title="Project size and edge footprint"
                 description="Backend-provided repository metrics visualized with Chart.js."
-                labels={["Files scanned", "Total lines", "Dependency edges", "Call edges"]}
+                labels={["Total files", "Analyzable files", "Total lines", "Dependency edges", "Call edges"]}
                 values={[
-                  bundle.project.metrics.files_scanned,
+                  bundle.project.metrics.total_files ?? bundle.project.metrics.files_scanned,
+                  bundle.project.metrics.analyzable_files ?? bundle.project.metrics.files_scanned,
                   bundle.project.metrics.total_lines,
                   bundle.project.metrics.dependency_edges,
                   bundle.project.metrics.call_edges,
