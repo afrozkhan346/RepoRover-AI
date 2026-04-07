@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="RepoRover AI">
+  <rect width="64" height="64" rx="12" fill="#0f172a"/>
+  <path d="M16 44l10-24h6l10 24h-6l-2-5H24l-2 5h-6zm10-10h6l-3-8-3 8z" fill="#38bdf8"/>
+  <circle cx="47" cy="17" r="5" fill="#22c55e"/>
+</svg>
