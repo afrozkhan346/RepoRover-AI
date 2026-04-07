@@ -48,6 +48,19 @@ def _iter_source_files(root: Path, max_files: int) -> list[Path]:
     return files
 
 
+def _count_total_files(root: Path, max_files: int) -> int:
+    count = 0
+    for path in root.rglob("*"):
+        if any(part in IGNORED_DIRS for part in path.parts):
+            continue
+        if not path.is_file():
+            continue
+        count += 1
+        if count >= max_files:
+            break
+    return count
+
+
 def _read_text(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8", errors="ignore")
@@ -121,6 +134,7 @@ def summarize_project(local_path: str, max_files: int = 2000) -> ProjectSummarie
         raise ValueError("local_path must be an existing directory")
 
     source_files = _iter_source_files(root, max_files=max_files)
+    total_files = _count_total_files(root, max_files=max_files)
     total_lines = sum(len(_read_text(path).splitlines()) for path in source_files)
     language_breakdown = _language_breakdown(source_files)
 
@@ -135,7 +149,7 @@ def summarize_project(local_path: str, max_files: int = 2000) -> ProjectSummarie
     flow_path = [labels.get(node_id, node_id) for node_id in flow_ids]
 
     project_summary = (
-        f"Scanned {len(source_files)} files and {total_lines} lines across "
+        f"Detected {total_files} total files, including {len(source_files)} analyzable files, and {total_lines} lines across "
         f"{len(language_breakdown)} primary language groups. "
         f"Most represented language: {max(language_breakdown, key=language_breakdown.get) if language_breakdown else 'Unknown'}."
     )
@@ -153,6 +167,8 @@ def summarize_project(local_path: str, max_files: int = 2000) -> ProjectSummarie
     )
 
     metrics = SummaryMetrics(
+        total_files=total_files,
+        analyzable_files=len(source_files),
         files_scanned=len(source_files),
         total_lines=total_lines,
         language_breakdown=language_breakdown,

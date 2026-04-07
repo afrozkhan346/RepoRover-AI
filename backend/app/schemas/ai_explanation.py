@@ -7,6 +7,16 @@ class AIExplanationRequest(BaseModel):
     question: str | None = None
 
 
+class ExplanationEvidence(BaseModel):
+    kind: str
+    label: str
+    excerpt: str
+    start_point: tuple[int, int] | None = None
+    end_point: tuple[int, int] | None = None
+    related_symbols: list[str] = Field(default_factory=list)
+    note: str | None = None
+
+
 class AIExplanationResponse(BaseModel):
     explanation: str
     language: str | None = None
@@ -15,3 +25,5 @@ class AIExplanationResponse(BaseModel):
     model: str | None = None
     complexity_score: float | None = None
     key_concepts: list[str] = Field(default_factory=list)
+    named_entities: list[str] = Field(default_factory=list)
+    evidence: list[ExplanationEvidence] = Field(default_factory=list)

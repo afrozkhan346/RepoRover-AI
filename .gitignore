@@ -19,6 +19,7 @@
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
@@ -35,7 +36,7 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.t
+next-env.d.ts
 
 # environment variables
 .env

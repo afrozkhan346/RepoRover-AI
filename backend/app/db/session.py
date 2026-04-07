@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Generator
+from sqlalchemy.orm import Session
+
 from app.db.connection import (
     create_tables,
     get_database_engine,
@@ -10,6 +13,14 @@ from app.db.connection import (
 engine = get_database_engine()
 SessionLocal = get_session_factory()
 
+
+def get_db_session() -> Generator[Session, None, None]:
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 __all__ = [
     "create_tables",
     "engine",
@@ -17,4 +28,5 @@ __all__ = [
     "get_database_info",
     "get_session_factory",
     "SessionLocal",
+    "get_db_session",
 ]

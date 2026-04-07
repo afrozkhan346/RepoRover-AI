@@ -32,6 +32,12 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
+def _coerce_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 def _normalize_email(email: str) -> str:
     return email.strip().lower()
 
@@ -173,7 +179,7 @@ def get_user_by_session_token(db: Session, token: str) -> AuthSessionResult:
     if not session:
         return AuthSessionResult(token=None, user=None)
 
-    if session.expires_at <= _now():
+    if _coerce_utc(session.expires_at) <= _now():
         db.delete(session)
         db.commit()
         return AuthSessionResult(token=None, user=None)

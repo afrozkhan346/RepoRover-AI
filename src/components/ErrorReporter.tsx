@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 type ReporterProps = {
   /*  ⎯⎯ props are only provided on the global-error page ⎯⎯ */
@@ -9,10 +9,6 @@ type ReporterProps = {
 };
 
 export default function ErrorReporter({ error, reset }: ReporterProps) {
-  /* ─ instrumentation shared by every route ─ */
-  const lastOverlayMsg = useRef("");
-  const pollRef = useRef<NodeJS.Timeout>();
-
   useEffect(() => {
     const inIframe = window.parent !== window;
     if (!inIframe) return;
@@ -44,35 +40,15 @@ export default function ErrorReporter({ error, reset }: ReporterProps) {
         timestamp: Date.now(),
       });
 
-    const pollOverlay = () => {
-      const overlay = document.querySelector("[data-nextjs-dialog-overlay]");
-      const node =
-        overlay?.querySelector(
-          "h1, h2, .error-message, [data-nextjs-dialog-body]"
-        ) ?? null;
-      const txt = node?.textContent ?? node?.innerHTML ?? "";
-      if (txt && txt !== lastOverlayMsg.current) {
-        lastOverlayMsg.current = txt;
-        send({
-          type: "ERROR_CAPTURED",
-          error: { message: txt, source: "nextjs-dev-overlay" },
-          timestamp: Date.now(),
-        });
-      }
-    };
-
     window.addEventListener("error", onError);
     window.addEventListener("unhandledrejection", onReject);
-    pollRef.current = setInterval(pollOverlay, 1000);
 
     return () => {
       window.removeEventListener("error", onError);
       window.removeEventListener("unhandledrejection", onReject);
-      pollRef.current && clearInterval(pollRef.current);
     };
   }, []);
 
-  /* ─ extra postMessage when on the global-error route ─ */
   useEffect(() => {
     if (!error) return;
     window.parent.postMessage(
@@ -91,10 +67,8 @@ export default function ErrorReporter({ error, reset }: ReporterProps) {
     );
   }, [error]);
 
-  /* ─ ordinary pages render nothing ─ */
   if (!error) return null;
 
-  /* ─ global-error UI ─ */
   return (
     <html>
       <body className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">

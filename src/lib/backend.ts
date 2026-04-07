@@ -1,5 +1,9 @@
-export const BACKEND_API_BASE =
-  process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "http://localhost:8000/api";
+const resolvedBackendUrl =
+  (typeof import.meta !== "undefined" && (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_BACKEND_URL) ||
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) ||
+  "http://localhost:8000/api";
+
+export const BACKEND_API_BASE = resolvedBackendUrl.replace(/\/$/, "");
 
 export const BACKEND_ROOT_BASE = BACKEND_API_BASE.replace(/\/api$/, "");
 
@@ -43,6 +47,8 @@ export type ProjectSummariesResponse = {
   key_dependencies: string[];
   flow_path: string[];
   metrics: {
+    total_files: number;
+    analyzable_files: number;
     files_scanned: number;
     total_lines: number;
     language_breakdown: Record<string, number>;
@@ -109,6 +115,14 @@ export type ExplainabilityTraceResponse = {
     lexeme: string;
     start_point: [number, number];
     end_point: [number, number];
+    evidence?: {
+      kind: string;
+      excerpt: string;
+      start_point: [number, number];
+      end_point: [number, number];
+      unit_type?: string | null;
+      unit_name?: string | null;
+    } | null;
   }>;
   ast_traces: Array<{
     finding_id: string;
@@ -117,6 +131,14 @@ export type ExplainabilityTraceResponse = {
     name: string | null;
     start_point: [number, number];
     end_point: [number, number];
+    evidence?: {
+      kind: string;
+      excerpt: string;
+      start_point: [number, number];
+      end_point: [number, number];
+      unit_type?: string | null;
+      unit_name?: string | null;
+    } | null;
   }>;
   graph_traces: Array<{
     finding_id: string;
@@ -135,6 +157,16 @@ export type AIExplanationResponse = {
   model?: string | null;
   complexity_score?: number | null;
   key_concepts?: string[];
+  named_entities?: string[];
+  evidence?: Array<{
+    kind: string;
+    label: string;
+    excerpt: string;
+    start_point?: [number, number] | null;
+    end_point?: [number, number] | null;
+    related_symbols?: string[];
+    note?: string | null;
+  }>;
 };
 
 export type ProjectUploadResponse = {
@@ -142,6 +174,12 @@ export type ProjectUploadResponse = {
   project_path: string;
   files_saved: number;
   total_size: number;
+};
+
+export type ProjectCloneResponse = {
+  message: string;
+  repo_url: string;
+  project_path: string;
 };
 
 export async function fetchProjectSummaries(localPath: string, maxFiles = 1000) {
@@ -224,4 +262,29 @@ export async function uploadProjectFiles(files: File[]) {
   }
 
   return (await response.json()) as ProjectUploadResponse;
+}
+
+export async function cloneProjectFromGithub(repoUrl: string) {
+  const formData = new FormData();
+  formData.append("repo_url", repoUrl);
+
+  const response = await fetch(`${BACKEND_ROOT_BASE}/project/clone`, {
+    method: "POST",
+    body: formData,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    let errorPayload: ApiErrorPayload | null = null;
+    try {
+      errorPayload = (await response.json()) as ApiErrorPayload;
+    } catch {
+      errorPayload = null;
+    }
+
+    const message = errorPayload?.detail || `Request failed with status ${response.status}`;
+    throw new Error(message);
+  }
+
+  return (await response.json()) as ProjectCloneResponse;
 }
