@@ -137,3 +137,41 @@ Optional flags:
 
 - `--data-dir <path>`: custom CSV directory
 - `--chunk-size <n>`: bulk upsert chunk size (default `1000`)
+
+## LLM Providers
+
+The backend can use different LLM providers for repo summarization and code explanations.
+
+### Ollama
+
+In `.env`:
+
+```bash
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.1
+OLLAMA_TIMEOUT_SECONDS=120
+```
+
+Use `LLM_PROVIDER=gemini` or `LLM_PROVIDER=openai` to keep the existing remote providers.
+
+### Quick Smoke Test (Repo Summaries)
+
+From `backend/`, run the smoke script against a local repository path:
+
+```bash
+python -m scripts.ollama_repo_summary_smoke ..\
+```
+
+Or target a specific folder and model:
+
+```bash
+python -m scripts.ollama_repo_summary_smoke D:\path\to\repo --model llama3.1 --base-url http://localhost:11434
+```
+
+The script prints:
+
+- `project_summary`
+- `architecture_summary`
+- `execution_flow_summary`
+- summary metrics payload

@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from collections import Counter, deque
 from pathlib import Path
+import re
 
 from app.schemas.project_summaries import ProjectSummariesResponse, SummaryMetrics
 from app.services.call_graph_service import build_call_graph
 from app.services.dependency_graph_service import build_dependency_graph
+from app.services.llm_service import generate_repo_summaries
 
 SOURCE_EXTENSIONS = {".py", ".js", ".jsx", ".ts", ".tsx", ".json", ".md", ".sql", ".css", ".html"}
 IGNORED_DIRS = {
@@ -31,6 +33,99 @@ LANGUAGE_MAP = {
     ".css": "CSS",
     ".html": "HTML",
 }
+
+
+def _readme_candidates(root: Path) -> list[Path]:
+    return [
+        root / "README.md",
+        root / "readme.md",
+        root / "README.txt",
+        root / "README",
+    ]
+
+
+def _clean_markdown_line(line: str) -> str:
+    text = line.strip()
+    text = re.sub(r"^#{1,6}\s*", "", text)
+    text = re.sub(r"^[-*+]\s+", "", text)
+    text = re.sub(r"^\d+\.\s+", "", text)
+    text = text.replace("**", "").replace("__", "").replace("`", "")
+    return " ".join(text.split())
+
+
+def _extract_readme_insights(root: Path) -> tuple[str | None, str | None]:
+    for candidate in _readme_candidates(root):
+        if not candidate.exists() or not candidate.is_file():
+            continue
+
+        text = _read_text(candidate)
+        if not text.strip():
+            continue
+
+        lines: list[str] = []
+        in_code_block = False
+        for raw_line in text.splitlines():
+            stripped = raw_line.strip()
+            if stripped.startswith("```"):
+                in_code_block = not in_code_block
+                continue
+            if in_code_block:
+                continue
+            if not stripped:
+                continue
+            if set(stripped) <= {"-"} or set(stripped) <= {"="}:
+                continue
+            cleaned = _clean_markdown_line(stripped)
+            if not cleaned:
+                continue
+            if cleaned.lower().startswith("http"):
+                continue
+            lines.append(cleaned)
+
+        meaningful = [line for line in lines if len(line) >= 20]
+        if not meaningful:
+            return None, None
+
+        purpose = meaningful[0][:260]
+        info_bits: list[str] = []
+        for line in meaningful[1:8]:
+            if line == purpose:
+                continue
+            info_bits.append(line)
+            if len(info_bits) >= 3:
+                break
+
+        info = " ".join(info_bits) if info_bits else None
+        return purpose, info
+
+    return None, None
+
+
+def _project_purpose_hint(root: Path) -> str | None:
+    readme_candidates = [
+        root / "README.md",
+        root / "readme.md",
+        root / "README.txt",
+        root / "README",
+    ]
+
+    for candidate in readme_candidates:
+        if not candidate.exists() or not candidate.is_file():
+            continue
+
+        text = _read_text(candidate)
+        if not text.strip():
+            continue
+
+        for raw_line in text.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith("#"):
+                continue
+            return line[:280]
+
+    return None
 
 
 def _iter_source_files(root: Path, max_files: int) -> list[Path]:
@@ -137,6 +232,8 @@ def summarize_project(local_path: str, max_files: int = 2000) -> ProjectSummarie
     total_files = _count_total_files(root, max_files=max_files)
     total_lines = sum(len(_read_text(path).splitlines()) for path in source_files)
     language_breakdown = _language_breakdown(source_files)
+    readme_purpose, readme_info = _extract_readme_insights(root)
+    purpose_hint = readme_purpose or _project_purpose_hint(root)
 
     dependency_graph = build_dependency_graph(str(root), max_files=max_files)
     call_graph = build_call_graph(str(root), max_files=max_files)
@@ -148,11 +245,19 @@ def summarize_project(local_path: str, max_files: int = 2000) -> ProjectSummarie
     labels = _node_label_map(call_graph)
     flow_path = [labels.get(node_id, node_id) for node_id in flow_ids]
 
-    project_summary = (
-        f"Detected {total_files} total files, including {len(source_files)} analyzable files, and {total_lines} lines across "
-        f"{len(language_breakdown)} primary language groups. "
-        f"Most represented language: {max(language_breakdown, key=language_breakdown.get) if language_breakdown else 'Unknown'}."
-    )
+    if purpose_hint:
+        detail_text = readme_info or "the core use-case and key capabilities documented in the repository"
+        project_summary = (
+            f"This project is {purpose_hint.rstrip('.')}" + ". "
+            f"It focuses on {detail_text.rstrip('.')}" + ". "
+            f"Technically, the scan found {total_files} files ({len(source_files)} analyzable) with {total_lines} lines of content across {len(language_breakdown)} language groups."
+        )
+    else:
+        project_summary = (
+            f"This project is a software repository named {root.name}. "
+            "It helps users by implementing source code, configuration, and documentation for its target use-case. "
+            f"Technically, it contains {total_files} files ({len(source_files)} analyzable) and {total_lines} lines across {len(language_breakdown)} language groups, led by {max(language_breakdown, key=language_breakdown.get) if language_breakdown else 'Unknown'}."
+        )
 
     architecture_summary = (
         "Architecture appears module-centric with import-heavy files acting as coordination hubs. "
@@ -175,6 +280,25 @@ def summarize_project(local_path: str, max_files: int = 2000) -> ProjectSummarie
         dependency_edges=dependency_graph.summary.total_edges,
         call_edges=call_graph.summary.call_edges,
     )
+
+    llm_summaries = generate_repo_summaries(
+        repo_name=root.name,
+        purpose_hint=purpose_hint,
+        readme_info_hint=readme_info,
+        total_files=total_files,
+        analyzable_files=len(source_files),
+        total_lines=total_lines,
+        language_breakdown=language_breakdown,
+        dependency_edges=dependency_graph.summary.total_edges,
+        call_edges=call_graph.summary.call_edges,
+        key_modules=key_modules,
+        key_dependencies=key_dependencies,
+        flow_path=flow_path,
+    )
+    if llm_summaries:
+        project_summary = llm_summaries["project_summary"]
+        architecture_summary = llm_summaries["architecture_summary"]
+        execution_flow_summary = llm_summaries["execution_flow_summary"]
 
     return ProjectSummariesResponse(
         project_summary=project_summary,
