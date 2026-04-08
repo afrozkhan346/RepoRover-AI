@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     projects_max_zip_uncompressed_bytes: int = 536870912
     projects_allowed_extensions: list[str] = Field(default_factory=list)
     projects_disallow_symlinks: bool = True
-    llm_provider: str = "gemini"
+    llm_provider: str = "groq"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1"
     ollama_timeout_seconds: int = 120
@@ -188,9 +188,9 @@ class Settings(BaseSettings):
     @classmethod
     def parse_llm_provider(cls, value: Any) -> str:
         if value is None:
-            return "gemini"
+            return "groq"
         normalized = str(value).strip().lower()
-        return normalized or "gemini"
+        return normalized or "groq"
 
     @field_validator("ollama_timeout_seconds", mode="before")
     @classmethod

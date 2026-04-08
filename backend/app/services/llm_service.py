@@ -20,7 +20,7 @@ if load_dotenv is not None:
 
 
 def _provider() -> str:
-    return os.getenv("LLM_PROVIDER", "gemini").strip().lower()
+    return os.getenv("LLM_PROVIDER", "groq").strip().lower()
 
 
 def _ollama_runtime_config() -> tuple[str, str, int]:
@@ -51,6 +51,23 @@ def _get_openai_client() -> Any | None:
         if base_url:
             return OpenAI(api_key=api_key, base_url=base_url)
         return OpenAI(api_key=api_key)
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return None
+
+
+def _get_groq_client() -> Any | None:
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    if not api_key:
+        return None
+
+    try:
+        from openai import OpenAI
+    except ImportError:
+        return None
+
+    base_url = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1").strip()
+    try:
+        return OpenAI(api_key=api_key, base_url=base_url)
     except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
         return None
 
@@ -98,6 +115,43 @@ def _generate_text_openai(
         return None
 
     model_name = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+    try:
+        response = client.chat.completions.create(
+            model=model_name,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        return None
+
+    try:
+        content = response.choices[0].message.content
+    except (AttributeError, IndexError, KeyError, TypeError):
+        return None
+
+    if not content:
+        return None
+    return str(content).strip()
+
+
+def _generate_text_groq(
+    *,
+    system_prompt: str,
+    user_prompt: str,
+    temperature: float,
+    max_tokens: int,
+    model: str | None = None,
+) -> str | None:
+    client = _get_groq_client()
+    if client is None:
+        return None
+
+    model_name = model or os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
     try:
         response = client.chat.completions.create(
@@ -195,7 +249,12 @@ def get_llm_runtime_status() -> dict[str, Any]:
     provider = _provider()
     status: dict[str, Any] = {
         "provider": provider,
-        "fallback_order": ["ollama", "gemini", "openai"],
+        "fallback_order": ["groq", "ollama", "openai", "gemini"],
+        "groq": {
+            "configured": bool(os.getenv("GROQ_API_KEY", "").strip()),
+            "model": os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+            "base_url": os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1"),
+        },
         "ollama": {
             "base_url": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
             "model": os.getenv("OLLAMA_MODEL", "llama3.1"),
@@ -221,8 +280,31 @@ def get_llm_runtime_status() -> dict[str, Any]:
 def generate_text(*, system_prompt: str, user_prompt: str, temperature: float = 0.3, max_tokens: int = 700) -> str | None:
     provider = _provider()
 
+    if provider == "groq":
+        return _generate_text_groq(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        ) or _generate_text_openai(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        ) or _generate_text_gemini(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+
     if provider == "ollama":
         return _generate_text_ollama(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        ) or _generate_text_groq(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             temperature=temperature,
@@ -245,6 +327,11 @@ def generate_text(*, system_prompt: str, user_prompt: str, temperature: float = 
             user_prompt=user_prompt,
             temperature=temperature,
             max_tokens=max_tokens,
+        ) or _generate_text_groq(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
         ) or _generate_text_openai(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
@@ -258,6 +345,11 @@ def generate_text(*, system_prompt: str, user_prompt: str, temperature: float = 
             user_prompt=user_prompt,
             temperature=temperature,
             max_tokens=max_tokens,
+        ) or _generate_text_groq(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
         ) or _generate_text_gemini(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
@@ -265,7 +357,12 @@ def generate_text(*, system_prompt: str, user_prompt: str, temperature: float = 
             max_tokens=max_tokens,
         )
 
-    return _generate_text_gemini(
+    return _generate_text_groq(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    ) or _generate_text_gemini(
         system_prompt=system_prompt,
         user_prompt=user_prompt,
         temperature=temperature,
