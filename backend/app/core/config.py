@@ -22,6 +22,10 @@ class Settings(BaseSettings):
             "http://127.0.0.1:5173",
             "http://localhost:5174",
             "http://127.0.0.1:5174",
+            "http://localhost:5175",
+            "http://127.0.0.1:5175",
+            "http://localhost:5176",
+            "http://127.0.0.1:5176",
         ]
     )
     database_backend: str = "sqlite"
@@ -44,6 +48,10 @@ class Settings(BaseSettings):
     projects_max_zip_uncompressed_bytes: int = 536870912
     projects_allowed_extensions: list[str] = Field(default_factory=list)
     projects_disallow_symlinks: bool = True
+    llm_provider: str = "gemini"
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3.1"
+    ollama_timeout_seconds: int = 120
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -62,6 +70,10 @@ class Settings(BaseSettings):
                 "http://127.0.0.1:5173",
                 "http://localhost:5174",
                 "http://127.0.0.1:5174",
+                "http://localhost:5175",
+                "http://127.0.0.1:5175",
+                "http://localhost:5176",
+                "http://127.0.0.1:5176",
             ]
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
@@ -74,6 +86,10 @@ class Settings(BaseSettings):
             "http://127.0.0.1:5173",
             "http://localhost:5174",
             "http://127.0.0.1:5174",
+            "http://localhost:5175",
+            "http://127.0.0.1:5175",
+            "http://localhost:5176",
+            "http://127.0.0.1:5176",
         ]
 
     @field_validator("debug", mode="before")
@@ -167,6 +183,24 @@ class Settings(BaseSettings):
             if normalized in {"0", "false", "no", "off", "disabled"}:
                 return False
         return bool(value)
+
+    @field_validator("llm_provider", mode="before")
+    @classmethod
+    def parse_llm_provider(cls, value: Any) -> str:
+        if value is None:
+            return "gemini"
+        normalized = str(value).strip().lower()
+        return normalized or "gemini"
+
+    @field_validator("ollama_timeout_seconds", mode="before")
+    @classmethod
+    def parse_ollama_timeout_seconds(cls, value: Any) -> int:
+        if value is None or value == "":
+            return 120
+        try:
+            return max(int(value), 1)
+        except (TypeError, ValueError):
+            return 120
 
     @model_validator(mode="after")
     def validate_database_configuration(self) -> "Settings":

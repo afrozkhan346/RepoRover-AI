@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.core.config import settings
+from app.services.llm_service import get_llm_runtime_status
 
 router = APIRouter()
 
@@ -23,3 +24,8 @@ def version_info() -> dict[str, str]:
         "environment": settings.environment,
         "api_prefix": settings.api_prefix,
     }
+
+
+@router.get("/llm")
+def llm_health() -> dict:
+    return get_llm_runtime_status()
