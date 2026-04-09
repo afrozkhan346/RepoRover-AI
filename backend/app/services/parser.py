@@ -76,6 +76,47 @@ AST_SUPPORTED_EXTENSIONS = {
     ".sh",
 }
 
+TEST_DIR_MARKERS = {"test", "tests", "__tests__", "spec", "specs"}
+TEST_FILE_PREFIXES = ("test_",)
+TEST_FILE_SUFFIXES = ("_test", ".test", ".spec")
+SOURCE_DIR_MARKERS = {"src", "source", "app", "lib", "packages"}
+CONFIG_DIR_MARKERS = {"config", "configs", ".github", ".vscode", ".idea"}
+CONFIG_FILE_NAMES = {
+    "dockerfile",
+    "makefile",
+    "requirements.txt",
+    "pyproject.toml",
+    "package.json",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "tsconfig.json",
+    "vite.config.ts",
+    "vite.config.js",
+    "webpack.config.js",
+    "rollup.config.js",
+    "jest.config.js",
+    "jest.config.ts",
+    ".env",
+}
+CONFIG_EXTENSIONS = {
+    ".json",
+    ".yml",
+    ".yaml",
+    ".toml",
+    ".ini",
+    ".cfg",
+    ".conf",
+    ".xml",
+}
+CONFIG_BASENAME_SUFFIXES = (
+    ".config",
+    ".config.js",
+    ".config.ts",
+    ".config.cjs",
+    ".config.mjs",
+)
+
 
 @dataclass(frozen=True)
 class FileMetadata:
@@ -83,6 +124,7 @@ class FileMetadata:
     name: str
     extension: str
     size: int
+    category: str
     language: str
     ast_supported: bool
 
@@ -159,6 +201,7 @@ class ProjectParsingEngine:
                     continue
 
                 extension = file_path.suffix.lower()
+                category = _categorize_file(relative_path=relative_path, file_name=file_name, extension=extension)
                 language = LANGUAGE_BY_EXTENSION.get(extension, "Unknown")
                 ast_supported = extension in AST_SUPPORTED_EXTENSIONS
 
@@ -171,6 +214,7 @@ class ProjectParsingEngine:
                         name=file_name,
                         extension=extension,
                         size=size,
+                        category=category,
                         language=language,
                         ast_supported=ast_supported,
                     )
@@ -233,12 +277,14 @@ def scan_project(project_path: str) -> list[dict[str, str]]:
             file_path = Path(current_root) / file_name
             relative_path = file_path.relative_to(root).as_posix()
             extension = file_name.rsplit(".", 1)[-1].lower() if "." in file_name else ""
+            category = _categorize_file(relative_path=relative_path, file_name=file_name, extension=f".{extension}" if extension else "")
 
             structure.append(
                 {
                     "name": file_name,
                     "path": relative_path,
                     "extension": extension,
+                    "category": category,
                 }
             )
 
@@ -248,15 +294,16 @@ def scan_project(project_path: str) -> list[dict[str, str]]:
 def detect_language(structure: list[dict[str, str]]) -> str:
     """Infer primary language from discovered file extensions."""
 
-    extensions = [file.get("extension", "").lower() for file in structure]
+    counts: Counter[str] = Counter()
+    for file in structure:
+        extension = file.get("extension", "").lower()
+        if not extension:
+            continue
+        language = LANGUAGE_BY_EXTENSION.get(f".{extension}")
+        if language:
+            counts[language] += 1
 
-    if "py" in extensions:
-        return "Python"
-    if "js" in extensions:
-        return "JavaScript"
-    if "java" in extensions:
-        return "Java"
-    return "Unknown"
+    return counts.most_common(1)[0][0] if counts else "Unknown"
 
 
 def parse_project(project_path: str) -> dict[str, Any]:
@@ -307,6 +354,7 @@ def _build_structure_tree(
             "type": "file",
             "path": file_entry.path,
             "extension": file_entry.extension,
+            "category": file_entry.category,
             "language": file_entry.language,
             "size": file_entry.size,
             "ast_supported": file_entry.ast_supported,
@@ -353,3 +401,30 @@ def _sort_tree(node: dict[str, Any]) -> dict[str, Any]:
     next_node = dict(node)
     next_node["children"] = normalized_children
     return next_node
+
+
+def _categorize_file(*, relative_path: str, file_name: str, extension: str) -> str:
+    normalized_parts = [part.lower() for part in Path(relative_path).parts]
+    lower_name = file_name.lower()
+    stem = Path(lower_name).stem
+
+    if any(part in TEST_DIR_MARKERS for part in normalized_parts):
+        return "test"
+    if lower_name.startswith(TEST_FILE_PREFIXES):
+        return "test"
+    if any(stem.endswith(suffix) for suffix in TEST_FILE_SUFFIXES):
+        return "test"
+
+    if lower_name in CONFIG_FILE_NAMES:
+        return "config"
+    if any(lower_name.endswith(suffix) for suffix in CONFIG_BASENAME_SUFFIXES):
+        return "config"
+    if any(part in CONFIG_DIR_MARKERS for part in normalized_parts):
+        return "config"
+    if extension in CONFIG_EXTENSIONS:
+        # Do not force config classification for data/fixtures under source trees.
+        if any(part in SOURCE_DIR_MARKERS for part in normalized_parts):
+            return "source"
+        return "config"
+
+    return "source"

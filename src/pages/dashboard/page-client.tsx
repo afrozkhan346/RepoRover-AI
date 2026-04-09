@@ -56,6 +56,13 @@ export default function DashboardPageClient() {
 
     return { tokenCount, astCount, graphCount };
   }, [bundle]);
+  const usedLanguages = useMemo(
+    () =>
+      Object.entries(bundle?.project?.metrics?.language_breakdown || {}).sort(
+        (left, right) => Number(right[1]) - Number(left[1]),
+      ),
+    [bundle],
+  );
 
   const isEmpty = !bundle;
 
@@ -100,6 +107,23 @@ export default function DashboardPageClient() {
                 <StatTile icon={Sparkles} label="Reliability" value={bundle?.risk?.reliability_score ?? 0} />
               </CardContent>
             </Card>
+            <Card className="border-border/70 bg-card/90 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Used languages</CardTitle>
+                <CardDescription>Languages detected from the last saved analysis.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                {usedLanguages.length ? (
+                  usedLanguages.map(([language, count]) => (
+                    <Badge key={language} variant="outline">
+                      {language} ({String(count)})
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">No languages detected yet.</span>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </section>
 
@@ -124,11 +148,10 @@ export default function DashboardPageClient() {
               <MetricBarCard
                 title="Repository footprint"
                 description="Key metrics captured from the FastAPI project summary response."
-                labels={["Total files", "Analyzable files", "Lines", "Dependency edges", "Call edges"]}
+                labels={["Total files", "Analyzable files", "Dependency edges", "Call edges"]}
                 values={[
                   bundle.project.metrics.total_files ?? bundle.project.metrics.files_scanned,
                   bundle.project.metrics.analyzable_files ?? bundle.project.metrics.files_scanned,
-                  bundle.project.metrics.total_lines,
                   bundle.project.metrics.dependency_edges,
                   bundle.project.metrics.call_edges,
                 ]}

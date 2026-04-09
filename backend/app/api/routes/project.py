@@ -20,6 +20,19 @@ from app.services.risk_analyzer import analyze_risks
 
 router = APIRouter()
 
+UPLOAD_IGNORED_DIRS = {
+    ".git",
+    "node_modules",
+    ".next",
+    "dist",
+    "build",
+    "venv",
+    ".venv",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+}
+
 
 def graph_to_json(graph) -> dict[str, list[dict[str, object]]]:
     nodes: list[dict[str, object]] = []
@@ -96,6 +109,10 @@ def _safe_relative_path(raw_path: str) -> Path:
     return candidate
 
 
+def _is_ignored_upload_path(path: Path) -> bool:
+    return any(part.lower() in UPLOAD_IGNORED_DIRS for part in path.parts)
+
+
 @router.post("/upload")
 async def upload_project(files: list[UploadFile] = File(...), relative_paths: list[str] = Form(default=[])) -> dict:
     if not files:
@@ -118,6 +135,10 @@ async def upload_project(files: list[UploadFile] = File(...), relative_paths: li
 
         incoming_path = relative_paths[index] if relative_paths else file.filename
         safe_relative = _safe_relative_path(incoming_path)
+
+        if _is_ignored_upload_path(safe_relative):
+            continue
+
         target_path = project_dir / safe_relative
         target_path.parent.mkdir(parents=True, exist_ok=True)
 

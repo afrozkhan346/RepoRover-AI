@@ -12,6 +12,7 @@ from git import Repo
 from app.core.config import Settings
 from app.main import app
 from app.services.ast_parser import parse_project_code, parse_python_source
+from app.services.parser import parse_project, scan_project
 from app.services.parser_service import parse_source, parse_structure
 from app.services.token_service import tokenize_source
 
@@ -210,6 +211,83 @@ class ParsingPrimitivesTestCase(unittest.TestCase):
             self.assertGreaterEqual(len(payload["findings"]), 1)
             self.assertGreaterEqual(len(payload["token_traces"]), 1)
             self.assertGreaterEqual(len(payload["ast_traces"]), 1)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_scan_project_categorizes_source_config_and_test_files(self) -> None:
+        root = Path(tempfile.mkdtemp(prefix="repo_rover_scan_categories_"))
+        try:
+            (root / "src").mkdir(parents=True, exist_ok=True)
+            (root / "tests").mkdir(parents=True, exist_ok=True)
+            (root / "config").mkdir(parents=True, exist_ok=True)
+
+            (root / "src" / "main.py").write_text("print('ok')\n", encoding="utf-8")
+            (root / "tests" / "test_main.py").write_text("def test_ok():\n    pass\n", encoding="utf-8")
+            (root / "config" / "settings.json").write_text('{"debug": true}\n', encoding="utf-8")
+
+            scanned = scan_project(str(root))
+            categories = {entry["path"]: entry.get("category") for entry in scanned}
+
+            self.assertEqual(categories.get("src/main.py"), "source")
+            self.assertEqual(categories.get("tests/test_main.py"), "test")
+            self.assertEqual(categories.get("config/settings.json"), "config")
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_project_analyze_api_includes_category_in_file_rows(self) -> None:
+        settings_obj = Settings()
+        projects_root = Path(settings_obj.projects_workspace_path)
+        if not projects_root.is_absolute():
+            projects_root = (Path(__file__).resolve().parents[1] / projects_root).resolve()
+        projects_root.mkdir(parents=True, exist_ok=True)
+
+        project_name = "scan-category-api-test"
+        project_root = projects_root / project_name
+        shutil.rmtree(project_root, ignore_errors=True)
+        try:
+            (project_root / "src").mkdir(parents=True, exist_ok=True)
+            (project_root / "tests").mkdir(parents=True, exist_ok=True)
+            (project_root / "config").mkdir(parents=True, exist_ok=True)
+
+            (project_root / "src" / "main.py").write_text("print('ok')\n", encoding="utf-8")
+            (project_root / "tests" / "test_main.py").write_text("def test_ok():\n    pass\n", encoding="utf-8")
+            (project_root / "config" / "settings.json").write_text('{"debug": true}\n', encoding="utf-8")
+
+            client = TestClient(app)
+            response = client.get(f"/api/project/analyze/{project_name}")
+
+            self.assertEqual(response.status_code, 200)
+            payload = response.json()
+            self.assertIn("files", payload)
+            self.assertGreaterEqual(len(payload["files"]), 3)
+
+            categories = {entry["path"]: entry.get("category") for entry in payload["files"]}
+            self.assertEqual(categories.get("src/main.py"), "source")
+            self.assertEqual(categories.get("tests/test_main.py"), "test")
+            self.assertEqual(categories.get("config/settings.json"), "config")
+        finally:
+            shutil.rmtree(project_root, ignore_errors=True)
+
+    def test_parse_project_detects_typescript_primary_language(self) -> None:
+        root = Path(tempfile.mkdtemp(prefix="repo_rover_ts_language_"))
+        try:
+            (root / "src").mkdir(parents=True, exist_ok=True)
+            (root / "src" / "index.ts").write_text("export const x = 1;\n", encoding="utf-8")
+
+            payload = parse_project(str(root))
+            self.assertEqual(payload["language"], "TypeScript")
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_scan_project_treats_json_under_src_as_source(self) -> None:
+        root = Path(tempfile.mkdtemp(prefix="repo_rover_src_json_"))
+        try:
+            (root / "src").mkdir(parents=True, exist_ok=True)
+            (root / "src" / "seed.json").write_text('{"v": 1}\n', encoding="utf-8")
+
+            scanned = scan_project(str(root))
+            categories = {entry["path"]: entry.get("category") for entry in scanned}
+            self.assertEqual(categories.get("src/seed.json"), "source")
         finally:
             shutil.rmtree(root, ignore_errors=True)
 

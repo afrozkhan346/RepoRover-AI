@@ -175,3 +175,50 @@ The script prints:
 - `architecture_summary`
 - `execution_flow_summary`
 - summary metrics payload
+
+## Project Scanner Response
+
+`GET /api/project/analyze/{project_name}` returns language summary plus scanned files.
+
+Each file row includes:
+
+- `name`
+- `path`
+- `extension`
+- `category`
+
+`category` values currently emitted by the scanner:
+
+- `source`
+- `test`
+- `config`
+
+Example:
+
+```json
+{
+  "language": "Python",
+  "total_files": 3,
+  "total_files_scanned": 3,
+  "files": [
+    {
+      "name": "main.py",
+      "path": "src/main.py",
+      "extension": "py",
+      "category": "source"
+    },
+    {
+      "name": "test_main.py",
+      "path": "tests/test_main.py",
+      "extension": "py",
+      "category": "test"
+    },
+    {
+      "name": "settings.json",
+      "path": "config/settings.json",
+      "extension": "json",
+      "category": "config"
+    }
+  ]
+}
+```

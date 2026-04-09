@@ -49,6 +49,18 @@ type AnalysisBundle = {
 };
 
 const STORAGE_KEY = "repoorover:last-analysis";
+const IGNORED_UPLOAD_DIRS = new Set([
+  ".git",
+  "node_modules",
+  ".next",
+  "dist",
+  "build",
+  "venv",
+  ".venv",
+  "__pycache__",
+  ".mypy_cache",
+  ".pytest_cache",
+]);
 
 function buildMermaidDefinition(flowPath: string[]) {
   if (!flowPath.length) {
@@ -58,6 +70,16 @@ function buildMermaidDefinition(flowPath: string[]) {
   const nodes = flowPath.map((label, index) => `  N${index}["${label.replace(/"/g, "'")}"]`).join("\n");
   const edges = flowPath.slice(0, -1).map((_, index) => `  N${index} --> N${index + 1}`).join("\n");
   return `flowchart LR\n${nodes}\n${edges}`;
+}
+
+function shouldSkipUploadFile(file: File): boolean {
+  const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+  const parts = relativePath.split("/").map((part) => part.trim().toLowerCase()).filter(Boolean);
+  return parts.some((part) => IGNORED_UPLOAD_DIRS.has(part));
+}
+
+function filterUploadFiles(files: File[]): File[] {
+  return files.filter((file) => !shouldSkipUploadFile(file));
 }
 
 export default function AnalyzePageClient() {
@@ -108,6 +130,13 @@ export default function AnalyzePageClient() {
 
   const graphImpactNodes = useMemo(
     () => (bundle?.graph.top_impact_rank || []).slice(0, 5),
+    [bundle],
+  );
+  const usedLanguages = useMemo(
+    () =>
+      Object.entries(bundle?.project.metrics.language_breakdown || {}).sort(
+        (left, right) => Number(right[1]) - Number(left[1]),
+      ),
     [bundle],
   );
 
@@ -251,7 +280,7 @@ export default function AnalyzePageClient() {
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="githubUrl">GitHub URL (optional)</Label>
+                <Label htmlFor="githubUrl">GitHub URL</Label>
                 <Input
                   id="githubUrl"
                   placeholder="https://github.com/owner/repo"
@@ -259,11 +288,34 @@ export default function AnalyzePageClient() {
                   onChange={(event) => setGithubUrl(event.target.value)}
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Project source</Label>
-                <p className="text-sm text-muted-foreground">
-                  Local path input is disabled. Use GitHub URL clone or upload a project folder below.
-                </p>
+              <div className="space-y-2 md:col-span-2">
+                <input
+                  ref={folderInputRef}
+                  id="project-folder-input"
+                  type="file"
+                  className="hidden"
+                  multiple
+                  onChange={(event) => setSelectedFiles(filterUploadFiles(Array.from(event.target.files ?? [])))}
+                />
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button type="button" variant="outline" onClick={openFolderPicker} className="gap-2">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                      +
+                    </span>
+                    Choose project folder
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleProjectUpload}
+                    disabled={isUploadingProject || !selectedFiles.length}
+                  >
+                    {isUploadingProject ? "Uploading folder..." : "Upload selected folder"}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {selectedFiles.length ? `${selectedFiles.length} files selected` : "No folder selected"}
+                  </span>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="graphType">Graph type</Label>
@@ -294,35 +346,6 @@ export default function AnalyzePageClient() {
                   value={codeProjectName}
                   onChange={(event) => setCodeProjectName(event.target.value)}
                 />
-              </div>
-              <div className="md:col-span-2 rounded-xl border bg-muted/20 p-3">
-                <input
-                  ref={folderInputRef}
-                  id="project-folder-input"
-                  type="file"
-                  className="hidden"
-                  multiple
-                  onChange={(event) => setSelectedFiles(Array.from(event.target.files ?? []))}
-                />
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button type="button" variant="outline" onClick={openFolderPicker} className="gap-2">
-                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                      +
-                    </span>
-                    {selectedFiles.length ? "Change project folder" : "Choose project folder"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleProjectUpload}
-                    disabled={isUploadingProject || !selectedFiles.length}
-                  >
-                    {isUploadingProject ? "Uploading folder..." : "Upload selected folder"}
-                  </Button>
-                  <span className="text-xs text-muted-foreground">
-                    {selectedFiles.length ? `${selectedFiles.length} files selected` : "No folder selected"}
-                  </span>
-                </div>
               </div>
               <div className="flex flex-wrap gap-3 md:col-span-2">
                 <Button onClick={handleAnalyze} disabled={isLoading} className="gap-2">
@@ -376,6 +399,23 @@ export default function AnalyzePageClient() {
                 <StatTile icon={Code2} label="Tokens" value={bundle?.traces.token_traces.length ?? 0} />
                 <StatTile icon={FileText} label="AST nodes" value={bundle?.traces.ast_traces.length ?? 0} />
                 <StatTile icon={Route} label="Paths" value={bundle?.traces.graph_traces.length ?? 0} />
+              </CardContent>
+            </Card>
+            <Card className="border-border/70 bg-card/90 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Used languages</CardTitle>
+                <CardDescription>Languages detected from scanned repository files.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                {usedLanguages.length ? (
+                  usedLanguages.map(([language, count]) => (
+                    <Badge key={language} variant="outline">
+                      {language} ({count})
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">No languages detected yet.</span>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -498,11 +538,10 @@ export default function AnalyzePageClient() {
               <MetricBarCard
                 title="Project size and edge footprint"
                 description="Backend-provided repository metrics visualized with Chart.js."
-                labels={["Total files", "Analyzable files", "Total lines", "Dependency edges", "Call edges"]}
+                labels={["Total files", "Analyzable files", "Dependency edges", "Call edges"]}
                 values={[
                   bundle.project.metrics.total_files ?? bundle.project.metrics.files_scanned,
                   bundle.project.metrics.analyzable_files ?? bundle.project.metrics.files_scanned,
-                  bundle.project.metrics.total_lines,
                   bundle.project.metrics.dependency_edges,
                   bundle.project.metrics.call_edges,
                 ]}
