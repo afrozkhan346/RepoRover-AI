@@ -56,6 +56,13 @@ export default function DashboardPageClient() {
 
     return { tokenCount, astCount, graphCount };
   }, [bundle]);
+  const usedLanguages = useMemo(
+    () =>
+      Object.entries(bundle?.project?.metrics?.language_breakdown || {}).sort(
+        (left, right) => Number(right[1]) - Number(left[1]),
+      ),
+    [bundle],
+  );
 
   const isEmpty = !bundle;
 
@@ -98,6 +105,23 @@ export default function DashboardPageClient() {
                 <StatTile icon={GitBranch} label="Graph type" value={bundle?.graph?.graph_type ?? "n/a"} />
                 <StatTile icon={TriangleAlert} label="Risk" value={bundle?.risk?.risk_score ?? 0} />
                 <StatTile icon={Sparkles} label="Reliability" value={bundle?.risk?.reliability_score ?? 0} />
+              </CardContent>
+            </Card>
+            <Card className="border-border/70 bg-card/90 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Used languages</CardTitle>
+                <CardDescription>Languages detected from the last saved analysis.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                {usedLanguages.length ? (
+                  usedLanguages.map(([language, count]) => (
+                    <Badge key={language} variant="outline">
+                      {language} ({String(count)})
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">No languages detected yet.</span>
+                )}
               </CardContent>
             </Card>
           </div>

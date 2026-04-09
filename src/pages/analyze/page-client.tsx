@@ -132,6 +132,13 @@ export default function AnalyzePageClient() {
     () => (bundle?.graph.top_impact_rank || []).slice(0, 5),
     [bundle],
   );
+  const usedLanguages = useMemo(
+    () =>
+      Object.entries(bundle?.project.metrics.language_breakdown || {}).sort(
+        (left, right) => Number(right[1]) - Number(left[1]),
+      ),
+    [bundle],
+  );
 
   const evidenceDistribution = useMemo(() => {
     const tokenCount = bundle?.traces.token_traces.filter((trace) => trace.evidence?.kind === "token").length ?? 0;
@@ -392,6 +399,23 @@ export default function AnalyzePageClient() {
                 <StatTile icon={Code2} label="Tokens" value={bundle?.traces.token_traces.length ?? 0} />
                 <StatTile icon={FileText} label="AST nodes" value={bundle?.traces.ast_traces.length ?? 0} />
                 <StatTile icon={Route} label="Paths" value={bundle?.traces.graph_traces.length ?? 0} />
+              </CardContent>
+            </Card>
+            <Card className="border-border/70 bg-card/90 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Used languages</CardTitle>
+                <CardDescription>Languages detected from scanned repository files.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                {usedLanguages.length ? (
+                  usedLanguages.map(([language, count]) => (
+                    <Badge key={language} variant="outline">
+                      {language} ({count})
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">No languages detected yet.</span>
+                )}
               </CardContent>
             </Card>
           </div>
