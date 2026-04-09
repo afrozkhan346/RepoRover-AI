@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -190,3 +190,35 @@ class Repository(Base):
     analyzed_at: Mapped[str | None] = mapped_column(String, nullable=True)
     analysis_data: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class CacheEntry(Base):
+    """
+    Persistent key-value cache stored in SQLite.
+
+    - namespace : logical group, e.g. "graph", "summary", "parser"
+    - cache_key : unique string key within the namespace
+    - value     : JSON-serialised payload
+    - expires_at: UTC datetime after which this entry is stale (NULL = never)
+    - created_at: when the entry was first written
+    - updated_at: last time the entry was refreshed
+    """
+
+    __tablename__ = "cache_entries"
+    __table_args__ = (
+        UniqueConstraint("namespace", "cache_key", name="uq_cache_namespace_key"),
+        Index("ix_cache_expires_at", "expires_at"),
+        Index("ix_cache_namespace", "namespace"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    namespace: Mapped[str] = mapped_column(String(64), nullable=False)
+    cache_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
