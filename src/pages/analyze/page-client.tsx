@@ -514,11 +514,10 @@ export default function AnalyzePageClient() {
               <MetricBarCard
                 title="Project size and edge footprint"
                 description="Backend-provided repository metrics visualized with Chart.js."
-                labels={["Total files", "Analyzable files", "Total lines", "Dependency edges", "Call edges"]}
+                labels={["Total files", "Analyzable files", "Dependency edges", "Call edges"]}
                 values={[
                   bundle.project.metrics.total_files ?? bundle.project.metrics.files_scanned,
                   bundle.project.metrics.analyzable_files ?? bundle.project.metrics.files_scanned,
-                  bundle.project.metrics.total_lines,
                   bundle.project.metrics.dependency_edges,
                   bundle.project.metrics.call_edges,
                 ]}
