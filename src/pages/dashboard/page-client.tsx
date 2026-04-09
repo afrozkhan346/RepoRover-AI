@@ -7,11 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MermaidDiagram } from "@/components/analysis/mermaid-diagram";
 import { MetricBarCard, SeverityDoughnutCard } from "@/components/analysis/metric-charts";
+import { canRenderOnDashboard } from "@/lib/analysis-sections";
+import { useSession } from "@/lib/auth-client";
+import { clearInMemoryAnalysisBundle, getInMemoryAnalysisBundle } from "@/lib/analysis-memory";
 import { Activity, ArrowRight, GitBranch, LayoutDashboard, Sparkles, TriangleAlert } from "lucide-react";
 
 type SavedBundle = any;
 
-const STORAGE_KEY = "repoorover:last-analysis";
+const STORAGE_KEY_PREFIX = "repoorover:last-analysis";
 
 function buildMermaidDefinition(flowPath: string[]) {
   if (!flowPath.length) {
@@ -24,20 +27,39 @@ function buildMermaidDefinition(flowPath: string[]) {
 }
 
 export default function DashboardPageClient() {
+  const { data: session, isPending: isSessionPending } = useSession();
   const [bundle, setBundle] = useState<SavedBundle | null>(null);
 
+  const storageKey = useMemo(() => {
+    const userId = session?.user?.id;
+    return userId ? `${STORAGE_KEY_PREFIX}:${userId}` : null;
+  }, [session?.user?.id]);
+
   useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (isSessionPending) {
+      return;
+    }
+
+    if (!storageKey) {
+      setBundle(getInMemoryAnalysisBundle<SavedBundle>());
+      window.localStorage.removeItem(STORAGE_KEY_PREFIX);
+      return;
+    }
+
+    const saved = window.localStorage.getItem(storageKey);
     if (!saved) {
+      setBundle(getInMemoryAnalysisBundle<SavedBundle>());
       return;
     }
 
     try {
       setBundle(JSON.parse(saved));
     } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(storageKey);
+      clearInMemoryAnalysisBundle();
+      setBundle(null);
     }
-  }, []);
+  }, [isSessionPending, storageKey]);
 
   const mermaidDefinition = useMemo(
     () => buildMermaidDefinition(bundle?.project?.flow_path || bundle?.graph?.traversal?.bfs_order || []),
@@ -46,6 +68,13 @@ export default function DashboardPageClient() {
 
   const graphImpactNodes = useMemo(
     () => (bundle?.graph?.top_impact_rank || []).slice(0, 5),
+    [bundle],
+  );
+  const prioritizedSignals = useMemo(
+    () =>
+      [...(bundle?.risk?.top_signals || [])]
+        .sort((left: any, right: any) => Number(right.weight) - Number(left.weight))
+        .slice(0, 6),
     [bundle],
   );
 
@@ -107,23 +136,25 @@ export default function DashboardPageClient() {
                 <StatTile icon={Sparkles} label="Reliability" value={bundle?.risk?.reliability_score ?? 0} />
               </CardContent>
             </Card>
-            <Card className="border-border/70 bg-card/90 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">Used languages</CardTitle>
-                <CardDescription>Languages detected from the last saved analysis.</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
-                {usedLanguages.length ? (
-                  usedLanguages.map(([language, count]) => (
-                    <Badge key={language} variant="outline">
-                      {language} ({String(count)})
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">No languages detected yet.</span>
-                )}
-              </CardContent>
-            </Card>
+            {canRenderOnDashboard("used-languages") ? (
+              <Card className="border-border/70 bg-card/90 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-base">Used languages</CardTitle>
+                  <CardDescription>Languages detected from the last saved analysis.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2">
+                  {usedLanguages.length ? (
+                    usedLanguages.map(([language, count]) => (
+                      <Badge key={language} variant="outline">
+                        {language} ({String(count)})
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">No languages detected yet.</span>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
           </div>
         </section>
 
@@ -144,78 +175,146 @@ export default function DashboardPageClient() {
           </Card>
         ) : (
           <section className="space-y-6">
-            <div className="grid gap-6 xl:grid-cols-2">
-              <MetricBarCard
-                title="Repository footprint"
-                description="Key metrics captured from the FastAPI project summary response."
-                labels={["Total files", "Analyzable files", "Dependency edges", "Call edges"]}
-                values={[
-                  bundle.project.metrics.total_files ?? bundle.project.metrics.files_scanned,
-                  bundle.project.metrics.analyzable_files ?? bundle.project.metrics.files_scanned,
-                  bundle.project.metrics.dependency_edges,
-                  bundle.project.metrics.call_edges,
-                ]}
-              />
-              <SeverityDoughnutCard
-                title="Severity mix"
-                description="Risk scoring buckets from the latest backend run."
-                labels={["High", "Medium", "Low"]}
-                values={[
-                  bundle.risk.severity_distribution.high,
-                  bundle.risk.severity_distribution.medium,
-                  bundle.risk.severity_distribution.low,
-                ]}
-                colors={["#dc2626", "#f59e0b", "#16a34a"]}
-              />
-            </div>
+            {canRenderOnDashboard("risks") || canRenderOnDashboard("priority") ? (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {canRenderOnDashboard("risks") ? (
+                  <Card className="border-border/70 bg-card/95 shadow-sm">
+                    <CardHeader>
+                      <CardTitle>Risks</CardTitle>
+                      <CardDescription>Top reliability and quality risks detected by analysis.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {bundle.quality.issues.length ? (
+                        bundle.quality.issues.slice(0, 5).map((issue: any) => (
+                          <div key={`${issue.category}-${issue.detail}`} className="rounded-xl border bg-muted/20 p-3 text-sm">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="font-semibold text-foreground">{issue.category}</span>
+                              <Badge variant="outline">{issue.severity}</Badge>
+                            </div>
+                            <p className="mt-2 text-muted-foreground">{issue.detail}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No risk issues reported.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : null}
 
-            <div className="grid gap-6 xl:grid-cols-2">
-              <MetricBarCard
-                title="Graph impact ranking"
-                description="Top nodes surfaced by the backend NetworkX analysis."
-                labels={graphImpactNodes.map((node: any) => node.label)}
-                values={graphImpactNodes.map((node: any) => Number(node.score.toFixed(3)))}
-                accent="rgba(13, 148, 136, 0.9)"
-              />
-              <SeverityDoughnutCard
-                title="Explainability evidence mix"
-                description="Token, AST, and graph traces from the last saved analysis."
-                labels={["Token", "AST", "Graph"]}
-                values={[
-                  evidenceDistribution.tokenCount,
-                  evidenceDistribution.astCount,
-                  evidenceDistribution.graphCount,
-                ]}
-                colors={["#2563eb", "#7c3aed", "#0f766e"]}
-              />
-            </div>
+                {canRenderOnDashboard("priority") ? (
+                  <Card className="border-border/70 bg-card/95 shadow-sm">
+                    <CardHeader>
+                      <CardTitle>Priority</CardTitle>
+                      <CardDescription>Highest-impact risk signals ranked by backend weight.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {prioritizedSignals.length ? (
+                        prioritizedSignals.map((signal: any) => (
+                          <div key={`${signal.title}-${signal.detail}`} className="rounded-xl border bg-muted/20 p-3 text-sm">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="font-semibold text-foreground">{signal.title}</span>
+                              <Badge variant="outline">{Number(signal.weight).toFixed(2)}</Badge>
+                            </div>
+                            <p className="mt-2 text-muted-foreground">{signal.detail}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No priority signals available.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : null}
+              </div>
+            ) : null}
 
-            <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-              <Card className="border-border/70 bg-card/95 shadow-sm">
-                <CardHeader>
-                  <CardTitle>Backend summaries</CardTitle>
-                  <CardDescription>Project summary, architecture summary, and execution flow.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
-                  <p className="text-foreground">{bundle.project.project_summary}</p>
-                  <p>{bundle.project.architecture_summary}</p>
-                  <p>{bundle.project.execution_flow_summary}</p>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {(bundle.project.key_dependencies || []).slice(0, 6).map((dependency: string) => (
-                      <Badge key={dependency} variant="secondary">
-                        {dependency}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+            {canRenderOnDashboard("repository-footprint") || canRenderOnDashboard("severity-mix") ? (
+              <div className="grid gap-6 xl:grid-cols-2">
+                {canRenderOnDashboard("repository-footprint") ? (
+                  <MetricBarCard
+                    title="Repository footprint"
+                    description="Key metrics captured from the FastAPI project summary response."
+                    labels={["Analyzable files", "Dependency edges", "Call edges"]}
+                    values={[
+                      bundle.project.metrics.analyzable_files ?? bundle.project.metrics.files_scanned,
+                      bundle.project.metrics.dependency_edges,
+                      bundle.project.metrics.call_edges,
+                    ]}
+                  />
+                ) : null}
+                {canRenderOnDashboard("severity-mix") ? (
+                  <SeverityDoughnutCard
+                    title="Severity mix"
+                    description="Risk scoring buckets from the latest backend run."
+                    labels={["High", "Medium", "Low"]}
+                    values={[
+                      bundle.risk.severity_distribution.high,
+                      bundle.risk.severity_distribution.medium,
+                      bundle.risk.severity_distribution.low,
+                    ]}
+                    colors={["#dc2626", "#f59e0b", "#16a34a"]}
+                  />
+                ) : null}
+              </div>
+            ) : null}
 
-              <MermaidDiagram
-                title="Flow path"
-                description="A rendered view of the saved execution path from the backend response."
-                definition={mermaidDefinition}
-              />
-            </div>
+            {canRenderOnDashboard("graph-impact-ranking") || canRenderOnDashboard("evidence-mix") ? (
+              <div className="grid gap-6 xl:grid-cols-2">
+                {canRenderOnDashboard("graph-impact-ranking") ? (
+                  <MetricBarCard
+                    title="Graph impact ranking"
+                    description="Top nodes surfaced by the backend NetworkX analysis."
+                    labels={graphImpactNodes.map((node: any) => node.label)}
+                    values={graphImpactNodes.map((node: any) => Number(node.score.toFixed(3)))}
+                    accent="rgba(13, 148, 136, 0.9)"
+                  />
+                ) : null}
+                {canRenderOnDashboard("evidence-mix") ? (
+                  <SeverityDoughnutCard
+                    title="Explainability evidence mix"
+                    description="Token, AST, and graph traces from the last saved analysis."
+                    labels={["Token", "AST", "Graph"]}
+                    values={[
+                      evidenceDistribution.tokenCount,
+                      evidenceDistribution.astCount,
+                      evidenceDistribution.graphCount,
+                    ]}
+                    colors={["#2563eb", "#7c3aed", "#0f766e"]}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+
+            {canRenderOnDashboard("backend-summaries") || canRenderOnDashboard("flow-path") ? (
+              <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+                {canRenderOnDashboard("backend-summaries") ? (
+                  <Card className="border-border/70 bg-card/95 shadow-sm">
+                    <CardHeader>
+                      <CardTitle>Backend summaries</CardTitle>
+                      <CardDescription>Project summary, architecture summary, and execution flow.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
+                      <p className="text-foreground">{bundle.project.project_summary}</p>
+                      <p>{bundle.project.architecture_summary}</p>
+                      <p>{bundle.project.execution_flow_summary}</p>
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {(bundle.project.key_dependencies || []).slice(0, 6).map((dependency: string) => (
+                          <Badge key={dependency} variant="secondary">
+                            {dependency}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : null}
+                {canRenderOnDashboard("flow-path") ? (
+                  <MermaidDiagram
+                    title="Flow path"
+                    description="A rendered view of the saved execution path from the backend response."
+                    definition={mermaidDefinition}
+                  />
+                ) : null}
+              </div>
+            ) : null}
           </section>
         )}
       </main>
