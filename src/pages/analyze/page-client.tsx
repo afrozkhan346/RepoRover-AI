@@ -24,8 +24,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MermaidDiagram } from "@/components/analysis/mermaid-diagram";
-import { MetricBarCard, SeverityDoughnutCard } from "@/components/analysis/metric-charts";
+import { canRenderOnAnalyze } from "@/lib/analysis-sections";
+import { useSession } from "@/lib/auth-client";
+import { clearInMemoryAnalysisBundle, setInMemoryAnalysisBundle } from "@/lib/analysis-memory";
 import {
   Activity,
   Brain,
@@ -48,7 +49,7 @@ type AnalysisBundle = {
   traces: ExplainabilityTraceResponse;
 };
 
-const STORAGE_KEY = "repoorover:last-analysis";
+const STORAGE_KEY_PREFIX = "repoorover:last-analysis";
 const IGNORED_UPLOAD_DIRS = new Set([
   ".git",
   "node_modules",
@@ -62,16 +63,6 @@ const IGNORED_UPLOAD_DIRS = new Set([
   ".pytest_cache",
 ]);
 
-function buildMermaidDefinition(flowPath: string[]) {
-  if (!flowPath.length) {
-    return "flowchart LR\n  A[No flow path available]";
-  }
-
-  const nodes = flowPath.map((label, index) => `  N${index}["${label.replace(/"/g, "'")}"]`).join("\n");
-  const edges = flowPath.slice(0, -1).map((_, index) => `  N${index} --> N${index + 1}`).join("\n");
-  return `flowchart LR\n${nodes}\n${edges}`;
-}
-
 function shouldSkipUploadFile(file: File): boolean {
   const relativePath = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
   const parts = relativePath.split("/").map((part) => part.trim().toLowerCase()).filter(Boolean);
@@ -83,6 +74,7 @@ function filterUploadFiles(files: File[]): File[] {
 }
 
 export default function AnalyzePageClient() {
+  const { data: session, isPending: isSessionPending } = useSession();
   const folderInputRef = useRef<HTMLInputElement | null>(null);
   const [githubUrl, setGithubUrl] = useState("");
   const [localPath, setLocalPath] = useState("");
@@ -97,6 +89,11 @@ export default function AnalyzePageClient() {
   const [error, setError] = useState<string | null>(null);
   const [level, setLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
 
+  const storageKey = useMemo(() => {
+    const userId = session?.user?.id;
+    return userId ? `${STORAGE_KEY_PREFIX}:${userId}` : null;
+  }, [session?.user?.id]);
+
   useEffect(() => {
     if (!folderInputRef.current) {
       return;
@@ -106,10 +103,29 @@ export default function AnalyzePageClient() {
     folderInputRef.current.setAttribute("directory", "");
   }, []);
 
-  const mermaidDefinition = useMemo(
-    () => buildMermaidDefinition(bundle?.project.flow_path || bundle?.graph.traversal.bfs_order || []),
-    [bundle],
-  );
+  useEffect(() => {
+    if (isSessionPending) {
+      return;
+    }
+
+    if (!storageKey) {
+      setBundle(null);
+      clearInMemoryAnalysisBundle();
+      window.localStorage.removeItem(STORAGE_KEY_PREFIX);
+      return;
+    }
+
+    const saved = window.localStorage.getItem(storageKey);
+    if (!saved) {
+      return;
+    }
+
+    try {
+      setBundle(JSON.parse(saved) as AnalysisBundle);
+    } catch {
+      window.localStorage.removeItem(storageKey);
+    }
+  }, [isSessionPending, storageKey]);
 
   const explanationByLevel = useMemo(
     () => ({
@@ -120,18 +136,6 @@ export default function AnalyzePageClient() {
     [bundle],
   );
 
-  const prioritizedSignals = useMemo(
-    () =>
-      [...(bundle?.risk.top_signals || [])]
-        .sort((left, right) => right.weight - left.weight)
-        .slice(0, 6),
-    [bundle],
-  );
-
-  const graphImpactNodes = useMemo(
-    () => (bundle?.graph.top_impact_rank || []).slice(0, 5),
-    [bundle],
-  );
   const usedLanguages = useMemo(
     () =>
       Object.entries(bundle?.project.metrics.language_breakdown || {}).sort(
@@ -139,13 +143,36 @@ export default function AnalyzePageClient() {
       ),
     [bundle],
   );
+  const fileTreeEntries = useMemo(() => {
+    if (!bundle) {
+      return [];
+    }
 
-  const evidenceDistribution = useMemo(() => {
-    const tokenCount = bundle?.traces.token_traces.filter((trace) => trace.evidence?.kind === "token").length ?? 0;
-    const astCount = bundle?.traces.ast_traces.filter((trace) => trace.evidence?.kind === "ast").length ?? 0;
-    const graphCount = bundle?.traces.graph_traces.length ?? 0;
+    const filePaths = new Set<string>();
 
-    return { tokenCount, astCount, graphCount };
+    for (const trace of bundle.traces.token_traces) {
+      if (trace.file_path) {
+        filePaths.add(trace.file_path);
+      }
+    }
+
+    for (const trace of bundle.traces.ast_traces) {
+      if (trace.file_path) {
+        filePaths.add(trace.file_path);
+      }
+    }
+
+    for (const issue of bundle.quality.issues) {
+      if (issue.file_path) {
+        filePaths.add(issue.file_path);
+      }
+    }
+
+    if (bundle.traces.focus_file) {
+      filePaths.add(bundle.traces.focus_file);
+    }
+
+    return Array.from(filePaths).sort((left, right) => left.localeCompare(right)).slice(0, 24);
   }, [bundle]);
 
   const deriveProjectNameFromPath = (projectPath: string) => {
@@ -189,7 +216,12 @@ export default function AnalyzePageClient() {
 
       const nextBundle: AnalysisBundle = { project, quality, risk, graph, traces };
       setBundle(nextBundle);
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextBundle));
+      setInMemoryAnalysisBundle(nextBundle);
+      if (storageKey) {
+        window.localStorage.setItem(storageKey, JSON.stringify(nextBundle));
+      } else {
+        window.localStorage.removeItem(STORAGE_KEY_PREFIX);
+      }
       toast.success("FastAPI analysis complete.");
     } catch (analysisError) {
       const message = analysisError instanceof Error ? analysisError.message : "Analysis failed";
@@ -263,7 +295,7 @@ export default function AnalyzePageClient() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_35%),linear-gradient(180deg,_rgba(2,6,23,0.04),_transparent_40%)]">
       <Navigation />
-      <main className="container mx-auto px-4 py-8 lg:py-12 space-y-8">
+      <main className="container mx-auto px-4 py-8 lg:py-12 space-y-8" data-view-mode="minimal">
         <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <Card className="border-border/70 bg-card/95 shadow-sm">
             <CardHeader className="space-y-4">
@@ -369,7 +401,8 @@ export default function AnalyzePageClient() {
           </Card>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            <Card className="border-border/70 bg-card/90 shadow-sm">
+            {canRenderOnAnalyze("backend-signals") ? (
+              <Card className="border-border/70 bg-card/90 shadow-sm">
               <CardHeader>
                 <CardTitle className="text-base">Backend signals</CardTitle>
                 <CardDescription>Metrics returned by the FastAPI analysis pipeline.</CardDescription>
@@ -389,8 +422,10 @@ export default function AnalyzePageClient() {
                 <StatTile icon={TriangleAlert} label="Risk score" value={bundle?.risk.risk_score ?? 0} />
                 <StatTile icon={Brain} label="Reliability" value={bundle?.risk.reliability_score ?? 0} />
               </CardContent>
-            </Card>
-            <Card className="border-border/70 bg-card/90 shadow-sm">
+              </Card>
+            ) : null}
+            {canRenderOnAnalyze("explainability-coverage") ? (
+              <Card className="border-border/70 bg-card/90 shadow-sm">
               <CardHeader>
                 <CardTitle className="text-base">Explainability coverage</CardTitle>
                 <CardDescription>Trace counts tied back to tokens, AST nodes, and graph paths.</CardDescription>
@@ -400,8 +435,29 @@ export default function AnalyzePageClient() {
                 <StatTile icon={FileText} label="AST nodes" value={bundle?.traces.ast_traces.length ?? 0} />
                 <StatTile icon={Route} label="Paths" value={bundle?.traces.graph_traces.length ?? 0} />
               </CardContent>
-            </Card>
-            <Card className="border-border/70 bg-card/90 shadow-sm">
+              </Card>
+            ) : null}
+            {canRenderOnAnalyze("file-tree") ? (
+              <Card className="border-border/70 bg-card/90 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">File tree</CardTitle>
+                <CardDescription>Paths discovered from explainability and quality findings.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {fileTreeEntries.length ? (
+                  fileTreeEntries.map((path) => (
+                    <div key={path} className="rounded-md border bg-background/80 px-2 py-1 font-mono text-xs">
+                      {path}
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">No file paths detected yet.</span>
+                )}
+              </CardContent>
+              </Card>
+            ) : null}
+            {canRenderOnAnalyze("used-languages") ? (
+              <Card className="border-border/70 bg-card/90 shadow-sm">
               <CardHeader>
                 <CardTitle className="text-base">Used languages</CardTitle>
                 <CardDescription>Languages detected from scanned repository files.</CardDescription>
@@ -417,28 +473,17 @@ export default function AnalyzePageClient() {
                   <span className="text-sm text-muted-foreground">No languages detected yet.</span>
                 )}
               </CardContent>
-            </Card>
+              </Card>
+            ) : null}
           </div>
         </section>
 
         {bundle ? (
           <section className="space-y-6">
-            <Card className="border-border/70 bg-card/95 shadow-sm">
+            {canRenderOnAnalyze("repo-summary") ? (
+              <Card className="border-border/70 bg-card/95 shadow-sm">
               <CardHeader>
-                <CardTitle>Project Dashboard</CardTitle>
-                <CardDescription>{"Upload project -> Analyze -> Show dashboard -> Explain results."}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-2 text-xs">
-                <Badge variant="secondary">Upload project</Badge>
-                <Badge variant="secondary">Analyze</Badge>
-                <Badge variant="secondary">Show dashboard</Badge>
-                <Badge variant="secondary">Explain results</Badge>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/70 bg-card/95 shadow-sm">
-              <CardHeader>
-                <CardTitle>Summary</CardTitle>
+                <CardTitle>Repo / Project summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm text-muted-foreground">
                 <p className="text-foreground">{bundle.project.project_summary}</p>
@@ -447,11 +492,13 @@ export default function AnalyzePageClient() {
                   <div className="rounded-lg border p-4">Dependencies: {bundle.project.key_dependencies.length}</div>
                 </div>
               </CardContent>
-            </Card>
+              </Card>
+            ) : null}
 
-            <Card className="border-border/70 bg-card/95 shadow-sm">
+            {canRenderOnAnalyze("code-explanation") ? (
+              <Card className="border-border/70 bg-card/95 shadow-sm">
               <CardHeader>
-                <CardTitle>Explanation (Tabs)</CardTitle>
+                <CardTitle>Code explanation section</CardTitle>
                 <CardDescription>Switch explanation depth for beginner, intermediate, and advanced audiences.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -480,106 +527,8 @@ export default function AnalyzePageClient() {
                 </div>
                 <p className="rounded-xl border bg-muted/20 p-4 text-sm leading-6 text-foreground">{explanationByLevel[level]}</p>
               </CardContent>
-            </Card>
-
-            <MermaidDiagram
-              title="Graph Visualization"
-              description="Execution graph from backend flow path rendered as a product-ready visual."
-              definition={mermaidDefinition}
-            />
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <Card className="border-border/70 bg-card/95 shadow-sm">
-                <CardHeader>
-                  <CardTitle>Risks</CardTitle>
-                  <CardDescription>Top reliability and quality risks detected by analysis.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {bundle.quality.issues.length ? (
-                    bundle.quality.issues.slice(0, 5).map((issue) => (
-                      <div key={`${issue.category}-${issue.detail}`} className="rounded-xl border bg-muted/20 p-3 text-sm">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-semibold text-foreground">{issue.category}</span>
-                          <Badge variant="outline">{issue.severity}</Badge>
-                        </div>
-                        <p className="mt-2 text-muted-foreground">{issue.detail}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No risk issues reported.</p>
-                  )}
-                </CardContent>
               </Card>
-
-              <Card className="border-border/70 bg-card/95 shadow-sm">
-                <CardHeader>
-                  <CardTitle>Priority</CardTitle>
-                  <CardDescription>Highest-impact risk signals ranked by backend weight.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {prioritizedSignals.length ? (
-                    prioritizedSignals.map((signal) => (
-                      <div key={`${signal.title}-${signal.detail}`} className="rounded-xl border bg-muted/20 p-3 text-sm">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="font-semibold text-foreground">{signal.title}</span>
-                          <Badge variant="outline">{signal.weight.toFixed(2)}</Badge>
-                        </div>
-                        <p className="mt-2 text-muted-foreground">{signal.detail}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No priority signals available.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid gap-6 xl:grid-cols-2">
-              <MetricBarCard
-                title="Project size and edge footprint"
-                description="Backend-provided repository metrics visualized with Chart.js."
-                labels={["Total files", "Analyzable files", "Dependency edges", "Call edges"]}
-                values={[
-                  bundle.project.metrics.total_files ?? bundle.project.metrics.files_scanned,
-                  bundle.project.metrics.analyzable_files ?? bundle.project.metrics.files_scanned,
-                  bundle.project.metrics.dependency_edges,
-                  bundle.project.metrics.call_edges,
-                ]}
-                accent="rgba(37, 99, 235, 0.9)"
-              />
-              <SeverityDoughnutCard
-                title="Risk distribution"
-                description="Severity buckets from the reliability scoring pipeline."
-                labels={["High", "Medium", "Low"]}
-                values={[
-                  bundle.risk.severity_distribution.high,
-                  bundle.risk.severity_distribution.medium,
-                  bundle.risk.severity_distribution.low,
-                ]}
-                colors={["#dc2626", "#f59e0b", "#16a34a"]}
-              />
-            </div>
-
-            <div className="grid gap-6 xl:grid-cols-2">
-              <MetricBarCard
-                title="Graph impact ranking"
-                description="Top nodes surfaced by the backend NetworkX analysis."
-                labels={graphImpactNodes.map((node) => node.label)}
-                values={graphImpactNodes.map((node) => Number(node.score.toFixed(3)))}
-                accent="rgba(13, 148, 136, 0.9)"
-              />
-              <SeverityDoughnutCard
-                title="Explainability evidence mix"
-                description="Token, AST, and graph traces returned by the explainability pipeline."
-                labels={["Token", "AST", "Graph"]}
-                values={[
-                  evidenceDistribution.tokenCount,
-                  evidenceDistribution.astCount,
-                  evidenceDistribution.graphCount,
-                ]}
-                colors={["#2563eb", "#7c3aed", "#0f766e"]}
-              />
-            </div>
+            ) : null}
           </section>
         ) : (
           <Card className="border-dashed border-border/70 bg-card/70 shadow-none">
