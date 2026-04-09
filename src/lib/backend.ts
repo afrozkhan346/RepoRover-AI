@@ -1,7 +1,10 @@
-const resolvedBackendUrl =
-  (typeof import.meta !== "undefined" && (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_BACKEND_URL) ||
-  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL) ||
-  "http://localhost:8000/api";
+const viteEnv = typeof import.meta !== "undefined" ? (import.meta as { env?: Record<string, string | undefined> }).env : undefined;
+const explicitBackendUrl =
+  viteEnv?.VITE_BACKEND_URL ||
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL);
+
+// In local Vite dev, default to a relative API path so requests flow through the dev proxy.
+const resolvedBackendUrl = explicitBackendUrl || (viteEnv?.DEV ? "/api" : "http://127.0.0.1:8000/api");
 
 export const BACKEND_API_BASE = resolvedBackendUrl.replace(/\/$/, "");
 

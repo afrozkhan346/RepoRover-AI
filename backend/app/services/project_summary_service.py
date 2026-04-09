@@ -46,11 +46,78 @@ def _readme_candidates(root: Path) -> list[Path]:
 
 def _clean_markdown_line(line: str) -> str:
     text = line.strip()
+    text = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r"\1", text)
+    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1", text)
+    text = re.sub(r"<[^>]+>", " ", text)
     text = re.sub(r"^#{1,6}\s*", "", text)
     text = re.sub(r"^[-*+]\s+", "", text)
     text = re.sub(r"^\d+\.\s+", "", text)
     text = text.replace("**", "").replace("__", "").replace("`", "")
-    return " ".join(text.split())
+    text = re.sub(r"\([^)]*https?://[^)]*\)", "", text)
+    text = re.sub(r"https?://\S+", "", text)
+    text = text.replace("|", " ")
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
+def _is_noise_line(line: str) -> bool:
+    lowered = line.lower().strip()
+    if not lowered:
+        return True
+
+    if lowered.startswith("[") and "](http" in lowered:
+        return True
+
+    if "img.shields.io" in lowered:
+        return True
+
+    if lowered in {"architecture", "deployment split", "notes", "prerequisites", "frontend", "backend"}:
+        return True
+
+    if "->" in lowered or "=>" in lowered:
+        return True
+
+    if lowered.startswith("browser ui") or lowered.startswith("api:"):
+        return True
+
+    alpha_count = sum(ch.isalpha() for ch in lowered)
+    if alpha_count < 12:
+        return True
+
+    if lowered.count("[") >= 2 and lowered.count("]") >= 2:
+        return True
+
+    return False
+
+
+def _to_sentence(text: str) -> str:
+    value = " ".join(text.split()).strip()
+    value = re.sub(r"\s+", " ", value)
+    value = re.sub(r"\bin the\.?$", "", value, flags=re.IGNORECASE).strip()
+    value = re.sub(r"\bin this\.?$", "", value, flags=re.IGNORECASE).strip()
+    value = value.rstrip(" ,;:-")
+    if not value:
+        return ""
+    if value[-1] not in ".!?":
+        value += "."
+    return value
+
+
+def _project_intro_sentence(repo_name: str, purpose_hint: str | None) -> str:
+    if not purpose_hint:
+        return f"This project is a software repository named {repo_name}."
+
+    hint = purpose_hint.strip()
+    lowered = hint.lower()
+
+    if lowered.startswith("this project is "):
+        return _to_sentence(hint)
+
+    repo_tokens = {repo_name.lower(), repo_name.lower().replace("-", " "), repo_name.lower().replace("_", " ")}
+    if any(lowered.startswith(f"{token} is ") for token in repo_tokens if token):
+        return _to_sentence(hint)
+
+    return _to_sentence(f"This project is {hint}")
 
 
 def _extract_readme_insights(root: Path) -> tuple[str | None, str | None]:
@@ -78,6 +145,8 @@ def _extract_readme_insights(root: Path) -> tuple[str | None, str | None]:
             cleaned = _clean_markdown_line(stripped)
             if not cleaned:
                 continue
+            if _is_noise_line(cleaned):
+                continue
             if cleaned.lower().startswith("http"):
                 continue
             lines.append(cleaned)
@@ -95,7 +164,7 @@ def _extract_readme_insights(root: Path) -> tuple[str | None, str | None]:
             if len(info_bits) >= 3:
                 break
 
-        info = " ".join(info_bits) if info_bits else None
+        info = "; ".join(info_bits) if info_bits else None
         return purpose, info
 
     return None, None
@@ -123,7 +192,10 @@ def _project_purpose_hint(root: Path) -> str | None:
                 continue
             if line.startswith("#"):
                 continue
-            return line[:280]
+            cleaned = _clean_markdown_line(line)
+            if not cleaned or _is_noise_line(cleaned):
+                continue
+            return cleaned[:280]
 
     return None
 
@@ -248,8 +320,8 @@ def summarize_project(local_path: str, max_files: int = 2000) -> ProjectSummarie
     if purpose_hint:
         detail_text = readme_info or "the core use-case and key capabilities documented in the repository"
         project_summary = (
-            f"This project is {purpose_hint.rstrip('.')}" + ". "
-            f"It focuses on {detail_text.rstrip('.')}" + ". "
+            f"{_project_intro_sentence(root.name, purpose_hint)} "
+            f"It helps developers with {detail_text.rstrip('.')}" + ". "
             f"Technically, the scan found {total_files} files ({len(source_files)} analyzable) with {total_lines} lines of content across {len(language_breakdown)} language groups."
         )
     else:
