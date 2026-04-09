@@ -15,6 +15,15 @@ from app.schemas.project_ast import AstCallSite, ProjectAstSnapshot
 from app.services.parser_service import parse_source, parse_structure, resolve_language
 
 
+def preflight_tree_sitter_language(language: str) -> tuple[bool, str | None]:
+    """Validate that a Tree-sitter parser can be loaded for the language."""
+    try:
+        get_parser(language)
+        return True, None
+    except Exception as error:
+        return False, str(error)
+
+
 @dataclass(frozen=True)
 class ImportInfo:
     module: str
@@ -368,6 +377,86 @@ def _collect_call_sites(root: Node, source_bytes: bytes, max_calls: int = 1000) 
     return call_sites
 
 
+def _offset_to_line(source_code: str, offset: int) -> int:
+    return source_code[:offset].count("\n") + 1
+
+
+def _fallback_python_call_sites(source_code: str, max_calls: int = 1000) -> list[AstCallSite]:
+    try:
+        tree = ast.parse(source_code)
+    except SyntaxError:
+        return []
+
+    call_sites: list[AstCallSite] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        called_name: str | None = None
+        if isinstance(node.func, ast.Name):
+            called_name = node.func.id
+        elif isinstance(node.func, ast.Attribute):
+            called_name = node.func.attr
+        if not called_name:
+            continue
+        call_sites.append(
+            AstCallSite(
+                called_name=called_name,
+                call_line=getattr(node, "lineno", 1),
+                call_type="fallback_python_call",
+            )
+        )
+        if len(call_sites) >= max_calls:
+            break
+
+    return call_sites
+
+
+def _fallback_generic_call_sites(source_code: str, max_calls: int = 1000) -> list[AstCallSite]:
+    call_sites: list[AstCallSite] = []
+    excluded_names = {"if", "for", "while", "switch", "catch", "return", "new", "function", "class"}
+    pattern = re.compile(r"\b([A-Za-z_$][A-Za-z0-9_$]*)\s*\(")
+    for match in pattern.finditer(source_code):
+        name = match.group(1)
+        if name in excluded_names:
+            continue
+        call_sites.append(
+            AstCallSite(
+                called_name=name,
+                call_line=_offset_to_line(source_code, match.start()),
+                call_type="fallback_regex_call",
+            )
+        )
+        if len(call_sites) >= max_calls:
+            break
+    return call_sites
+
+
+def _collect_fallback_call_sites(source_code: str, language: str, max_calls: int = 1000) -> list[AstCallSite]:
+    if language == "python":
+        return _fallback_python_call_sites(source_code, max_calls=max_calls)
+    return _fallback_generic_call_sites(source_code, max_calls=max_calls)
+
+
+def _call_sites_from_python_functions(functions: list[dict[str, Any]], max_calls: int = 1000) -> list[AstCallSite]:
+    call_sites: list[AstCallSite] = []
+    for function in functions:
+        for call in function.get("calls", []):
+            called_name = call.get("called_name")
+            call_line = call.get("call_line")
+            if not called_name or not isinstance(call_line, int):
+                continue
+            call_sites.append(
+                AstCallSite(
+                    called_name=called_name,
+                    call_line=call_line,
+                    call_type=str(call.get("call_type") or "python_ast_call"),
+                )
+            )
+            if len(call_sites) >= max_calls:
+                return call_sites
+    return call_sites
+
+
 def _syntax_unit_from_import(unit: SyntaxUnit) -> dict[str, Any]:
     return {
         "module": unit.name or "",
@@ -440,31 +529,50 @@ def _calls_for_unit(function_unit: SyntaxUnit, call_sites: list[AstCallSite]) ->
     return calls
 
 
-def _parse_source_file(file_path: Path) -> tuple[dict[str, Any], ProjectAstSnapshot]:
+def _parse_source_file(file_path: Path, *, parser_available: bool | None = None) -> tuple[dict[str, Any], ProjectAstSnapshot]:
     source = file_path.read_text(encoding="utf-8", errors="ignore")
     resolved_language = resolve_language(None, file_path.suffix)
 
     preview = parse_source(source, language=resolved_language, file_extension=file_path.suffix, max_nodes=500)
     structure = parse_structure(source, language=resolved_language, file_extension=file_path.suffix, max_tree_nodes=500, max_depth=12)
 
-    parser = get_parser(resolved_language)
-    source_bytes = source.encode("utf-8")
-    tree = parser.parse(source_bytes)
-    call_sites = _collect_call_sites(tree.root_node, source_bytes)
-
-    imports = [_syntax_unit_from_import(unit) for unit in structure.imports]
-    classes = [_syntax_unit_from_class(unit) for unit in structure.classes]
-
-    function_units = structure.functions
-    functions = []
-    for function_unit in function_units:
-        parent_class = _enclosing_class(function_unit, structure.classes)
-        function_calls = _calls_for_unit(function_unit, call_sites)
-        functions.append(_syntax_unit_from_function(function_unit, parent_class=parent_class, calls=function_calls))
+    parse_mode = "tree_sitter"
+    if resolved_language == "python":
+        python_summary = parse_python_source(source, file_path=str(file_path))
+        imports = python_summary.get("imports", [])
+        classes = python_summary.get("classes", [])
+        functions = python_summary.get("functions", [])
+        call_sites = _call_sites_from_python_functions(functions)
+        parse_mode = "python_ast"
+    elif parser_available is True or (parser_available is None and preflight_tree_sitter_language(resolved_language)[0]):
+        parser = get_parser(resolved_language)
+        source_bytes = source.encode("utf-8")
+        tree = parser.parse(source_bytes)
+        call_sites = _collect_call_sites(tree.root_node, source_bytes)
+        imports = [_syntax_unit_from_import(unit) for unit in structure.imports]
+        classes = [_syntax_unit_from_class(unit) for unit in structure.classes]
+        function_units = structure.functions
+        functions = []
+        for function_unit in function_units:
+            parent_class = _enclosing_class(function_unit, structure.classes)
+            function_calls = _calls_for_unit(function_unit, call_sites)
+            functions.append(_syntax_unit_from_function(function_unit, parent_class=parent_class, calls=function_calls))
+    else:
+        call_sites = _collect_fallback_call_sites(source, resolved_language)
+        imports = [_syntax_unit_from_import(unit) for unit in structure.imports]
+        classes = [_syntax_unit_from_class(unit) for unit in structure.classes]
+        function_units = structure.functions
+        functions = []
+        for function_unit in function_units:
+            parent_class = _enclosing_class(function_unit, structure.classes)
+            function_calls = _calls_for_unit(function_unit, call_sites)
+            functions.append(_syntax_unit_from_function(function_unit, parent_class=parent_class, calls=function_calls))
+        parse_mode = "fallback"
 
     file_payload = {
         "file_path": str(file_path),
         "language": resolved_language,
+        "parse_mode": parse_mode,
         "imports": imports,
         "classes": classes,
         "functions": functions,
@@ -501,12 +609,22 @@ def _parse_source_file(file_path: Path) -> tuple[dict[str, Any], ProjectAstSnaps
 def parse_project_code(project_path: str) -> list[dict[str, Any]]:
     """Parse supported source files in a project into a normalized AST payload."""
 
+    report = parse_project_code_report(project_path)
+    return report["files"]
+
+
+def parse_project_code_report(project_path: str) -> dict[str, Any]:
+    """Parse project files and return files plus per-file diagnostics."""
+
     root = Path(project_path).expanduser().resolve()
     if not root.exists() or not root.is_dir():
         raise ValueError("project_path must be an existing directory")
 
     result: list[dict[str, Any]] = []
+    errors: list[dict[str, str]] = []
+    files_scanned = 0
     ignored_dirs = {".git", "node_modules", ".next", "dist", "build", "venv", ".venv", "__pycache__"}
+    parser_availability: dict[str, bool] = {}
 
     for current_root, dir_names, files in os.walk(root):
         dir_names[:] = [name for name in dir_names if name not in ignored_dirs]
@@ -516,10 +634,27 @@ def parse_project_code(project_path: str) -> list[dict[str, Any]]:
             ext = file_path.suffix.lower()
 
             if ext in {".py", ".js", ".jsx", ".ts", ".tsx"}:
+                files_scanned += 1
+                relative_path = file_path.relative_to(root).as_posix()
+                resolved_language = resolve_language(None, ext)
+                parser_available: bool | None = None
+                if resolved_language != "python":
+                    if resolved_language not in parser_availability:
+                        parser_availability[resolved_language] = preflight_tree_sitter_language(resolved_language)[0]
+                    parser_available = parser_availability[resolved_language]
                 try:
-                    data, normalized_snapshot = _parse_source_file(file_path)
+                    data, normalized_snapshot = _parse_source_file(file_path, parser_available=parser_available)
                     data["normalized_ast"] = normalized_snapshot.model_dump()
-                except (OSError, ValueError):
+                except (OSError, ValueError) as error:
+                    errors.append(
+                        {
+                            "file": relative_path,
+                            "path": str(file_path),
+                            "language": resolved_language,
+                            "error_type": "parse_error",
+                            "error": str(error),
+                        }
+                    )
                     continue
             else:
                 continue
@@ -535,4 +670,11 @@ def parse_project_code(project_path: str) -> list[dict[str, Any]]:
                 }
             )
 
-    return result
+    return {
+        "project_path": str(root),
+        "files_scanned": files_scanned,
+        "files_parsed": len(result),
+        "files_failed": len(errors),
+        "files": result,
+        "errors": errors,
+    }
