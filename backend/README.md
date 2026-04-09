@@ -222,3 +222,69 @@ Example:
   ]
 }
 ```
+
+## Code Analysis Response
+
+`GET /api/project/code-analysis/{project_name}` now returns a diagnostics-aware payload:
+
+- `project_path`
+- `files_scanned`
+- `files_parsed`
+- `files_failed`
+- `files` (successful parse outputs)
+- `errors` (per-file failure details)
+
+Each parsed file includes `data.parse_mode`:
+
+- `python_ast`: native Python `ast` semantic parsing
+- `tree_sitter`: Tree-sitter parser path
+- `fallback`: regex/generic fallback path when Tree-sitter parser is unavailable
+
+Example:
+
+```json
+{
+  "project_path": "D:/RepoRoverAI/RepoRover-AI/projects/demo",
+  "files_scanned": 3,
+  "files_parsed": 2,
+  "files_failed": 1,
+  "files": [
+    {
+      "file": "src/main.py",
+      "language": "python",
+      "data": {
+        "parse_mode": "python_ast"
+      }
+    },
+    {
+      "file": "src/util.js",
+      "language": "javascript",
+      "data": {
+        "parse_mode": "fallback"
+      }
+    }
+  ],
+  "errors": [
+    {
+      "file": "src/problem.ts",
+      "language": "typescript",
+      "error_type": "parse_error",
+      "error": "Unable to parse ..."
+    }
+  ]
+}
+```
+
+## Parsing Troubleshooting
+
+If multi-language Tree-sitter parsers are not available (for example due to restricted network access), project parsing continues in degraded mode:
+
+- Python files still parse through native `ast` (`parse_mode=python_ast`)
+- JS/TS files switch to fallback extraction (`parse_mode=fallback`)
+- parse failures are reported in `errors` instead of being silently dropped
+
+Quick health check:
+
+1. Call `GET /api/project/code-analysis/{project_name}`
+2. Inspect `files_failed` and `errors`
+3. Inspect `files[*].data.parse_mode`

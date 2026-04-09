@@ -8,7 +8,7 @@ import os
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.core.config import settings
-from app.services.ast_parser import parse_project_code
+from app.services.ast_parser import parse_project_code, parse_project_code_report
 from app.services.gap_detector import analyze_gaps
 from app.services.graph_analysis_service import dfs_traversal
 from app.services.graph_builder import analyze_graph, build_graph, build_system_graph
@@ -225,7 +225,7 @@ def analyze_project(project_name: str) -> dict:
 
 
 @router.get("/code-analysis/{project_name}")
-def analyze_code(project_name: str) -> list[dict]:
+def analyze_code(project_name: str) -> dict[str, object]:
     safe_name = Path(project_name).name
     if safe_name != project_name or safe_name in {"", ".", ".."}:
         raise HTTPException(status_code=400, detail={"detail": "Invalid project name", "code": "INVALID_PROJECT"})
@@ -235,7 +235,7 @@ def analyze_code(project_name: str) -> list[dict]:
         raise HTTPException(status_code=404, detail={"detail": "Project not found", "code": "PROJECT_NOT_FOUND"})
 
     try:
-        return parse_project_code(str(path))
+        return parse_project_code_report(str(path))
     except ValueError as error:
         raise HTTPException(status_code=400, detail={"detail": str(error), "code": "CODE_ANALYSIS_FAILED"}) from error
 
