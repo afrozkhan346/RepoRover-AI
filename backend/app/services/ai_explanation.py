@@ -5,7 +5,10 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-import torch
+try:
+    import torch as _torch
+except ModuleNotFoundError:  # pragma: no cover - torch is optional
+    _torch = None  # type: ignore[assignment]
 
 from app.schemas.ai_explanation import ExplanationEvidence
 from app.services.parser_service import parse_structure
@@ -50,7 +53,7 @@ class AICodeTutorPipeline:
         if hf_pipeline is None:
             return None
         try:
-            device = 0 if torch.cuda.is_available() else -1
+            device = 0 if (_torch is not None and _torch.cuda.is_available()) else -1
             self._hf_generator = hf_pipeline(
                 "text2text-generation",
                 model=self.model_name,
@@ -182,18 +185,20 @@ class AICodeTutorPipeline:
         import_count = len(re.findall(r"\b(import|from)\b", code))
         avg_line_len = (sum(len(ln) for ln in lines) / len(lines)) if lines else 0.0
 
-        features = torch.tensor(
-            [
-                float(len(lines)),
-                float(branch_count),
-                float(function_count),
-                float(import_count),
-                float(avg_line_len),
-            ],
-            dtype=torch.float32,
-        )
-        weights = torch.tensor([0.04, 0.25, 0.2, 0.1, 0.03], dtype=torch.float32)
-        raw_score = torch.dot(features, weights).item()
+        feature_values = [
+            float(len(lines)),
+            float(branch_count),
+            float(function_count),
+            float(import_count),
+            float(avg_line_len),
+        ]
+        weight_values = [0.04, 0.25, 0.2, 0.1, 0.03]
+        if _torch is not None:
+            features = _torch.tensor(feature_values, dtype=_torch.float32)
+            weights = _torch.tensor(weight_values, dtype=_torch.float32)
+            raw_score = _torch.dot(features, weights).item()
+        else:
+            raw_score = sum(f * w for f, w in zip(feature_values, weight_values))
         return round(min(10.0, max(0.0, raw_score)), 2)
 
     def _fallback_explanation(
