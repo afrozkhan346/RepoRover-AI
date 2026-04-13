@@ -5,6 +5,10 @@ import logging
 
 from app.db.session import SessionLocal
 from app.services import cache_service as cache
+from app.schemas.call_graph import CallGraphResponse
+from app.schemas.call_graph import CallGraphAnalytics
+from app.schemas.dependency_graph import DependencyGraphResponse
+from app.schemas.graph_analysis import GraphAnalysisResponse
 from app.services.call_graph_service import build_call_graph, build_call_graph_analytics
 from app.services.dependency_graph_service import build_dependency_graph
 from app.services.graph_analysis_service import analyze_graph
@@ -49,9 +53,9 @@ class GraphBuilderEngine:
             hit = cache.get(db, ns, key)
             if hit is not None:
                 logger.info("Cache HIT  dependency_graph  %s", local_path)
-                return hit
+                return DependencyGraphResponse(**hit)
             result = build_dependency_graph(local_path, max_files=max_files)
-            cache.set(db, ns, key, result, ttl_seconds=_DEFAULT_TTL)
+            cache.set(db, ns, key, result.model_dump(), ttl_seconds=_DEFAULT_TTL)
             logger.info("Cache SET  dependency_graph  %s", local_path)
         return result
 
@@ -64,9 +68,9 @@ class GraphBuilderEngine:
             hit = cache.get(db, ns, key)
             if hit is not None:
                 logger.info("Cache HIT  call_graph  %s", local_path)
-                return hit
+                return CallGraphResponse(**hit)
             result = build_call_graph(local_path, max_files=max_files)
-            cache.set(db, ns, key, result, ttl_seconds=_DEFAULT_TTL)
+            cache.set(db, ns, key, result.model_dump(), ttl_seconds=_DEFAULT_TTL)
             logger.info("Cache SET  call_graph  %s", local_path)
         return result
 
@@ -76,9 +80,9 @@ class GraphBuilderEngine:
             hit = cache.get(db, ns, key)
             if hit is not None:
                 logger.info("Cache HIT  call_graph_analytics  %s", local_path)
-                return hit
+                return CallGraphAnalytics(**hit)
             result = build_call_graph_analytics(local_path, max_files=max_files)
-            cache.set(db, ns, key, result, ttl_seconds=_DEFAULT_TTL)
+            cache.set(db, ns, key, result.model_dump(), ttl_seconds=_DEFAULT_TTL)
             logger.info("Cache SET  call_graph_analytics  %s", local_path)
         return result
 
@@ -99,13 +103,13 @@ class GraphBuilderEngine:
             hit = cache.get(db, ns, key)
             if hit is not None:
                 logger.info("Cache HIT  graph_analysis  %s", local_path)
-                return hit
+                return GraphAnalysisResponse(**hit)
             result = analyze_graph(
                 local_path=local_path,
                 graph_type=graph_type,
                 max_files=max_files,
                 traversal_start=traversal_start,
             )
-            cache.set(db, ns, key, result, ttl_seconds=_DEFAULT_TTL)
+            cache.set(db, ns, key, result.model_dump(), ttl_seconds=_DEFAULT_TTL)
             logger.info("Cache SET  graph_analysis  %s", local_path)
         return result
