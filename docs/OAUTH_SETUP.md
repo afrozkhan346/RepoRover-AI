@@ -36,15 +36,19 @@ RepoRover AI now supports **3 authentication methods**:
 - Application type: **Web application**
 - Name: `RepoRover AI - Production`
 - Authorized JavaScript origins:
+
   ```
   http://localhost:3000
   https://yourdomain.com
   ```
+
 - Authorized redirect URIs:
+
   ```
   http://localhost:3000/api/auth/callback/google
   https://yourdomain.com/api/auth/callback/google
   ```
+
 - Click **"Create"**
 - Copy the **Client ID** and **Client Secret**
 
@@ -70,9 +74,11 @@ GOOGLE_CLIENT_SECRET=your-client-secret
    - Homepage URL: `https://yourdomain.com` (or `http://localhost:3000` for dev)
    - Application description: `AI-powered learning platform for GitHub repositories`
    - Authorization callback URL:
+
      ```
      http://localhost:3000/api/auth/callback/github
      ```
+
      (For production, use your domain)
 4. Click **"Register application"**
 5. Copy the **Client ID**
@@ -95,11 +101,13 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 ### **For Development**
 
 1. Create a `.env` file in the project root (copy from `.env.example`):
+
    ```bash
    cp .env.example .env
    ```
 
 2. Add your OAuth credentials:
+
    ```bash
    # Google OAuth
    GOOGLE_CLIENT_ID=123456789-abc.apps.googleusercontent.com
@@ -111,6 +119,7 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
    ```
 
 3. Restart your development server:
+
    ```bash
    npm run dev
    ```
@@ -125,6 +134,7 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
    - Other platforms: Follow their documentation for secrets management
 
 2. Add the same OAuth credentials:
+
    ```
    GOOGLE_CLIENT_ID=your-google-client-id
    GOOGLE_CLIENT_SECRET=your-google-client-secret
@@ -169,7 +179,8 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 
 **Cause**: The redirect URI in your OAuth app doesn't match the callback URL.
 
-**Solution**: 
+**Solution**:
+
 - Ensure your OAuth app's authorized redirect URIs include:
   - Development: `http://localhost:3000/api/auth/callback/google` (or `/github`)
   - Production: `https://yourdomain.com/api/auth/callback/google` (or `/github`)
@@ -179,6 +190,7 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 **Cause**: Environment variables are not loaded.
 
 **Solution**:
+
 - Check your `.env` file exists and has the correct variables
 - Restart your development server after adding env vars
 - Verify environment variables are properly configured in production
@@ -188,6 +200,7 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 **Cause**: OAuth consent screen is not configured.
 
 **Solution**:
+
 - Complete the OAuth consent screen setup in Google Cloud Console
 - Add your email as a test user (for development)
 - Publish your app (for production)
@@ -197,6 +210,7 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 **Cause**: GitHub app has issues.
 
 **Solution**:
+
 - Check your GitHub OAuth app settings
 - Ensure callback URL is correct
 - Verify the app is not rate-limited
@@ -214,12 +228,14 @@ When users sign in with Google or GitHub, we automatically:
 - ✅ Redirect to dashboard
 
 **Data we collect**:
+
 - Email address
 - Full name
 - Profile picture (optional)
 - OAuth provider ID
 
 **Data we DON'T collect**:
+
 - Passwords (OAuth users don't have passwords)
 - Private repository data
 - OAuth access tokens (only used for authentication)
@@ -272,4 +288,3 @@ If you encounter issues:
 **Built with ❤️ using Next.js and Better Auth**
 
 *Modern, fast, secure authentication* ✨
-

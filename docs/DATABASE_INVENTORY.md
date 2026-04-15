@@ -8,12 +8,14 @@ This inventory classifies the current database schema, seeds, and migration arti
 ## Current Database Schema To Convert
 
 ### Auth and identity
+
 - `src/db/schema.ts` - `user`
 - `src/db/schema.ts` - `session`
 - `src/db/schema.ts` - `account`
 - `src/db/schema.ts` - `verification`
 
 ### Learning and progress
+
 - `src/db/schema.ts` - `userProgress`
 - `src/db/schema.ts` - `learningPaths`
 - `src/db/schema.ts` - `lessons`
@@ -24,6 +26,7 @@ This inventory classifies the current database schema, seeds, and migration arti
 - `src/db/schema.ts` - `quizAttempts`
 
 ### Repository analysis data
+
 - `src/db/schema.ts` - `repositories`
 
 ## Database Runtime And Helper Files To Replace
@@ -53,10 +56,12 @@ This inventory classifies the current database schema, seeds, and migration arti
 ## Data Layer Conversion Notes
 
 ### Keep as concept only
+
 - Table naming and relationships are useful as a domain map
 - Content model for learning paths, lessons, quizzes, achievements, progress, and repositories should remain
 
 ### Rebuild in Python
+
 - Schema definitions
 - Migrations
 - Seed scripts

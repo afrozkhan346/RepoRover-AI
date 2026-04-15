@@ -20,12 +20,14 @@ This document defines what is in scope for the migration to the final React + Fa
 ## In Scope
 
 ### Backend replacement
+
 - Convert all `src/app/api/*` routes into FastAPI endpoints
 - Replace Next.js auth/API flow with Python backend services
 - Replace current JS AI endpoints with Python AI/NLP pipelines
 - Replace current DB access with Python models, migrations, and seeds
 
 ### Data and analysis
+
 - Add local project ingestion
 - Add zip archive ingestion
 - Add Tree-sitter parsing pipeline
@@ -33,6 +35,7 @@ This document defines what is in scope for the migration to the final React + Fa
 - Add NetworkX graph analysis
 
 ### Frontend conversion
+
 - Rebuild current UI pages as a React frontend
 - Keep only reusable visual patterns where they still fit the new stack
 - Reconnect charts and diagrams to FastAPI outputs

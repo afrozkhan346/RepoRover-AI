@@ -71,39 +71,39 @@ Progress: explainability traces endpoint now links findings to token, AST, and g
 
 Progress: React frontend now consumes FastAPI outputs through the analyzer, dashboard, home page, and AI tutor views with Chart.js and Mermaid.
 
-7. Create the FastAPI project skeleton and base application layout.
-8. Define shared settings, environment loading, and configuration structure in Python. ✅
-9. Add the first FastAPI router for GitHub repository analysis. ✅
-10. Add the first FastAPI router for AI explanation requests. ✅
-11. Add the first FastAPI router for learning path data. ✅
-12. Establish response models and error handling conventions for the backend. ✅
+1. Create the FastAPI project skeleton and base application layout.
+2. Define shared settings, environment loading, and configuration structure in Python. ✅
+3. Add the first FastAPI router for GitHub repository analysis. ✅
+4. Add the first FastAPI router for AI explanation requests. ✅
+5. Add the first FastAPI router for learning path data. ✅
+6. Establish response models and error handling conventions for the backend. ✅
 
 ## Phase 3: Data and repository handling
 
-13. Replace the current TypeScript data layer with Python models and migrations. ✅
-14. Set up SQLite as the initial database target. ✅
-15. Design the PostgreSQL migration path and connection layer. ✅
-16. Implement GitPython-based repository loading for GitHub URLs. ✅
-17. Implement local folder ingestion for uploaded or selected projects. ✅
-18. Implement zip archive ingestion and extraction for project imports. ✅
+1. Replace the current TypeScript data layer with Python models and migrations. ✅
+2. Set up SQLite as the initial database target. ✅
+3. Design the PostgreSQL migration path and connection layer. ✅
+4. Implement GitPython-based repository loading for GitHub URLs. ✅
+5. Implement local folder ingestion for uploaded or selected projects. ✅
+6. Implement zip archive ingestion and extraction for project imports. ✅
 
 ## Phase 4: Parsing and graph intelligence
 
-19. Integrate Tree-sitter and normalize parser output across languages. ✅
-20. Add token-level extraction for lexical understanding. ✅
-21. Add AST-level extraction for syntax and structure understanding. ✅
-22. Build dependency graph generation from imports and package metadata. ✅
-23. Build call graph generation from intra-file and inter-file relationships. ✅
-24. Add NetworkX analysis for centrality, traversal, and impact ranking. ✅
+1. Integrate Tree-sitter and normalize parser output across languages. ✅
+2. Add token-level extraction for lexical understanding. ✅
+3. Add AST-level extraction for syntax and structure understanding. ✅
+4. Build dependency graph generation from imports and package metadata. ✅
+5. Build call graph generation from intra-file and inter-file relationships. ✅
+6. Add NetworkX analysis for centrality, traversal, and impact ranking. ✅
 
 ## Phase 5: AI, explanation, and analysis
 
-25. Move AI/NLP pipelines to Python with PyTorch, HuggingFace, and spaCy. ✅
-26. Add project summary, architecture summary, and execution-flow explanation generation. ✅
-27. Add code-quality and design-gap detection outputs. ✅
-28. Add risk, reliability, and severity scoring outputs. ✅
-29. Add explainability traces that tie findings back to tokens, AST nodes, and graph paths. ✅
-30. Rebuild the React frontend and visualization layer to consume FastAPI outputs with Chart.js and Mermaid. ✅
+1. Move AI/NLP pipelines to Python with PyTorch, HuggingFace, and spaCy. ✅
+2. Add project summary, architecture summary, and execution-flow explanation generation. ✅
+3. Add code-quality and design-gap detection outputs. ✅
+4. Add risk, reliability, and severity scoring outputs. ✅
+5. Add explainability traces that tie findings back to tokens, AST nodes, and graph paths. ✅
+6. Rebuild the React frontend and visualization layer to consume FastAPI outputs with Chart.js and Mermaid. ✅
 
 ## Next Chat Entry Rule
 

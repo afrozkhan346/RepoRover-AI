@@ -5,6 +5,7 @@ Status: In Progress (revalidated incrementally through 2026-04-07)
 Scope: Canonical contract for frontend-facing backend features (auth, repositories, analysis, learning, achievements, profile) with normalized request/response and error format.
 
 Progress Note:
+
 - This contract is being validated route-by-route in small slices.
 - Sections already revalidated include auth, learning paths, lessons, achievements, GitHub analysis, parsing, tokens, dependency graph, call graph, graph analysis, and project ingest/analyze slices.
 
@@ -176,47 +177,52 @@ Status code rules:
      - `404 PROJECT_NOT_FOUND`
 
 10. `GET /project/risk/{project_name}`
-   - Response:
-     - `risks: [{file|node, risk, score}]`
-   - Errors:
-     - `400 INVALID_PROJECT | RISK_ANALYSIS_FAILED`
-     - `404 PROJECT_NOT_FOUND`
 
-11. `GET /project/priority/{project_name}`
-   - Response:
-     - `top_risks: [{file, risk, score}]`
-     - `important_functions: [[string, number]]`
-   - Errors:
-     - `400 INVALID_PROJECT | PRIORITY_ANALYSIS_FAILED`
-     - `404 PROJECT_NOT_FOUND`
+- Response:
+  - `risks: [{file|node, risk, score}]`
+- Errors:
+  - `400 INVALID_PROJECT | RISK_ANALYSIS_FAILED`
+  - `404 PROJECT_NOT_FOUND`
 
-12. `POST /api/github/analyze`
-   - Auth: none
-   - Request:
-     - `github_url: string`
-   - Response: `GitHubAnalysisResponse`
-     - Repository metadata + language stats + file structure + recent commits + ingestion metadata
-   - Errors:
-     - `400 INVALID_INPUT | <repository_loader_code>`
-     - `502 GITHUB_API_ERROR`
+1. `GET /project/priority/{project_name}`
 
-13. `POST /api/github/analyze-local`
-   - Auth: none
-   - Request:
-     - `local_path: string`
-   - Response: `GitHubAnalysisResponse`
-   - Errors:
-     - `400 INVALID_LOCAL_PATH | <repository_loader_code>`
-     - `500 LOCAL_ANALYSIS_ERROR`
+- Response:
+  - `top_risks: [{file, risk, score}]`
+  - `important_functions: [[string, number]]`
+- Errors:
+  - `400 INVALID_PROJECT | PRIORITY_ANALYSIS_FAILED`
+  - `404 PROJECT_NOT_FOUND`
 
-14. `POST /api/github/analyze-archive`
-   - Auth: none
-   - Request: `multipart/form-data`
-     - `file: UploadFile` (`.zip` required)
-   - Response: `GitHubAnalysisResponse`
-   - Errors:
-     - `400 INVALID_ARCHIVE | <repository_loader_code>`
-     - `500 ARCHIVE_ANALYSIS_ERROR`
+1. `POST /api/github/analyze`
+
+- Auth: none
+- Request:
+  - `github_url: string`
+- Response: `GitHubAnalysisResponse`
+  - Repository metadata + language stats + file structure + recent commits + ingestion metadata
+- Errors:
+  - `400 INVALID_INPUT | <repository_loader_code>`
+  - `502 GITHUB_API_ERROR`
+
+1. `POST /api/github/analyze-local`
+
+- Auth: none
+- Request:
+  - `local_path: string`
+- Response: `GitHubAnalysisResponse`
+- Errors:
+  - `400 INVALID_LOCAL_PATH | <repository_loader_code>`
+  - `500 LOCAL_ANALYSIS_ERROR`
+
+1. `POST /api/github/analyze-archive`
+
+- Auth: none
+- Request: `multipart/form-data`
+  - `file: UploadFile` (`.zip` required)
+- Response: `GitHubAnalysisResponse`
+- Errors:
+  - `400 INVALID_ARCHIVE | <repository_loader_code>`
+  - `500 ARCHIVE_ANALYSIS_ERROR`
 
 ### 3.3 AI and Explainability
 

@@ -10,12 +10,14 @@ Official finalized stack reference: see docs/FINAL_TECH_STACK.md.
 ## Full Feature Recall (User Source)
 
 1. Input and project acquisition
+
 - Analyze GitHub repositories via URL
 - Analyze local projects from file manager
 - Supports zipped projects and folders
 - Language-aware project detection
 
-2. Project structure understanding
+1. Project structure understanding
+
 - Folder hierarchy analysis
 - File categorization
 - Entry-point detection
@@ -24,60 +26,70 @@ Official finalized stack reference: see docs/FINAL_TECH_STACK.md.
 - Function/class/module extraction
 - Import/include analysis
 
-3. Project graph construction
+1. Project graph construction
+
 - Nodes: files, classes, functions, configs
 - Edges: imports, function calls, inheritance, dependency usage
 - Cross-file tracing and interaction mapping
 
-4. Semantic project understanding
+1. Semantic project understanding
+
 - Purpose inference
 - Module responsibility identification
 - Core vs utility separation
 - Data flow understanding
 - Execution flow explanation
 
-5. Learning-oriented explanations
+1. Learning-oriented explanations
+
 - Beginner/intermediate/advanced explanation levels
 - Concept breakdown
 - Learning roadmap and reading order
 
-6. Code and design quality analysis
+1. Code and design quality analysis
+
 - Error handling gaps
 - Complex functions and duplicate logic
 - Hardcoded values
 - Modularity/coupling/abstraction gaps
 
-7. Risk and reliability analysis
+1. Risk and reliability analysis
+
 - High-risk modules
 - Single points of failure
 - Untested critical code
 - Dependency risk
 - Severity and mitigation suggestions
 
-8. Explainable AI features
+1. Explainable AI features
+
 - Why a file/function is important
 - Why a risk/gap is detected
 - Signals used for decisions
 - Rule/graph/metric/LLM-backed explanation
 
-9. NLP and LLM features
+1. NLP and LLM features
+
 - Natural language project explanation and summaries
 - LLM as interpreter, not decision-maker
 
-10. Output and UX features
+1. Output and UX features
+
 - Project summary
 - Architecture and execution explanation
 - Risk and gap report
 - Learning roadmap
 - Structured outputs and optional visuals
 
-11. Research and academic features
+1. Research and academic features
+
 - Repository-level understanding
 - Learning-oriented explainable analysis
 - Hybrid AI architecture (Graph + ML + LLM)
 - Evaluation support
 
-12. Future-ready extensions
+1. Future-ready extensions
+
 - Multi-language support
 - CI/CD integration
 - Project evolution analysis
@@ -85,29 +97,33 @@ Official finalized stack reference: see docs/FINAL_TECH_STACK.md.
 - IDE plugin support
 - Continuous monitoring
 
-13. Unique tech
+1. Unique tech
+
 - Multi-view code representation
-	- Token-level (lexical understanding)
-	- AST-level (syntax and structure)
-	- Inter-file graph-level (system behavior)
+  - Token-level (lexical understanding)
+  - AST-level (syntax and structure)
+  - Inter-file graph-level (system behavior)
 - Core technology choices
-	- Tree-sitter for AST extraction
-	- Call graph and dependency graph construction
-	- Lightweight graph algorithms for ranking and traversal
+  - Tree-sitter for AST extraction
+  - Call graph and dependency graph construction
+  - Lightweight graph algorithms for ranking and traversal
 
 ## Quick Implementation Snapshot (Current Repo)
 
 Implemented now (evidence in code):
+
 - GitHub URL analysis endpoint and dashboard flow
 - AI code explanation API and AI Tutor UI
 - Learning paths API and seeded path content
 - Analysis result display UX
 
 Partially implemented:
+
 - Learning roadmap data model and presentation pieces
 - Explainable outputs at UI level, but limited signal provenance
 
 Not yet implemented as core engine:
+
 - Local folder/zip ingestion pipeline
 - AST parser pipeline and graph engine
 - Execution flow inference engine

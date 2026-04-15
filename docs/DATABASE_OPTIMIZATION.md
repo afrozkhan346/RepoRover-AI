@@ -189,6 +189,7 @@ const slowQueries = queryMonitor.getSlowQueries(100); // > 100ms
 ```
 
 **Features**:
+
 - Configurable slow query threshold (default: 100ms)
 - Query name tracking for easier debugging
 - Circular buffer to prevent memory leaks (max 1000 queries)
@@ -220,6 +221,7 @@ console.log(stats);
 ```
 
 **Features**:
+
 - Max 20 concurrent connections
 - Request queue for excess connections
 - 5-second timeout on connection acquisition
@@ -248,6 +250,7 @@ const patterns = n1Detector.getPatterns();
 ```
 
 **Features**:
+
 - Automatic pattern detection
 - Configurable threshold (default: 5 repetitions)
 - Query signature normalization
@@ -280,6 +283,7 @@ const user3 = await userLoader.load('user-3');
 ```
 
 **Features**:
+
 - Automatic request batching
 - Configurable batch size (default: 50)
 - Configurable batch delay (default: 10ms)
@@ -418,12 +422,14 @@ setInterval(async () => {
 ### DO ✅
 
 1. **Use indexed columns in WHERE clauses**
+
    ```typescript
    // GOOD - uses idx_lesson_progress_user_id
    db.select().from(lessonProgress).where(eq(lessonProgress.userId, userId));
    ```
 
 2. **Use JOINs instead of multiple queries**
+
    ```typescript
    // GOOD - single query with JOIN
    db.select()
@@ -433,18 +439,21 @@ setInterval(async () => {
    ```
 
 3. **Use batch operations**
+
    ```typescript
    // GOOD - single insert
    db.insert(lessonProgress).values(records);
    ```
 
 4. **Use data loaders for repeated queries**
+
    ```typescript
    // GOOD - batched automatically
    const users = await Promise.all(ids.map(id => userLoader.load(id)));
    ```
 
 5. **Monitor query performance**
+
    ```typescript
    // GOOD - wrapped for monitoring
    await monitoredQuery(() => db.select()..., 'queryName');
@@ -453,6 +462,7 @@ setInterval(async () => {
 ### DON'T ❌
 
 1. **Don't query in loops (N+1)**
+
    ```typescript
    // BAD - N+1 query problem
    for (const lesson of lessons) {
@@ -463,12 +473,14 @@ setInterval(async () => {
    ```
 
 2. **Don't forget to use indexes**
+
    ```typescript
    // BAD - full table scan on non-indexed field
    db.select().from(lessons).where(eq(lessons.content, 'something'));
    ```
 
 3. **Don't select unnecessary columns**
+
    ```typescript
    // BAD - fetches all columns
    db.select().from(lessons);
@@ -478,6 +490,7 @@ setInterval(async () => {
    ```
 
 4. **Don't ignore connection pool**
+
    ```typescript
    // BAD - unmanaged connection
    await db.select()...;
@@ -491,6 +504,7 @@ setInterval(async () => {
 ### Applying the Indexes
 
 1. **Run the migration SQL**:
+
    ```bash
    # Using Drizzle Kit
    npm run drizzle:push
@@ -500,6 +514,7 @@ setInterval(async () => {
    ```
 
 2. **Verify indexes created**:
+
    ```typescript
    import { dbAnalytics } from '@/db';
    
@@ -508,6 +523,7 @@ setInterval(async () => {
    ```
 
 3. **Update queries to use optimization utilities**:
+
    ```typescript
    // Before
    const lessons = await db.select().from(lessons);
@@ -550,12 +566,14 @@ console.timeEnd('query');
 ### Slow Queries
 
 1. Check if query uses indexes:
+
    ```sql
    EXPLAIN QUERY PLAN SELECT * FROM lessons WHERE learningPathId = 1;
    -- Should show "USING INDEX idx_lessons_learning_path"
    ```
 
 2. Check slow query log:
+
    ```typescript
    const slowQueries = queryMonitor.getSlowQueries(100);
    console.log(slowQueries);
@@ -566,6 +584,7 @@ console.timeEnd('query');
 ### High Connection Pool Usage
 
 1. Check pool stats:
+
    ```typescript
    const stats = connectionPool.getStats();
    console.log('Active:', stats.activeConnections);
@@ -578,6 +597,7 @@ console.timeEnd('query');
 ### N+1 Queries Detected
 
 1. Check patterns:
+
    ```typescript
    const patterns = n1Detector.getPatterns();
    ```

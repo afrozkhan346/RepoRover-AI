@@ -3,6 +3,7 @@
 This directory stores database migrations for the Python backend.
 
 Current status:
+
 - `0001_initial_schema.sql` captures the current domain schema as a starting point.
 - Alembic environment is now configured in `backend/alembic.ini` and `backend/migrations/env.py`.
 - Alembic baseline revision: `backend/migrations/versions/0001_sqlalchemy_baseline.py`.

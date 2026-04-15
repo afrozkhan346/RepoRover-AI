@@ -27,14 +27,21 @@ Browser UI (React + Vite)
 
 The frontend reads backend responses directly through `VITE_BACKEND_URL`, and the backend is the single source of truth for analysis, explanation, and repository processing.
 
-## Key Capabilities
+## Features
 
-- Project upload and GitHub clone ingestion
-- Tree-sitter-backed parsing, tokens, and AST evidence
-- NetworkX dependency graphs, call graphs, and impact analysis
-- PyTorch + HuggingFace + spaCy explanation pipeline
-- Chart.js and Mermaid visualizations
-- Learning pages, achievements, and dashboard views
+- Analyze GitHub repos or local projects (Tree-sitter, AST, NetworkX)
+- Visualize dependencies, call graphs, and code structure
+- Detect code smells, design gaps, and complexity risks
+- AI-powered code explanations (beginner to advanced, groq API)
+- Guided repo walkthroughs and Q&A
+- GitHub OAuth login and profile insights
+- Personalized repo suggestions and growth tracking
+- Auto-generated, shareable contribution portfolio
+- Interactive dashboards and visualizations
+- PDF/JSON report export and improvement suggestions
+- Weekly digest, notifications, and OSS matching
+- Self-hostable open core, paid advanced features
+- Modern stack: React, Vite, FastAPI, Drizzle, Supabase, groq, Redis, GitHub Actions
 
 ## Getting Started
 

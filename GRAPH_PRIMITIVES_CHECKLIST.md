@@ -10,6 +10,7 @@
 ## 🚀 Quick Verification Steps
 
 ### **Test 1 ✅ - Node Creation**
+
 ```
 COMMAND:
 python -c "from app.services.graph_builder import GraphNode; n = GraphNode(id='file:test.py', node_type='file', label='test.py'); print(f'✅ Node Created: {n.label}')"
@@ -26,6 +27,7 @@ RESULT: ✅ PASS
 ---
 
 ### **Test 2 ✅ - Edge Creation**
+
 ```
 COMMAND:
 python -c "from app.services.graph_builder import GraphEdge; e = GraphEdge(source='file:a', target='class:B', edge_type='contains'); print(f'✅ Edge Created: {e.source} -> {e.target}')"
@@ -42,6 +44,7 @@ RESULT: ✅ PASS
 ---
 
 ### **Test 3 ✅ - Directed Graph**
+
 ```
 COMMAND:
 python -c "import networkx as nx; g = nx.DiGraph(); g.add_edge('A', 'B'); print(f'✅ Is DiGraph: {isinstance(g, nx.DiGraph)}'); print(f'✅ Directed: A->B exists={g.has_edge(\"A\", \"B\")}, B->A exists={g.has_edge(\"B\", \"A\")}')"
@@ -59,6 +62,7 @@ RESULT: ✅ PASS
 ---
 
 ### **Test 4 ✅ - Node Labeling**
+
 ```
 COMMAND:
 python -c "from app.services.graph_builder import GraphNode; n = GraphNode(id='class:module.py:MyClass', node_type='class', label='MyClass'); print(f'✅ ID: {n.id}'); print(f'✅ Label: {n.label}'); print(f'✅ Label != ID: {n.label != n.id}')"
@@ -75,6 +79,7 @@ RESULT: ✅ PASS
 ---
 
 ### **Test 5 ✅ - Build Graph from AST**
+
 ```
 COMMAND:
 cd backend
@@ -92,6 +97,7 @@ RESULT: ✅ PASS (7 nodes, 7 edges, 2 call edges)
 ---
 
 ### **Test 6 ✅ - System Graph from Real Files**
+
 ```
 COMMAND:
 cd backend
@@ -167,17 +173,20 @@ All endpoints operational on `http://localhost:8000`:
 To verify manually:
 
 1. **Run Full Test Suite:**
+
    ```bash
    cd backend
    python tests/test_graph_primitives.py
    ```
 
 2. **Test Individual Features:**
+
    ```bash
    python -c "from app.services.graph_builder import GraphNode; print(GraphNode(id='test', node_type='file', label='test'))"
    ```
 
 3. **Test API Endpoints:**
+
    ```bash
    curl -X POST http://localhost:8000/api/call-graph/from-path \
      -H "Content-Type: application/json" \

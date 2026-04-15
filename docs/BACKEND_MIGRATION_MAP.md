@@ -153,30 +153,37 @@ Primary request/response schema groups:
 ### Gaps to resolve in upcoming parts
 
 1. Endpoint duplication and overlap
-- /api/github/* and /project/* both handle repository analysis workflows.
+
+- /api/github/*and /project/* both handle repository analysis workflows.
 - Engine-based endpoints and legacy project endpoints overlap in capability.
 
-2. Inconsistent API response style
+1. Inconsistent API response style
+
 - Some endpoints use strict pydantic response models.
 - Some endpoints return raw dict/list payloads without unified envelope.
 
-3. Architecture split across old and new layers
+1. Architecture split across old and new layers
+
 - Some routes call engine facades; others call legacy service modules directly.
 - Migration should converge on one service entry model per domain.
 
-4. Mixed data-access patterns
+1. Mixed data-access patterns
+
 - Domain endpoints still rely on in-route session handling and ORM query patterns.
 - Needs standardized dependency injection and transaction/session pattern.
 
-5. Auth transition gap
+1. Auth transition gap
+
 - Backend provides /api/auth, but frontend still has Next-side better-auth dependencies.
 - Requires contract alignment and token/session handling simplification in migration parts 4-6 and 18.
 
-6. Project endpoint contract shape not fully aligned
+1. Project endpoint contract shape not fully aligned
+
 - /project/* endpoints mix operational actions (upload/clone) and analysis reads.
 - Requires versioned contract and consistent request/response schemas.
 
-7. Database migration consistency gap
+1. Database migration consistency gap
+
 - SQLite and PostgreSQL support exists at connection level.
 - Need stricter migration policy across all models and Alembic workflows for full parity.
 
