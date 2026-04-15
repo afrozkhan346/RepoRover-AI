@@ -8,16 +8,19 @@ This inventory marks remaining Cloud Run, Next-only, and hackathon-era artifacts
 ## Remove
 
 ### Cloud Run and hackathon artifacts
+
 - `cloudbuild.yaml` if it reappears
 - Any future `CLOUD_RUN_*` deployment docs or templates
 - Any future hackathon-branded README or documentation content
 
 ### Legacy environment files
+
 - `.env.development` entries that reference Firestore, Firebase, or Cloud Run-era variables
 - `.env.production` if recreated with Cloud Run-specific settings
 - Any `.env` template sections that refer to GCP-only deployment behavior
 
 ### Next-only runtime artifacts
+
 - `next.config.ts` once the frontend is moved out of Next.js
 - `next-env.d.ts`
 - `middleware.ts`
@@ -26,17 +29,20 @@ This inventory marks remaining Cloud Run, Next-only, and hackathon-era artifacts
 ## Rewrite
 
 ### App shell and routing
+
 - `src/app/layout.tsx`
 - `src/app/page.tsx`
 - `src/app/*/page.tsx` route modules
 
 ### Next-specific helpers
+
 - `src/components/theme-provider.tsx`
 - `src/components/theme-toggle.tsx`
 - `src/components/navigation.tsx`
 - `src/components/ErrorReporter.tsx`
 
 ### Frontend build assumptions
+
 - `postcss.config.mjs` may need revision for the final React frontend build toolchain
 - Next-specific build scripts in `package.json`
 

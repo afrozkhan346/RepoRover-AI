@@ -15,6 +15,7 @@ Cleanup inventory: [Cleanup Inventory](CLEANUP_INVENTORY.md).
 ## No Longer Needed
 
 ### Framework and backend runtime
+
 - Next.js app-router backend routes in `src/app/api/*`
 - `middleware.ts`
 - `next.config.ts` Next-only server assumptions
@@ -22,6 +23,7 @@ Cleanup inventory: [Cleanup Inventory](CLEANUP_INVENTORY.md).
 - `better-auth` server/client wiring for the current Next app
 
 ### Current database stack
+
 - `drizzle-orm`
 - `drizzle-kit`
 - `@libsql/client`
@@ -29,60 +31,72 @@ Cleanup inventory: [Cleanup Inventory](CLEANUP_INVENTORY.md).
 - `src/db/*` TypeScript database layer
 
 ### Current AI runtime
+
 - `@google/generative-ai`
 - Current JS-based Gemini API call flow
 
 ### Current cloud and legacy stack
+
 - `firebase`
 - `firebase-admin`
 - `ioredis` if caching is not retained in the new backend
 - Cloud Run and Cloud Build artifacts or docs
 
 ### Current deployment assumptions
+
 - Any code assuming one monolithic Next.js deployment for frontend and backend
 - Any GCP-specific deployment logic that was left from the hackathon phase
 
 ## Need to Convert
 
 ### Frontend
+
 - `src/app/*` pages should become a React frontend structure suitable for Vite or another React-only client app
 - `src/components/*` should be retained only for reusable UI, then adapted to the new frontend architecture
 - Theme handling should be re-implemented in the new client app if still required
 
 ### Backend APIs
+
 - `src/app/api/github/analyze/route.ts` should move to a FastAPI router
 - `src/app/api/ai/explain-code/route.ts` should move to a FastAPI service endpoint
 - `src/app/api/learning-paths/route.ts` should move to FastAPI with a Python data layer
 - Any repository, lesson, quiz, progress, or achievement routes should become FastAPI endpoints
 
 ### Database layer
+
 - Current Drizzle schema and seed files should be translated into Python models, migrations, and seed scripts
 - SQLite should be the first target database, with a later PostgreSQL migration path
 
 ### AI and NLP
+
 - Current AI explanation logic should become Python services using PyTorch, HuggingFace, and spaCy
 - Prompting and response shaping should move into a controlled Python pipeline
 
 ### Repository analysis
+
 - GitHub repository ingestion should be reworked into Python-based repo handling with GitPython
 - Local project ingestion, zip support, and parsing should be implemented in the backend
 
 ### Graph and static analysis
+
 - Tree-sitter parsing should replace the current lightweight file-structure-only analysis
 - NetworkX should power dependency graphs, call graphs, and impact tracing
 - Graph output should feed summaries, risk analysis, and explainability
 
 ### Visualization
+
 - Current chart/report UI pieces should be converted to a React frontend that renders Chart.js and Mermaid outputs from the backend
 
 ## Can Stay
 
 ### Frontend foundations
+
 - `react`
 - `tailwindcss`
 - `typescript`
 
 ### Visualization and analysis targets
+
 - `Chart.js`
 - `Mermaid`
 - `Tree-sitter`
@@ -90,12 +104,14 @@ Cleanup inventory: [Cleanup Inventory](CLEANUP_INVENTORY.md).
 - `NetworkX`
 
 ### Deployment targets
+
 - `Vercel` for the frontend
 - `Render` for the FastAPI backend
 
 ## Package-Level Actions
 
 ### Remove or replace from `package.json`
+
 - `next`
 - `next-themes`
 - `better-auth`
@@ -108,6 +124,7 @@ Cleanup inventory: [Cleanup Inventory](CLEANUP_INVENTORY.md).
 - `ioredis`
 
 ### Review for possible removal after frontend rewrite
+
 - `@radix-ui/*` packages
 - `framer-motion`
 - `react-syntax-highlighter`
@@ -121,6 +138,7 @@ Cleanup inventory: [Cleanup Inventory](CLEANUP_INVENTORY.md).
 ## File-Level Actions
 
 ### Remove or replace
+
 - `src/app/api/*`
 - `src/db/*`
 - `drizzle.config.ts`
@@ -129,6 +147,7 @@ Cleanup inventory: [Cleanup Inventory](CLEANUP_INVENTORY.md).
 - `cloudbuild.yaml` if it reappears
 
 ### Convert
+
 - `src/app/page.tsx`
 - `src/app/analyze/page.tsx`
 - `src/app/ai-tutor/page.tsx`

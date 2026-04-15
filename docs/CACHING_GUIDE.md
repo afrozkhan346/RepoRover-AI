@@ -95,6 +95,7 @@ REDIS_URL=redis://localhost:6379
 ### 3. Run Redis Server
 
 **Local Development:**
+
 ```bash
 # Using Docker
 docker run -d -p 6379:6379 --name redis redis:7-alpine
@@ -104,6 +105,7 @@ docker-compose up -d redis
 ```
 
 **Production:**
+
 - Use managed Redis service (Redis Cloud, AWS ElastiCache, Azure Cache, etc.)
 - Enable persistence (AOF + RDB)
 - Configure memory limits and eviction policy
@@ -415,12 +417,14 @@ console.log(`Cache Size: ${await cache.getSize()} keys`);
 ### DO ✅
 
 1. **Cache immutable or rarely changing data**
+
    ```typescript
    // GOOD - Learning paths rarely change
    await cache.set(CacheKeys.learningPaths(), paths, { ttl: 3600 });
    ```
 
 2. **Use appropriate TTLs**
+
    ```typescript
    // GOOD - Different TTLs for different data
    learningPaths: 1 hour
@@ -429,6 +433,7 @@ console.log(`Cache Size: ${await cache.getSize()} keys`);
    ```
 
 3. **Tag your cache entries**
+
    ```typescript
    // GOOD - Easy batch invalidation
    await cache.set(key, data, {
@@ -437,6 +442,7 @@ console.log(`Cache Size: ${await cache.getSize()} keys`);
    ```
 
 4. **Invalidate on writes**
+
    ```typescript
    // GOOD - Keep cache fresh
    await db.update(...);
@@ -444,6 +450,7 @@ console.log(`Cache Size: ${await cache.getSize()} keys`);
    ```
 
 5. **Use stale-while-revalidate for better UX**
+
    ```typescript
    // GOOD - Fast response, background update
    const data = await getWithRevalidate(key, fetchFn, { ttl: 1800 });
@@ -452,6 +459,7 @@ console.log(`Cache Size: ${await cache.getSize()} keys`);
 ### DON'T ❌
 
 1. **Don't cache user-specific data with long TTLs**
+
    ```typescript
    // BAD - User data changes frequently
    await cache.set(`user:${userId}`, userData, { ttl: 3600 });
@@ -461,6 +469,7 @@ console.log(`Cache Size: ${await cache.getSize()} keys`);
    ```
 
 2. **Don't cache without invalidation strategy**
+
    ```typescript
    // BAD - No way to invalidate
    await cache.set('some-data', data);
@@ -470,6 +479,7 @@ console.log(`Cache Size: ${await cache.getSize()} keys`);
    ```
 
 3. **Don't cache POST/PUT/DELETE requests**
+
    ```typescript
    // BAD - Mutations shouldn't be cached
    export const POST = withCache(createLesson, { ttl: 3600 });
@@ -479,6 +489,7 @@ console.log(`Cache Size: ${await cache.getSize()} keys`);
    ```
 
 4. **Don't use very long TTLs without reason**
+
    ```typescript
    // BAD - Data might become stale
    await cache.set(key, data, { ttl: 86400 }); // 24 hours
@@ -506,6 +517,7 @@ Expected performance improvements with caching:
 ### Cache Not Working
 
 1. Check Redis connection:
+
    ```typescript
    const cache = getCache();
    const connected = cache.isConnected();
@@ -513,12 +525,14 @@ Expected performance improvements with caching:
    ```
 
 2. Verify environment variables:
+
    ```bash
    echo $REDIS_HOST
    echo $REDIS_PORT
    ```
 
 3. Check Redis server is running:
+
    ```bash
    redis-cli ping
    # Should return: PONG
@@ -527,6 +541,7 @@ Expected performance improvements with caching:
 ### High Memory Usage
 
 1. Check cache size:
+
    ```typescript
    const size = await cache.getSize();
    const info = await cache.getInfo();
@@ -534,12 +549,14 @@ Expected performance improvements with caching:
    ```
 
 2. Reduce TTLs for large data:
+
    ```typescript
    // Instead of 1 hour
    { ttl: 1800 } // 30 minutes
    ```
 
 3. Implement memory limit:
+
    ```bash
    # In redis.conf
    maxmemory 512mb
@@ -549,6 +566,7 @@ Expected performance improvements with caching:
 ### Low Hit Rate
 
 1. Check statistics:
+
    ```typescript
    const stats = cache.getStats();
    console.log('Hit rate:', stats.hitRate);

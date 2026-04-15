@@ -11,7 +11,8 @@ Failed: 0 ❌
 Skipped: 0 ⏭️
 ```
 
-### Test Summary:
+### Test Summary
+
 1. ✅ **Node Creation** - 4 nodes created successfully
 2. ✅ **Edge Creation** - 4 edges created successfully  
 3. ✅ **Directed Graph Representation** - DiGraph verified (5 nodes, 4 edges)
@@ -25,13 +26,15 @@ Skipped: 0 ⏭️
 
 ### 1. **Node Creation** - How to Verify Manually
 
-#### What to Check:
+#### What to Check
+
 - Nodes can be created with different types (file, class, function, module)
 - Each node has required fields: id, node_type, label, and optional file_path
 
-#### Manual Test Steps:
+#### Manual Test Steps
 
 **Via Python REPL:**
+
 ```python
 # Step 1: Open Python interactive shell
 cd backend
@@ -59,6 +62,7 @@ print(f"All nodes have IDs: {all([node_file.id, node_class.id, node_func.id, nod
 ```
 
 **Expected Output:**
+
 ```
 GraphNode(id='file:app.py', node_type='file', label='app.py', file_path='app.py')
 GraphNode(id='class:MyClass', node_type='class', label='MyClass', file_path=None)
@@ -70,14 +74,16 @@ GraphNode(id='module:numpy', node_type='module', label='numpy', file_path=None)
 
 ### 2. **Edge Creation** - How to Verify Manually
 
-#### What to Check:
+#### What to Check
+
 - Edges can be created between nodes
 - Edges have source, target, and edge_type attributes
 - Different edge types (contains, calls, imports) are supported
 
-#### Manual Test Steps:
+#### Manual Test Steps
 
 **Via Python REPL:**
+
 ```python
 from app.services.graph_builder import GraphEdge
 
@@ -112,6 +118,7 @@ print(f"Calls edge type: {edge_calls.edge_type}")
 ```
 
 **Expected Output:**
+
 ```
 GraphEdge(source='file:app.py', target='class:MyClass', edge_type='contains')
 GraphEdge(source='function:process', target='function:parse', edge_type='calls')
@@ -122,14 +129,16 @@ GraphEdge(source='file:app.py', target='module:numpy', edge_type='imports')
 
 ### 3. **Directed Graph Representation** - How to Verify Manually
 
-#### What to Check:
+#### What to Check
+
 - Graph is a directed graph (DiGraph)
 - Edges flow only in one direction
 - NetworkX is used for graph representation
 
-#### Manual Test Steps:
+#### Manual Test Steps
 
 **Via Python REPL:**
+
 ```python
 import networkx as nx
 
@@ -160,6 +169,7 @@ print(f"All edges: {list(G.edges())}")
 ```
 
 **Expected Output:**
+
 ```
 Type of graph: <class 'networkx.classes.digraph.DiGraph'>
 Is DiGraph: True
@@ -174,14 +184,16 @@ All edges: [('A', 'B'), ('B', 'C')]
 
 ### 4. **Node Labeling** - How to Verify Manually
 
-#### What to Check:
+#### What to Check
+
 - Labels are human-readable (e.g., "MyClass" not "class:MyClass")
 - IDs are qualified with context (path, type prefix)
 - Labels match the semantic meaning
 
-#### Manual Test Steps:
+#### Manual Test Steps
 
 **Via Python REPL:**
+
 ```python
 from app.services.graph_builder import GraphNode
 
@@ -206,6 +218,7 @@ print(f"Unique IDs: {len(ids) == len(set(ids))}")
 ```
 
 **Expected Output:**
+
 ```
 ID: file:utils/helper.py
 Label: helper.py
@@ -230,9 +243,10 @@ Unique IDs: True
 
 ### 5. **API Endpoints - How to Test via HTTP**
 
-#### Available Endpoints:
+#### Available Endpoints
 
 **Endpoint 1: Call Graph**
+
 ```bash
 curl -X POST http://localhost:8000/api/call-graph/from-path \
   -H "Content-Type: application/json" \
@@ -243,6 +257,7 @@ curl -X POST http://localhost:8000/api/call-graph/from-path \
 ```
 
 **Expected Response:**
+
 ```json
 {
   "total_nodes": <number>,
@@ -255,6 +270,7 @@ curl -X POST http://localhost:8000/api/call-graph/from-path \
 ---
 
 **Endpoint 2: Dependency Graph**
+
 ```bash
 curl -X POST http://localhost:8000/api/dependency-graph/from-path \
   -H "Content-Type: application/json" \
@@ -267,6 +283,7 @@ curl -X POST http://localhost:8000/api/dependency-graph/from-path \
 ---
 
 **Endpoint 3: Graph Analysis**
+
 ```bash
 curl -X POST http://localhost:8000/api/graph-analysis/from-path \
   -H "Content-Type: application/json" \
@@ -289,6 +306,7 @@ python tests/test_graph_primitives.py
 ```
 
 **Output should show:**
+
 ```
 ============================================================
 SUMMARY
@@ -334,6 +352,7 @@ Breakdown by Edge Type:
 ### **NONE** ✅
 
 All features are working correctly:
+
 - ✅ Nodes created with all required fields
 - ✅ Edges created with proper direction
 - ✅ Directed graph is fully functional
@@ -361,6 +380,7 @@ All features are working correctly:
 Test file location: `backend/tests/test_graph_primitives.py`
 
 The test file includes:
+
 - 6 comprehensive test functions
 - Graph primitives validation
 - Real file system testing
