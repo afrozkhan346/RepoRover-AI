@@ -18,19 +18,15 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Use explicit SQL to keep migration compatible across SQLite and PostgreSQL.
-    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_learning_paths_title ON learning_paths (title)")
-    op.execute(
-        "CREATE UNIQUE INDEX IF NOT EXISTS uq_lessons_learning_path_title ON lessons (learning_path_id, title)"
-    )
-    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_achievements_title ON achievements (title)")
-    op.execute(
-        "CREATE UNIQUE INDEX IF NOT EXISTS uq_quizzes_lesson_question ON quizzes (lesson_id, question)"
-    )
+    # Use explicit SQL for index creation. Remove IF NOT EXISTS for PostgreSQL compatibility.
+    op.execute("CREATE UNIQUE INDEX uq_learning_paths_title ON learning_paths (title)")
+    op.execute("CREATE UNIQUE INDEX uq_lessons_learning_path_title ON lessons (learning_path_id, title)")
+    op.execute("CREATE UNIQUE INDEX uq_achievements_title ON achievements (title)")
+    op.execute("CREATE UNIQUE INDEX uq_quizzes_lesson_question ON quizzes (lesson_id, question)")
 
 
 def downgrade() -> None:
-    op.execute("DROP INDEX IF EXISTS uq_quizzes_lesson_question")
-    op.execute("DROP INDEX IF EXISTS uq_achievements_title")
-    op.execute("DROP INDEX IF EXISTS uq_lessons_learning_path_title")
-    op.execute("DROP INDEX IF EXISTS uq_learning_paths_title")
+    op.execute("DROP INDEX uq_quizzes_lesson_question")
+    op.execute("DROP INDEX uq_achievements_title")
+    op.execute("DROP INDEX uq_lessons_learning_path_title")
+    op.execute("DROP INDEX uq_learning_paths_title")

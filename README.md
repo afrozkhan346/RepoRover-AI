@@ -1,47 +1,75 @@
+
 # Reponium AI
 
-Reponium AI is a repository intelligence platform with a React + Vite frontend and a FastAPI backend. It analyzes local projects or cloned GitHub repositories, then renders summaries, graph analytics, explainability traces, and AI-assisted explanations in the browser.
+Reponium AI is a next-generation developer intelligence platform that empowers you to understand, grow, and showcase your open source journey. Built with React, Vite, and FastAPI, Reponium analyzes GitHub repositories and local projects, delivering actionable insights and adaptive explanations tailored to your developer profile.
 
-[![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-cyan)](https://tailwindcss.com/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)](https://fastapi.tiangolo.com/)
-[![Chart.js](https://img.shields.io/badge/Chart.js-4-f5788d)](https://www.chartjs.org/)
-[![Mermaid](https://img.shields.io/badge/Mermaid-11-ff6b6b)](https://mermaid.js.org/)
+## Core Feature Pillars
 
-## Architecture
+### 1. AI Explanation Engine (Developer Experience Profiling Algorithm)
 
-Browser UI (React + Vite)
-  -> FastAPI backend (`backend/app`)
-  -> core engines
-    - parsing and AST extraction
-    - dependency and call graph analysis
-    - AI/NLP and explanation generation
-    - repository ingestion and validation
-  -> SQLite for development, PostgreSQL for deployment
+- Adaptive code explanations based on your experience level (beginner, intermediate, advanced)
+- Natural language architecture summaries, step-by-step repo walkthroughs, and Q&A
+- Developer Experience Profiling Algorithm personalizes every explanation
 
-## Deployment Split
+### 2. GitHub Profile Intelligence
 
-- Frontend: Vercel
-- Backend: Render
+- GitHub OAuth login for instant onboarding
+- Automatic computation of your language proficiency, experience level, and contribution history
+- Profile refresh, manual override, and last synced tracking
 
-The frontend reads backend responses directly through `VITE_BACKEND_URL`, and the backend is the single source of truth for analysis, explanation, and repository processing.
+### 3. Personalized Developer Growth
 
-## Features
+- Repo suggestions and learning paths matched to your experience and interests
+- Skill gap analysis and targeted recommendations
+- Weekly personalized digest and OSS contribution matching
 
-- Analyze GitHub repos or local projects (Tree-sitter, AST, NetworkX)
-- Visualize dependencies, call graphs, and code structure
-- Detect code smells, design gaps, and complexity risks
-- AI-powered code explanations (beginner to advanced, groq API)
-- Guided repo walkthroughs and Q&A
-- GitHub OAuth login and profile insights
-- Personalized repo suggestions and growth tracking
-- Auto-generated, shareable contribution portfolio
-- Interactive dashboards and visualizations
-- PDF/JSON report export and improvement suggestions
-- Weekly digest, notifications, and OSS matching
-- Self-hostable open core, paid advanced features
-- Modern stack: React, Vite, FastAPI, Drizzle, Supabase, groq, Redis, GitHub Actions
+### 4. Career Growth Tracker
+
+- Visual skill progression timeline and language milestones
+- Repo analysis history, lesson tracking, and growth streaks
+- Difficulty feedback loop to adapt your profile and recommendations
+
+### 5. Adaptive Code Explanation Engine
+
+- Progressive, context-aware explanations that build on your knowledge
+- Concept mapping for unfamiliar patterns and human-readable risk/gap reports
+
+### 6. OSS Readiness Scoring
+
+- Repo readiness scoring and contribution difficulty matching
+- Active repo filtering and career goal-driven recommendations
+
+---
+
+## Technical Highlights
+
+- React + Vite + TypeScript frontend
+- FastAPI Python backend
+- Drizzle ORM with PostgreSQL via Supabase
+- Claude Haiku API for AI explanations
+- Tree-sitter for multi-language AST parsing
+- NetworkX for graph construction and analysis
+- ARQ + Upstash Redis for background job queue
+- GitHub OAuth via Supabase Auth
+- Vercel frontend deployment, Render backend deployment
+- GitHub Actions CI pipeline
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18 or newer
+- Python 3.11 or newer
+- npm
+
+### Frontend
+
+```bash
+npm ci
+npm run dev
+```
 
 ## Getting Started
 
