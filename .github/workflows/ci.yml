@@ -25,6 +25,15 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Guard against committed env secrets
+        run: |
+          tracked_envs=$(git ls-files | grep -E '(^|/)\.env($|\.production$|\.development$|\.local$)' | grep -v '\.example$' || true)
+          if [ -n "$tracked_envs" ]; then
+            echo "Found tracked environment files:"
+            echo "$tracked_envs"
+            exit 1
+          fi
+
       - name: Build frontend
         run: npm run build
 
@@ -32,7 +41,7 @@ jobs:
         run: npm run lint
 
   backend:
-    name: Backend syntax and config smoke check
+    name: Backend tests
     runs-on: ubuntu-latest
 
     steps:
@@ -47,18 +56,33 @@ jobs:
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
 
-      - name: Install backend smoke-test dependencies
-        run: python -m pip install pydantic pydantic-settings
+      - name: Install backend dependencies
+        run: |
+          python -m pip install -r backend/requirements.txt
+          python -m pip install pytest
+
+      - name: Guard against committed env secrets
+        run: |
+          tracked_envs=$(git ls-files | grep -E '(^|/)\.env($|\.production$|\.development$|\.local$)' | grep -v '\.example$' || true)
+          if [ -n "$tracked_envs" ]; then
+            echo "Found tracked environment files:"
+            echo "$tracked_envs"
+            exit 1
+          fi
 
       - name: Compile backend package
         run: python -m compileall backend/app
 
-      - name: Smoke test backend config
+      - name: Run backend tests
+        env:
+          DATABASE_BACKEND: sqlite
+          DATABASE_URL: sqlite:///./ci.db
+          PROJECTS_WORKSPACE_PATH: ./projects
+          LLM_PROVIDER: ollama
+          AI_PROVIDER: ollama
+          GROQ_API_KEY: ""
+          OPENAI_API_KEY: ""
+          GEMINI_API_KEY: ""
         run: |
-          python - <<'PY'
-          import sys
-          sys.path.insert(0, 'backend')
-          from app.core.config import settings
-          print(settings.app_name)
-          print(settings.resolved_database_backend)
-          PY
+          cd backend
+          pytest -q tests

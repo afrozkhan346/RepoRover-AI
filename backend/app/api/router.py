@@ -8,6 +8,7 @@ from app.api.routes.github_analysis import router as github_analysis_router
 from app.api.routes.lessons import router as lessons_router
 from app.api.routes.learning_paths import router as learning_paths_router
 from app.api.routes.parsing import router as parsing_router
+from app.api.routes.project import router as project_router
 from app.api.routes.tokens import router as tokens_router
 from app.api.routes.dependency_graph import router as dependency_graph_router
 from app.api.routes.call_graph import router as call_graph_router
@@ -23,6 +24,7 @@ api_router.include_router(ai_explanation_router, prefix="/ai", tags=["ai"])
 api_router.include_router(learning_paths_router, prefix="/learning-paths", tags=["learning-paths"])
 api_router.include_router(parsing_router, prefix="/parsing", tags=["parsing"])
 api_router.include_router(tokens_router, prefix="/tokens", tags=["tokens"])
+api_router.include_router(project_router, prefix="/project", tags=["project"])
 api_router.include_router(dependency_graph_router, prefix="/dependency-graph", tags=["dependency-graph"])
 api_router.include_router(call_graph_router, prefix="/call-graph", tags=["call-graph"])
 api_router.include_router(graph_analysis_router, prefix="/graph-analysis", tags=["graph-analysis"])

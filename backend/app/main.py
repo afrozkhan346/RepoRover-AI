@@ -1,12 +1,15 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
-from app.api.routes.project import router as project_router
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.errors import register_exception_handlers
-from app.db.connection import create_tables, get_database_info
+from app.db.connection import create_tables, get_database_info, missing_required_tables
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.app_name,
@@ -28,7 +31,6 @@ app.add_middleware(
 register_exception_handlers(app)
 
 app.include_router(api_router, prefix=settings.api_prefix)
-app.include_router(project_router, prefix="/project", tags=["project"])
 
 
 def custom_openapi() -> dict:
@@ -66,6 +68,14 @@ def on_startup() -> None:
     database_info = get_database_info()
     if database_info.backend == "sqlite":
         create_tables()
+        return
+
+    missing_tables = missing_required_tables(["cache_entries"])
+    if missing_tables:
+        logger.warning(
+            "Database is missing required tables %s. Run 'alembic upgrade head' before serving traffic.",
+            missing_tables,
+        )
 
 
 @app.get("/")

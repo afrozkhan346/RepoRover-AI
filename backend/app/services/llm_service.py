@@ -20,7 +20,8 @@ if load_dotenv is not None:
 
 
 def _provider() -> str:
-    return os.getenv("LLM_PROVIDER", "groq").strip().lower()
+    # Prefer AI_PROVIDER and keep LLM_PROVIDER as compatibility fallback.
+    return (os.getenv("AI_PROVIDER") or os.getenv("LLM_PROVIDER") or "groq").strip().lower()
 
 
 def _ollama_runtime_config() -> tuple[str, str, int]:
@@ -286,35 +287,10 @@ def generate_text(*, system_prompt: str, user_prompt: str, temperature: float = 
             user_prompt=user_prompt,
             temperature=temperature,
             max_tokens=max_tokens,
-        ) or _generate_text_openai(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        ) or _generate_text_gemini(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens,
         )
 
     if provider == "ollama":
         return _generate_text_ollama(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        ) or _generate_text_groq(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        ) or _generate_text_gemini(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        ) or _generate_text_openai(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             temperature=temperature,
@@ -327,30 +303,10 @@ def generate_text(*, system_prompt: str, user_prompt: str, temperature: float = 
             user_prompt=user_prompt,
             temperature=temperature,
             max_tokens=max_tokens,
-        ) or _generate_text_groq(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        ) or _generate_text_openai(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens,
         )
 
     if provider == "openai":
         return _generate_text_openai(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        ) or _generate_text_groq(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        ) or _generate_text_gemini(
             system_prompt=system_prompt,
             user_prompt=user_prompt,
             temperature=temperature,

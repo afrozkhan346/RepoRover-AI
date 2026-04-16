@@ -1,7 +1,7 @@
 """
 cache_service.py
 ----------------
-Persistent cache backed by the `cache_entries` SQLite table.
+Persistent cache backed by the `cache_entries` table.
 
 Public API
 ----------
@@ -19,18 +19,16 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.db.models import CacheEntry
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def _now() -> datetime:
-    """Return current time in UTC (timezone-naive, matching SQLite storage)."""
+    """Return current time in UTC (timezone-naive, matching DB storage)."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
@@ -41,9 +39,15 @@ def _is_expired(entry: CacheEntry) -> bool:
     return _now() >= entry.expires_at
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
+def _safe_commit(db: Session, *, warning: str) -> bool:
+    try:
+        db.commit()
+        return True
+    except SQLAlchemyError:
+        db.rollback()
+        logger.warning(warning, exc_info=True)
+        return False
+
 
 def get(db: Session, namespace: str, key: str) -> dict[str, Any] | None:
     """
@@ -52,29 +56,34 @@ def get(db: Session, namespace: str, key: str) -> dict[str, Any] | None:
     Returns the decoded dict if the entry exists and has not expired.
     Returns None if missing or expired (and silently deletes expired entries).
     """
-    entry: CacheEntry | None = (
-        db.query(CacheEntry)
-        .filter(CacheEntry.namespace == namespace, CacheEntry.cache_key == key)
-        .first()
-    )
+    try:
+        entry: CacheEntry | None = (
+            db.query(CacheEntry)
+            .filter(CacheEntry.namespace == namespace, CacheEntry.cache_key == key)
+            .first()
+        )
+    except SQLAlchemyError:
+        db.rollback()
+        logger.warning("Cache get failed; continuing without cache", exc_info=True)
+        return None
 
     if entry is None:
-        logger.debug("Cache MISS  [%s] %s", namespace, key)
+        logger.debug("Cache MISS [%s] %s", namespace, key)
         return None
 
     if _is_expired(entry):
-        logger.debug("Cache EXPIRED [%s] %s — deleting", namespace, key)
+        logger.debug("Cache EXPIRED [%s] %s - deleting", namespace, key)
         db.delete(entry)
-        db.commit()
+        _safe_commit(db, warning="Cache expired-delete failed; continuing without cache")
         return None
 
-    logger.debug("Cache HIT  [%s] %s", namespace, key)
+    logger.debug("Cache HIT [%s] %s", namespace, key)
     try:
         return json.loads(entry.value)
     except json.JSONDecodeError:
-        logger.warning("Cache entry [%s] %s has corrupt JSON — deleting", namespace, key)
+        logger.warning("Cache entry [%s] %s has corrupt JSON - deleting", namespace, key)
         db.delete(entry)
-        db.commit()
+        _safe_commit(db, warning="Cache corrupt-delete failed; continuing without cache")
         return None
 
 
@@ -98,11 +107,16 @@ def set(  # noqa: A001
 
     serialised = json.dumps(value, default=str)
 
-    entry: CacheEntry | None = (
-        db.query(CacheEntry)
-        .filter(CacheEntry.namespace == namespace, CacheEntry.cache_key == key)
-        .first()
-    )
+    try:
+        entry: CacheEntry | None = (
+            db.query(CacheEntry)
+            .filter(CacheEntry.namespace == namespace, CacheEntry.cache_key == key)
+            .first()
+        )
+    except SQLAlchemyError:
+        db.rollback()
+        logger.warning("Cache set query failed; skipping cache write", exc_info=True)
+        return
 
     if entry is None:
         entry = CacheEntry(
@@ -112,14 +126,14 @@ def set(  # noqa: A001
             expires_at=expires_at,
         )
         db.add(entry)
-        logger.debug("Cache SET (new) [%s] %s  ttl=%s", namespace, key, ttl_seconds)
+        logger.debug("Cache SET (new) [%s] %s ttl=%s", namespace, key, ttl_seconds)
     else:
         entry.value = serialised
         entry.expires_at = expires_at
         entry.updated_at = _now()
-        logger.debug("Cache SET (update) [%s] %s  ttl=%s", namespace, key, ttl_seconds)
+        logger.debug("Cache SET (update) [%s] %s ttl=%s", namespace, key, ttl_seconds)
 
-    db.commit()
+    _safe_commit(db, warning="Cache set commit failed; skipping cache write")
 
 
 def delete(db: Session, namespace: str, key: str) -> bool:
@@ -128,13 +142,21 @@ def delete(db: Session, namespace: str, key: str) -> bool:
 
     Returns True if an entry was found and deleted, False if it didn't exist.
     """
-    deleted = (
-        db.query(CacheEntry)
-        .filter(CacheEntry.namespace == namespace, CacheEntry.cache_key == key)
-        .delete(synchronize_session=False)
-    )
-    db.commit()
-    logger.debug("Cache DELETE [%s] %s  found=%s", namespace, key, bool(deleted))
+    try:
+        deleted = (
+            db.query(CacheEntry)
+            .filter(CacheEntry.namespace == namespace, CacheEntry.cache_key == key)
+            .delete(synchronize_session=False)
+        )
+    except SQLAlchemyError:
+        db.rollback()
+        logger.warning("Cache delete failed; continuing without cache", exc_info=True)
+        return False
+
+    if not _safe_commit(db, warning="Cache delete commit failed; continuing without cache"):
+        return False
+
+    logger.debug("Cache DELETE [%s] %s found=%s", namespace, key, bool(deleted))
     return bool(deleted)
 
 
@@ -144,13 +166,21 @@ def clear_namespace(db: Session, namespace: str) -> int:
 
     Returns the number of rows deleted.
     """
-    count = (
-        db.query(CacheEntry)
-        .filter(CacheEntry.namespace == namespace)
-        .delete(synchronize_session=False)
-    )
-    db.commit()
-    logger.info("Cache CLEAR namespace=%s  deleted=%d", namespace, count)
+    try:
+        count = (
+            db.query(CacheEntry)
+            .filter(CacheEntry.namespace == namespace)
+            .delete(synchronize_session=False)
+        )
+    except SQLAlchemyError:
+        db.rollback()
+        logger.warning("Cache clear-namespace failed; continuing without cache", exc_info=True)
+        return 0
+
+    if not _safe_commit(db, warning="Cache clear-namespace commit failed; continuing without cache"):
+        return 0
+
+    logger.info("Cache CLEAR namespace=%s deleted=%d", namespace, count)
     return count
 
 
@@ -164,13 +194,21 @@ def purge_expired(db: Session) -> int:
     Returns the number of rows deleted.
     """
     now = _now()
-    count = (
-        db.query(CacheEntry)
-        .filter(CacheEntry.expires_at.isnot(None), CacheEntry.expires_at <= now)
-        .delete(synchronize_session=False)
-    )
-    db.commit()
-    logger.info("Cache PURGE expired  deleted=%d", count)
+    try:
+        count = (
+            db.query(CacheEntry)
+            .filter(CacheEntry.expires_at.isnot(None), CacheEntry.expires_at <= now)
+            .delete(synchronize_session=False)
+        )
+    except SQLAlchemyError:
+        db.rollback()
+        logger.warning("Cache purge failed; continuing without cache", exc_info=True)
+        return 0
+
+    if not _safe_commit(db, warning="Cache purge commit failed; continuing without cache"):
+        return 0
+
+    logger.info("Cache PURGE expired deleted=%d", count)
     return count
 
 
@@ -185,14 +223,26 @@ def get_stats(db: Session, namespace: str | None = None) -> dict[str, Any]:
     if namespace:
         query = query.filter(CacheEntry.namespace == namespace)
 
-    all_entries = query.all()
+    try:
+        all_entries = query.all()
+    except SQLAlchemyError:
+        db.rollback()
+        logger.warning("Cache stats query failed; returning empty stats", exc_info=True)
+        return {
+            "total_entries": 0,
+            "active_entries": 0,
+            "expired_entries": 0,
+            "namespaces": {},
+            "scoped_to": namespace,
+        }
+
     total = len(all_entries)
     expired = sum(1 for e in all_entries if e.expires_at is not None and e.expires_at <= now)
     active = total - expired
 
     namespaces: dict[str, int] = {}
-    for e in all_entries:
-        namespaces[e.namespace] = namespaces.get(e.namespace, 0) + 1
+    for entry in all_entries:
+        namespaces[entry.namespace] = namespaces.get(entry.namespace, 0) + 1
 
     return {
         "total_entries": total,

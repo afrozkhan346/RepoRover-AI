@@ -141,4 +141,5 @@ python -m compileall backend/app
 
 - The migration tracker lives in `docs/MIGRATION_20_PART_PLAN.md`.
 - Backend deployment and environment details are documented in `backend/README.md`.
+- Production rollout and rollback steps are documented in `docs/DEPLOYMENT_RUNBOOK.md`.
 - Historical legacy references have been removed from the active setup instructions.

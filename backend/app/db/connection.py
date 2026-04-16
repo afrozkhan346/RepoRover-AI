@@ -2,14 +2,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
+import logging
 from urllib.parse import quote_plus
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
 from app.db.base import Base
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -30,14 +33,11 @@ def get_database_engine() -> Engine:
     database_info = get_database_info()
     engine_kwargs: dict[str, object] = {}
 
-    print(f"[DEBUG] Database backend: {database_info.backend}")
-    print(f"[DEBUG] Database URL: {database_info.url}")
+    logger.info("Initializing database engine for backend=%s", database_info.backend)
 
     if database_info.backend == "sqlite":
-        print("[DEBUG] Using SQLite connect_args: check_same_thread=False")
         engine_kwargs["connect_args"] = {"check_same_thread": False}
     else:
-        print("[DEBUG] Using PostgreSQL/other engine kwargs")
         engine_kwargs["pool_pre_ping"] = True
         engine_kwargs["pool_recycle"] = 1800
         engine_kwargs["pool_size"] = settings.db_pool_size
@@ -53,6 +53,16 @@ def get_session_factory() -> sessionmaker:
 
 def create_tables() -> None:
     Base.metadata.create_all(bind=get_database_engine())
+
+
+def missing_required_tables(required_tables: list[str]) -> list[str]:
+    engine = get_database_engine()
+    inspector = inspect(engine)
+    missing: list[str] = []
+    for table_name in required_tables:
+        if not inspector.has_table(table_name):
+            missing.append(table_name)
+    return missing
 
 
 def build_postgres_url(

@@ -319,9 +319,9 @@ def parse_project(project_path: str) -> dict[str, Any]:
 
     return {
         "language": language,
-        "total_files": len(language_source),
+        "total_files": len(structure),
         "total_files_scanned": len(structure),
-        "files": language_source,
+        "files": structure,
     }
 
 

@@ -44,6 +44,8 @@ next-env.d.ts
 .env*.local
 .env.development
 .env.production
+backend/.env
+backend/.env.production
 env
 
 # IMPORTANT: Only .env.example should be committed
@@ -171,6 +173,7 @@ env
 # Python cache artifacts
 __pycache__/
 *.py[cod]
+.pytest_cache/
 
 # Uploaded project analysis data
 backend/projects/
