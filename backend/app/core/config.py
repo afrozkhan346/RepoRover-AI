@@ -31,10 +31,10 @@ class Settings(BaseSettings):
         ]
     )
     database_backend: str = "sqlite"
-    database_url: str = "sqlite:///./repoorover.db"
+    database_url: str = "sqlite:///./Reponium.db"
     postgres_host: str | None = None
     postgres_port: int = 5432
-    postgres_database: str = "repoorover"
+    postgres_database: str = "Reponium"
     postgres_username: str | None = None
     postgres_password: str | None = None
     postgres_sslmode: str = "prefer"
