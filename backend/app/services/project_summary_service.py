@@ -327,6 +327,7 @@ def summarize_project(local_path: str, max_files: int = 2000) -> ProjectSummarie
     else:
         project_summary = (
             f"This project is a software repository named {root.name}. "
+            f"Detected {total_files} files in the current scan. "
             "It helps users by implementing source code, configuration, and documentation for its target use-case. "
             f"Technically, it contains {total_files} files ({len(source_files)} analyzable) and {total_lines} lines across {len(language_breakdown)} language groups, led by {max(language_breakdown, key=language_breakdown.get) if language_breakdown else 'Unknown'}."
         )

@@ -8,8 +8,6 @@ const resolvedBackendUrl = explicitBackendUrl || (viteEnv?.DEV ? "/api" : "http:
 
 export const BACKEND_API_BASE = resolvedBackendUrl.replace(/\/$/, "");
 
-export const BACKEND_ROOT_BASE = BACKEND_API_BASE.replace(/\/api$/, "");
-
 export type ApiErrorPayload = {
   detail: string;
   code?: string | null;
@@ -246,7 +244,7 @@ export async function uploadProjectFiles(files: File[]) {
     formData.append("relative_paths", relativePath);
   });
 
-  const response = await fetch(`${BACKEND_ROOT_BASE}/project/upload`, {
+  const response = await fetch(`${BACKEND_API_BASE}/project/upload`, {
     method: "POST",
     body: formData,
     cache: "no-store",
@@ -271,7 +269,7 @@ export async function cloneProjectFromGithub(repoUrl: string) {
   const formData = new FormData();
   formData.append("repo_url", repoUrl);
 
-  const response = await fetch(`${BACKEND_ROOT_BASE}/project/clone`, {
+  const response = await fetch(`${BACKEND_API_BASE}/project/clone`, {
     method: "POST",
     body: formData,
     cache: "no-store",
