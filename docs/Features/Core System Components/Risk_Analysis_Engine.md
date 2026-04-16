@@ -2,21 +2,17 @@
 
 **Features:**
 
-- Calculates risk scores
-- Detects failure points
-- Identifies critical nodes
+- Risk scoring
+- Failure point detection
+- Critical node identification
 
 **Working:**
 
-- Calculates risk scores for files/nodes — working
-- Detects potential failure points (e.g., complex or high-impact code) — working
-- Identifies critical nodes in the project graph — working
+- Risk scoring, failure point, and critical node detection — working
 
 **Not working / Not found:**
 
-- No integration with external security scanners
-- No probabilistic or AI-driven risk modeling
-- No historical risk tracking or trend analysis
+- No integration with external security scanners or advanced risk modeling
 
 **Summary:**
 All core risk analysis features are implemented and working. Advanced security integration and trend analysis are not covered.

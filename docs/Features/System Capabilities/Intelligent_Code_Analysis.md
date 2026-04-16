@@ -2,19 +2,16 @@
 
 **Features:**
 
-- Structural + semantic analysis
+- Structural and semantic analysis
 - Context-aware insights
 
 **Working:**
 
-- Structural analysis (AST, graph, metrics) — working
-- Semantic analysis (purpose, roles, responsibilities) — working
-- Context-aware insights (file, function, project level) — working
+- Structural/semantic analysis and context-aware insights — working
 
 **Not working / Not found:**
 
-- No deep intent inference or advanced semantic search
-- No integration with external code intelligence platforms
+- No advanced intent inference or external integrations
 
 **Summary:**
 All core intelligent code analysis features are implemented and working. Advanced intent inference and external integrations are not covered.

@@ -7,13 +7,11 @@
 
 **Working:**
 
-- Whole-project analysis (aggregates structure, metrics, graphs, etc.) — working
-- Cross-file reasoning (tracks imports, calls, dependencies across files) — working
+- Whole-project analysis and cross-file reasoning — working
 
 **Not working / Not found:**
 
-- No deep semantic reasoning (e.g., intent inference, design pattern detection)
-- No multi-repo or cross-repository analysis
+- No deep semantic reasoning or multi-repo analysis
 
 **Summary:**
 All core project-level analysis and cross-file reasoning features are implemented and working. Advanced semantic reasoning and multi-repo analysis are not covered.

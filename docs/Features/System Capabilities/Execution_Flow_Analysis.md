@@ -7,13 +7,11 @@
 
 **Working:**
 
-- Function call tracing (call graph, DFS traversal, etc.) — working
-- Flow visualization (UI: React Flow, Mermaid) — working
+- Function call tracing and flow visualization — working
 
 **Not working / Not found:**
 
-- No advanced runtime tracing (dynamic analysis)
-- No time-based or performance flow visualization
+- No advanced runtime tracing or performance visualization
 
 **Summary:**
 All core execution flow analysis and visualization features are implemented and working. Advanced runtime tracing and performance visualization are not covered.

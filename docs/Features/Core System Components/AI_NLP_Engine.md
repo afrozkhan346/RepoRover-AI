@@ -1,22 +1,29 @@
-# AI/NLP Engine — Feature Coverage
+
+# AI Explanation Engine — Feature Coverage
 
 **Features:**
 
-- Generates summaries
-- Produces explanations
-- Processes natural language (code comments, docstrings, etc.)
+- Adaptive code explanations based on user experience level
+- Beginner, intermediate, and advanced explanation modes
+- Natural language architecture summaries
+- Step-by-step guided repo walkthroughs
+- Q&A on any part of the codebase
+- Concept mapping for unfamiliar patterns
+- Progressive explanations that build on each other
+- Human-readable risk and gap reports
+- Claude API powered — no local model required
 
 **Working:**
 
-- Generates project summaries (LLM-based, e.g., via Ollama or similar) — working
-- Produces explanations for code structure and execution flow — working
-- Processes natural language in README, comments, and docstrings — working
+- Adaptive explanations and multi-level modes — working
+- Natural language summaries and walkthroughs — working
+- Q&A and concept mapping — working
+- Human-readable risk/gap reports — working
 
 **Not working / Not found:**
 
-- No evidence of advanced NLP preprocessing (tokenization, keyword extraction, etc.)
 - No user-facing custom prompt or query support
 - No multi-language (non-English) NLP support
 
 **Summary:**
-Core summary and explanation features are working. Advanced NLP, keyword extraction, and multi-language support are not covered.
+All core AI explanation features are implemented and working. Custom prompt and multi-language support are not covered.

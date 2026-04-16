@@ -7,13 +7,11 @@
 
 **Working:**
 
-- Multi-level explanations (beginner/intermediate/advanced) — working
-- Teaching-style output (step-by-step, concept breakdowns) — working
+- Multi-level explanations and teaching-style output — working
 
 **Not working / Not found:**
 
-- No personalized learning paths
-- No interactive Q&A or feedback loop
+- No personalized learning paths or interactive Q&A
 
 **Summary:**
 All core learning-oriented explanation features are implemented and working. Personalization and interactive learning are not covered.

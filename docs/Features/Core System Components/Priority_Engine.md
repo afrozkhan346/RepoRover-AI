@@ -2,21 +2,17 @@
 
 **Features:**
 
-- Ranks risks
-- Ranks important functions
-- Suggests what to fix first
+- Risk ranking
+- Function importance ranking
+- Priority suggestions
 
 **Working:**
 
-- Ranks risks based on analysis results — working
-- Ranks important functions (e.g., by centrality or impact) — working
-- Suggests what to fix first (priority list) — working
+- Risk and function ranking, priority suggestions — working
 
 **Not working / Not found:**
 
-- No user-customizable ranking criteria
-- No integration with issue trackers or ticketing systems
-- No historical prioritization or trend tracking
+- No user-customizable ranking or integration with issue trackers
 
 **Summary:**
-All core priority ranking features are implemented and working. Custom ranking, integration, and trend tracking are not covered.
+All core priority ranking features are implemented and working. Custom ranking and integration are not covered.

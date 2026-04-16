@@ -7,13 +7,11 @@
 
 **Working:**
 
-- Graph-based UI (React Flow, Mermaid) — working
-- User exploration (interactive graph, zoom, select, filter) — working
+- Graph-based UI and user exploration — working
 
 **Not working / Not found:**
 
-- No export or share features for visualizations
-- No advanced analytics overlays (e.g., heatmaps)
+- No export/share features or advanced analytics overlays
 
 **Summary:**
 All core interactive visualization features are implemented and working. Export and advanced analytics overlays are not covered.

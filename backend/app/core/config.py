@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "RepoRover AI"
+    app_name: str = "Reponium AI"
     app_version: str = "0.1.0"
     api_prefix: str = "/api"
     environment: str = "development"

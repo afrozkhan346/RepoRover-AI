@@ -2,19 +2,17 @@
 
 **Features:**
 
-- Works on GitHub + local system
+- GitHub project analysis
+- Local project analysis
 - Flexible input handling
 
 **Working:**
 
-- Analyzes GitHub repositories (via URL) — working
-- Analyzes local projects (folder/ZIP upload) — working
-- Flexible input handling (multiple formats, normalization) — working
+- GitHub and local project analysis, flexible input handling — working
 
 **Not working / Not found:**
 
-- No support for other remote sources (e.g., GitLab, Bitbucket)
-- No batch/multi-repo analysis
+- No support for other remote sources or batch analysis
 
 **Summary:**
 All core repository and local project analysis features are implemented and working. Other remote sources and batch analysis are not covered.

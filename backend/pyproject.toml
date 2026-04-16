@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "repoorover-backend"
 version = "0.1.0"
-description = "RepoRover AI FastAPI backend"
+description = "Reponium AI FastAPI backend"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

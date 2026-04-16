@@ -1,6 +1,6 @@
 # API Response Caching Guide
 
-This guide explains the Redis-based caching system implemented in RepoRover AI for improved API performance and reduced database load.
+This guide explains the Redis-based caching system implemented in Reponium AI for improved API performance and reduced database load.
 
 ## Table of Contents
 
@@ -85,7 +85,7 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=your-redis-password
 REDIS_DB=0
-REDIS_KEY_PREFIX=reporover:
+REDIS_KEY_PREFIX=reponium:
 REDIS_DEFAULT_TTL=3600
 
 # Optional: Redis URL (alternative to separate host/port)
@@ -588,4 +588,4 @@ Expected performance improvements with caching:
 
 **Last Updated**: 2024
 **Version**: 1.0.0
-**Maintained By**: RepoRover AI Team
+**Maintained By**: Reponium AI Team
