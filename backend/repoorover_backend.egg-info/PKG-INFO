@@ -1,7 +1,7 @@
 Metadata-Version: 2.4
 Name: repoorover-backend
 Version: 0.1.0
-Summary: RepoRover AI FastAPI backend
+Summary: Reponium AI FastAPI backend
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
 Requires-Dist: fastapi>=0.115.0
@@ -9,7 +9,7 @@ Requires-Dist: uvicorn[standard]>=0.30.0
 Requires-Dist: pydantic-settings>=2.4.0
 Requires-Dist: python-dotenv>=1.0.1
 
-# RepoRover Backend
+# Reponium Backend
 
 FastAPI backend for the final React + FastAPI architecture.
 

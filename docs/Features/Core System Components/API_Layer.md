@@ -1,22 +1,21 @@
+
 # API Layer — Feature Coverage
 
 **Features:**
 
-- REST endpoints (FastAPI)
-- Frontend-backend communication
-- Data exchange
+- API-driven architecture
+- REST endpoints for all major features
+- Data exchange between frontend and backend
 
 **Working:**
 
-- REST endpoints implemented with FastAPI — working
-- Frontend-backend communication (project upload, analysis, results, etc.) — working
-- Data exchange (JSON payloads for all major features) — working
+- REST endpoints and API-driven design — working
+- Data exchange for all features — working
 
 **Not working / Not found:**
 
 - No GraphQL or WebSocket support
-- No OpenAPI/Swagger custom documentation extensions
-- No built-in rate limiting or advanced security features
+- No advanced API documentation or rate limiting
 
 **Summary:**
-All core REST API and data exchange features are implemented and working. Advanced protocols and documentation extensions are not covered.
+All core API and data exchange features are implemented and working. Advanced protocols and documentation extensions are not covered.

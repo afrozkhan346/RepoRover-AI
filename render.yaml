@@ -1,0 +1,13 @@
+services:
+  - name: repo-rover-backend
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13"
+      - key: DATABASE_BACKEND
+        value: postgresql
+      # DATABASE_URL - Set in Render dashboard (from Supabase)
+      # GROQ_API_KEY - Set in Render dashboard
+      # LLM_PROVIDER=groq
+    rootDir: backend

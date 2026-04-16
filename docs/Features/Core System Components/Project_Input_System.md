@@ -2,25 +2,19 @@
 
 **Features:**
 
-- Supports GitHub projects
-- Supports local projects
-- Handles multiple formats (folders, ZIPs)
-- Normalizes input (path safety, extension allowlist, size/count limits)
+- GitHub repository ingestion
+- Local zip upload ingestion
+- Multi-language support
+- Project metadata extraction
 
 **Working:**
 
-- GitHub project ingestion (clone via URL) — working
-- Local project ingestion (folder upload) — working
-- ZIP project ingestion — working
-- Path normalization and safety checks — working
-- File count and size limits — working
-- Extension allowlist (optional) — working
+- GitHub and zip ingestion, multi-language, and metadata extraction — working
 
 **Not working / Not found:**
 
-- No support for non-GitHub remote sources (e.g., GitLab, Bitbucket)
-- No explicit support for non-code formats (e.g., binary-only projects)
-- No user-facing error for unsupported formats (not confirmed)
+- No support for private repos (without token)
+- No advanced metadata extraction or incremental ingestion
 
 **Summary:**
-All major features for GitHub/local/ZIP input and normalization are implemented and working. Only non-GitHub remote sources and non-code/binary-only projects are not covered.
+All core ingestion features are implemented and working. Advanced ingestion and update detection are not covered.

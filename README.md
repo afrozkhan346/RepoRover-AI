@@ -1,6 +1,6 @@
-# RepoRover AI
+# Reponium AI
 
-RepoRover AI is a repository intelligence platform with a React + Vite frontend and a FastAPI backend. It analyzes local projects or cloned GitHub repositories, then renders summaries, graph analytics, explainability traces, and AI-assisted explanations in the browser.
+Reponium AI is a repository intelligence platform with a React + Vite frontend and a FastAPI backend. It analyzes local projects or cloned GitHub repositories, then renders summaries, graph analytics, explainability traces, and AI-assisted explanations in the browser.
 
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)

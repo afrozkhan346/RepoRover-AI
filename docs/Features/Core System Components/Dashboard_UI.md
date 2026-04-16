@@ -1,22 +1,27 @@
-# Dashboard UI — Feature Coverage
+
+# Visualizations & Dashboard — Feature Coverage
 
 **Features:**
 
-- Unified interface
-- Multi-panel visualization
-- Interactive controls
+- Interactive dependency graph viewer
+- Call graph visualization
+- Project size and edge footprint charts
+- Risk distribution chart
+- Graph impact ranking
+- Explainability evidence mix chart
+- Complexity metrics dashboard
+- Module overview panel
+- Execution flow diagram
+- Architecture explanation view
 
 **Working:**
 
-- Unified dashboard interface (single entry point for analysis/results) — working
-- Multi-panel visualization (side-by-side graphs, charts, details) — working
-- Interactive controls (filtering, selection, zoom, etc.) — working
+- Interactive graph and chart visualizations — working
+- Dashboard panels and execution flow diagrams — working
 
 **Not working / Not found:**
 
-- No user-customizable layouts or themes
-- No drag-and-drop panel rearrangement
-- No persistent user preferences or saved dashboards
+- No user-customizable layouts or persistent preferences
 
 **Summary:**
-All core dashboard UI features are implemented and working. Custom layouts and persistent preferences are not covered.
+All core dashboard and visualization features are implemented and working. Custom layouts and persistent preferences are not covered.

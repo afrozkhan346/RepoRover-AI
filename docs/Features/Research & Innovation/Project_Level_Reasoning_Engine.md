@@ -3,17 +3,15 @@
 **Features:**
 
 - Whole-system understanding
-- Not limited to files
+- Cross-file/module reasoning
 
 **Working:**
 
-- Whole-system understanding (aggregates structure, flow, risk, quality, etc.) — working
-- Not limited to files: supports cross-file, cross-module, and project-wide reasoning — working
+- Whole-system understanding and cross-file/module reasoning — working
 
 **Not working / Not found:**
 
-- No multi-repo or cross-project reasoning
-- No deep intent or design pattern inference
+- No multi-repo or deep intent/design pattern inference
 
 **Summary:**
 All core project-level reasoning features are implemented and working. Multi-repo and deep intent inference are not covered.

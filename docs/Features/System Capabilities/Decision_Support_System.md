@@ -2,18 +2,16 @@
 
 **Features:**
 
-- Prioritizes issues
-- Guides developers
+- Issue prioritization
+- Developer guidance
 
 **Working:**
 
-- Prioritizes issues (risk, gaps, priorities) — working
-- Guides developers (suggests what to fix first, provides recommendations) — working
+- Issue prioritization and developer guidance — working
 
 **Not working / Not found:**
 
-- No integration with external ticketing or workflow systems
-- No adaptive or learning-based guidance
+- No external integration or adaptive guidance
 
 **Summary:**
 All core decision support features are implemented and working. External integration and adaptive guidance are not covered.

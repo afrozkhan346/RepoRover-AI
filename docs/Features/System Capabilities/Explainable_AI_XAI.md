@@ -7,13 +7,11 @@
 
 **Working:**
 
-- Transparent reasoning (explanations for analysis results) — working
-- Justified outputs (reasoning steps shown in explanations) — working
+- Transparent reasoning and justified outputs — working
 
 **Not working / Not found:**
 
-- No user-customizable explanation depth
-- No regulatory or compliance-focused XAI features
+- No user-customizable explanation depth or compliance features
 
 **Summary:**
 All core XAI features for transparency and justification are implemented and working. Customization and compliance features are not covered.

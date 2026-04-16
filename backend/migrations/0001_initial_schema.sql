@@ -1,4 +1,4 @@
--- RepoRover AI initial Python migration
+-- Reponium AI initial Python migration
 -- This migration mirrors the current domain tables and can be applied to SQLite first,
 -- then adapted for PostgreSQL as the backend evolves.
 

@@ -1,4 +1,4 @@
-# RepoRover Backend
+# Reponium Backend
 
 FastAPI backend for the final React + FastAPI architecture.
 
@@ -244,7 +244,7 @@ Example:
 
 ```json
 {
-  "project_path": "D:/RepoRoverAI/RepoRover-AI/projects/demo",
+  "project_path": "D:/Reponium/RepoRover-AI/projects/demo",
   "files_scanned": 3,
   "files_parsed": 2,
   "files_failed": 1,
