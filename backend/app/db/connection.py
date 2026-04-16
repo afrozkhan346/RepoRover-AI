@@ -21,6 +21,11 @@ class DatabaseInfo:
     url: str
 
 
+def is_sqlite_url(url: str) -> bool:
+    normalized = (url or "").strip().lower()
+    return normalized.startswith("sqlite")
+
+
 @lru_cache
 def get_database_info() -> DatabaseInfo:
     url = settings.resolved_database_url
@@ -35,7 +40,9 @@ def get_database_engine() -> Engine:
 
     logger.info("Initializing database engine for backend=%s", database_info.backend)
 
-    if database_info.backend == "sqlite":
+    # Guard against misconfigured DATABASE_BACKEND values by trusting the URL
+    # scheme for driver-specific connect args.
+    if is_sqlite_url(database_info.url):
         engine_kwargs["connect_args"] = {"check_same_thread": False}
     else:
         engine_kwargs["pool_pre_ping"] = True
@@ -53,6 +60,10 @@ def get_session_factory() -> sessionmaker:
 
 def create_tables() -> None:
     Base.metadata.create_all(bind=get_database_engine())
+
+
+def should_create_sqlite_tables() -> bool:
+    return is_sqlite_url(get_database_info().url)
 
 
 def missing_required_tables(required_tables: list[str]) -> list[str]:
