@@ -7,7 +7,12 @@ from fastapi.openapi.utils import get_openapi
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.errors import register_exception_handlers
-from app.db.connection import create_tables, get_database_info, missing_required_tables
+from app.db.connection import (
+    create_tables,
+    get_database_info,
+    missing_required_tables,
+    should_create_sqlite_tables,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +71,7 @@ app.openapi = custom_openapi
 @app.on_event("startup")
 def on_startup() -> None:
     database_info = get_database_info()
-    if database_info.backend == "sqlite":
+    if should_create_sqlite_tables():
         create_tables()
         return
 
