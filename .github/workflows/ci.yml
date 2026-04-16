@@ -75,6 +75,7 @@ jobs:
 
       - name: Run backend tests
         env:
+          PYTHONPATH: backend
           DATABASE_BACKEND: sqlite
           DATABASE_URL: sqlite:///./ci.db
           PROJECTS_WORKSPACE_PATH: ./projects
@@ -84,5 +85,4 @@ jobs:
           OPENAI_API_KEY: ""
           GEMINI_API_KEY: ""
         run: |
-          cd backend
-          pytest -q tests
+          pytest -q backend/tests

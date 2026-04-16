@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 from uuid import uuid4
 
 from git import InvalidGitRepositoryError, Repo
@@ -345,7 +345,14 @@ def clone_repository_with_metadata(source_url: str) -> CloneResult:
 
     parsed = urlparse(source)
     if parsed.scheme == "file":
-        local_path = Path(parsed.path.lstrip("/")).expanduser()
+        # Preserve absolute POSIX paths (e.g. file:///tmp/repo) and support
+        # Windows file URLs (e.g. file:///C:/repo).
+        raw_path = unquote(parsed.path or "")
+        if parsed.netloc:
+            raw_path = f"//{parsed.netloc}{raw_path}"
+        if len(raw_path) >= 3 and raw_path.startswith("/") and raw_path[2] == ":":
+            raw_path = raw_path.lstrip("/")
+        local_path = Path(raw_path).expanduser()
         if not local_path.exists() or not local_path.is_dir():
             raise RepositoryLoadError("Local file:// repository path does not exist", code="INVALID_LOCAL_PATH")
         return _copy_local_into_workspace(local_path)
