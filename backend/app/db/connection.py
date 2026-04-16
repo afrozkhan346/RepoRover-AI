@@ -55,7 +55,7 @@ def build_postgres_url(
     password: str,
     host: str,
     port: int = 5432,
-    database: str = "repoorover",
+    database: str = "Reponium",
 ) -> str:
     safe_password = quote_plus(password)
     return f"postgresql+psycopg://{username}:{safe_password}@{host}:{port}/{database}"

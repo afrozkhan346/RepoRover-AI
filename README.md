@@ -46,13 +46,21 @@ Reponium AI is a next-generation developer intelligence platform that empowers y
 - React + Vite + TypeScript frontend
 - FastAPI Python backend
 - Drizzle ORM with PostgreSQL via Supabase
-- Claude Haiku API for AI explanations
+- Groq LLM API for AI explanations (set `GROQ_API_KEY` in your backend environment)
 - Tree-sitter for multi-language AST parsing
 - NetworkX for graph construction and analysis
 - ARQ + Upstash Redis for background job queue
 - GitHub OAuth via Supabase Auth
 - Vercel frontend deployment, Render backend deployment
 - GitHub Actions CI pipeline
+
+### Environment Variables (AI)
+
+- `GROQ_API_KEY` (required for AI features)
+  - Get your key from <https://console.groq.com/keys>
+- `LLM_PROVIDER` (optional, defaults to `groq`)
+
+If you previously set `ANTHROPIC_API_KEY`, it is no longer used. All AI features now require Groq.
 
 ---
 

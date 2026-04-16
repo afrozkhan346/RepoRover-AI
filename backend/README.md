@@ -10,40 +10,27 @@ uvicorn app.main:app --reload --app-dir backend
 
 ## Database Modes
 
-The backend supports SQLite-first development and PostgreSQL readiness.
+The backend is designed for PostgreSQL (Supabase) as the default and recommended database for all deployments. Drizzle ORM is used for migrations and queries.
 
-### SQLite (default)
+### Local Development
 
-In `.env`:
+By default, the backend will use PostgreSQL if you provide a valid `DATABASE_URL` (Supabase or self-hosted). If no PostgreSQL configuration is found, it will fall back to SQLite for local development only. This fallback is for quick prototyping and should not be used in production.
+
+**Recommended:**
+
+```bash
+DATABASE_BACKEND=postgresql
+DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/Reponium?sslmode=prefer
+```
+
+**Fallback (not for production):**
 
 ```bash
 DATABASE_BACKEND=sqlite
-DATABASE_URL=sqlite:///./repoorover.db
+DATABASE_URL=sqlite:///./Reponium.db
 ```
 
-### PostgreSQL (ready)
-
-Option A: explicit DSN
-
-```bash
-DATABASE_BACKEND=postgresql
-DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/repoorover?sslmode=prefer
-```
-
-Option B: component fields (auto-built DSN)
-
-```bash
-DATABASE_BACKEND=postgresql
-DATABASE_URL=sqlite:///./repoorover.db
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_DATABASE=repoorover
-POSTGRES_USERNAME=repoorover
-POSTGRES_PASSWORD=change-me
-POSTGRES_SSLMODE=prefer
-```
-
-`DATABASE_URL` remains the single runtime URL source, and is resolved from the above policy.
+`DATABASE_URL` is always the single runtime source and is resolved from the above policy. For production, always use Supabase or another PostgreSQL instance.
 
 ## Alembic Migrations
 
@@ -72,12 +59,12 @@ alembic revision --autogenerate -m "autogen: model updates"
 Repository ingestion now uses a shared workspace strategy with GitPython:
 
 - Remote Git URLs:
-	- first request: clone into shared workspace
-	- subsequent requests: fetch + best-effort fast-forward pull (update in place)
+  - first request: clone into shared workspace
+  - subsequent requests: fetch + best-effort fast-forward pull (update in place)
 - Local folder ingestion:
-	- copied into managed workspace for consistent analysis lifecycle
+  - copied into managed workspace for consistent analysis lifecycle
 - ZIP ingestion:
-	- extracted into managed upload workspace
+  - extracted into managed upload workspace
 
 Workspace policy env knobs:
 

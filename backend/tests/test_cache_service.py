@@ -1,7 +1,7 @@
 """
 Tests for the persistent cache service (cache_service.py).
 
-Runs against an in-memory SQLite database — no side effects on repoorover.db.
+Runs against an in-memory SQLite database — no side effects on Reponium.db.
 """
 from __future__ import annotations
 

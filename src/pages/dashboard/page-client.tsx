@@ -14,7 +14,7 @@ import { Activity, ArrowRight, GitBranch, LayoutDashboard, Sparkles, TriangleAle
 
 type SavedBundle = any;
 
-const STORAGE_KEY_PREFIX = "repoorover:last-analysis";
+const STORAGE_KEY_PREFIX = "Reponium:last-analysis";
 
 function buildMermaidDefinition(flowPath: string[]) {
   if (!flowPath.length) {

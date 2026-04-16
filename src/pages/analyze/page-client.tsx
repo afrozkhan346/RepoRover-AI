@@ -49,7 +49,7 @@ type AnalysisBundle = {
   traces: ExplainabilityTraceResponse;
 };
 
-const STORAGE_KEY_PREFIX = "repoorover:last-analysis";
+const STORAGE_KEY_PREFIX = "Reponium:last-analysis";
 const IGNORED_UPLOAD_DIRS = new Set([
   ".git",
   "node_modules",
