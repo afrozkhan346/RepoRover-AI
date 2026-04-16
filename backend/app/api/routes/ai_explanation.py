@@ -23,7 +23,7 @@ def explain_code_route(payload: AIExplanationRequest) -> dict:
 @router.get("/explain-code", response_model=AIExplanationResponse)
 def ai_service_health() -> dict:
     return {
-        "explanation": "AI explanation service is active with PyTorch/HuggingFace/spaCy pipeline and deterministic fallback.",
+        "explanation": "AI explanation service is active with API-based LLM pipeline and deterministic fallback.",
         "language": None,
         "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
         "pipeline": "health-check",
