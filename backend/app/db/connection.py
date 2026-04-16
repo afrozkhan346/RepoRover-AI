@@ -30,9 +30,14 @@ def get_database_engine() -> Engine:
     database_info = get_database_info()
     engine_kwargs: dict[str, object] = {}
 
+    print(f"[DEBUG] Database backend: {database_info.backend}")
+    print(f"[DEBUG] Database URL: {database_info.url}")
+
     if database_info.backend == "sqlite":
+        print("[DEBUG] Using SQLite connect_args: check_same_thread=False")
         engine_kwargs["connect_args"] = {"check_same_thread": False}
     else:
+        print("[DEBUG] Using PostgreSQL/other engine kwargs")
         engine_kwargs["pool_pre_ping"] = True
         engine_kwargs["pool_recycle"] = 1800
         engine_kwargs["pool_size"] = settings.db_pool_size
