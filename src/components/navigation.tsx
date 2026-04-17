@@ -59,7 +59,7 @@ export function Navigation() {
             <div className="p-2 bg-primary/10 rounded-lg">
               <Code2 className="h-6 w-6 text-primary" />
             </div>
-            <span className="font-bold text-xl hidden sm:inline-block">RepoRoverAI</span>
+            <span className="font-bold text-xl hidden sm:inline-block">Reponium</span>
           </Link>
 
           {/* Desktop Navigation */}

@@ -5,6 +5,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.13"
+      - key: ENVIRONMENT
+        value: production
       - key: DATABASE_BACKEND
         value: postgresql
       # DATABASE_URL - Set in Render dashboard (from Supabase)

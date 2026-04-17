@@ -93,7 +93,7 @@ export default function RegisterPage() {
             </div>
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Join RepoRover AI
+            Join Reponium
           </CardTitle>
           <CardDescription className="text-base">
             Start your AI-powered learning journey in seconds
