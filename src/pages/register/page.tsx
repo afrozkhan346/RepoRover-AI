@@ -37,14 +37,14 @@ export default function RegisterPage() {
 
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
-    toast.error("Google sign-up is not available yet in the FastAPI auth flow.");
-    setGoogleLoading(false);
+    window.location.href = "http://127.0.0.1:8000/api/auth/social/google/login";
+
   };
 
   const handleGithubSignup = async () => {
     setGithubLoading(true);
-    toast.error("GitHub sign-up is not available yet in the FastAPI auth flow.");
-    setGithubLoading(false);
+    window.location.href = "http://127.0.0.1:8000/api/auth/social/github/login";
+
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

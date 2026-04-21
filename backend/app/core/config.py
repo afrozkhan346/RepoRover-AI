@@ -55,6 +55,12 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.1"
     ollama_timeout_seconds: int = 120
 
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+    github_client_id: str | None = None
+    github_client_secret: str | None = None
+    frontend_url: str = "http://localhost:3000"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

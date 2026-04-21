@@ -187,20 +187,7 @@ export default function ProfilePage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-2">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Lessons Completed
-                    </CardTitle>
-                    <BookOpen className="h-5 w-5 text-blue-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold">{stats?.lessons_completed || 0}</div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Courses finished
-                    </p>
-                  </CardContent>
-                </Card>
+                
 
                 <Card className="border-2">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -244,37 +231,9 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                      <div className="flex items-center gap-3">
-                        <Target className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="font-medium">Total Progress</p>
-                          <p className="text-sm text-muted-foreground">
-                            Overall learning completion
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant="secondary" className="text-lg px-4 py-2">
-                        {stats?.lessons_completed || 0} lessons
-                      </Badge>
-                    </div>
+                    
 
-                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                      <div className="flex items-center gap-3">
-                        <Zap className="h-5 w-5 text-yellow-500" />
-                        <div>
-                          <p className="font-medium">XP Rate</p>
-                          <p className="text-sm text-muted-foreground">
-                            Average experience per lesson
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant="secondary" className="text-lg px-4 py-2">
-                        {stats?.lessons_completed > 0 
-                          ? Math.round((stats?.total_xp || 0) / stats.lessons_completed)
-                          : 0} XP
-                      </Badge>
-                    </div>
+                    
 
                     <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                       <div className="flex items-center gap-3">

@@ -79,21 +79,6 @@ npm ci
 npm run dev
 ```
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18 or newer
-- Python 3.11 or newer
-- npm
-
-### Frontend
-
-```bash
-npm ci
-npm run dev
-```
-
 ### Backend
 
 ```bash
