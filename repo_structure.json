@@ -1,0 +1,4301 @@
+{
+  "name": "new reponium",
+  "type": "folder",
+  "path": ".",
+  "icon": "folder",
+  "color": "#F59E0B",
+  "language": null,
+  "children": [
+    {
+      "name": ".github",
+      "type": "folder",
+      "path": ".github",
+      "icon": "folder",
+      "color": "#F59E0B",
+      "language": null,
+      "children": [
+        {
+          "name": "workflows",
+          "type": "folder",
+          "path": ".github/workflows",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "ci.yml",
+              "type": "file",
+              "path": ".github/workflows/ci.yml",
+              "size": 2354,
+              "extension": ".yml",
+              "icon": "file-json",
+              "color": "#CB171E",
+              "language": "YAML"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": ".vscode",
+      "type": "folder",
+      "path": ".vscode",
+      "icon": "folder",
+      "color": "#F59E0B",
+      "language": null,
+      "children": [
+        {
+          "name": "settings.json",
+          "type": "file",
+          "path": ".vscode/settings.json",
+          "size": 42,
+          "extension": ".json",
+          "icon": "file-json",
+          "color": "#F5A623",
+          "language": "JSON"
+        }
+      ]
+    },
+    {
+      "name": "backend",
+      "type": "folder",
+      "path": "backend",
+      "icon": "folder",
+      "color": "#F59E0B",
+      "language": null,
+      "children": [
+        {
+          "name": "app",
+          "type": "folder",
+          "path": "backend/app",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "api",
+              "type": "folder",
+              "path": "backend/app/api",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "routes",
+                  "type": "folder",
+                  "path": "backend/app/api/routes",
+                  "icon": "folder",
+                  "color": "#F59E0B",
+                  "language": null,
+                  "children": [
+                    {
+                      "name": "__init__.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/__init__.py",
+                      "size": 0,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "achievements.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/achievements.py",
+                      "size": 2587,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "ai_explanation.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/ai_explanation.py",
+                      "size": 3373,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "auth.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/auth.py",
+                      "size": 4368,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "call_graph.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/call_graph.py",
+                      "size": 1072,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "dependency_graph.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/dependency_graph.py",
+                      "size": 687,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "github_analysis.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/github_analysis.py",
+                      "size": 2627,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "graph_analysis.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/graph_analysis.py",
+                      "size": 826,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "health.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/health.py",
+                      "size": 735,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "learning_paths.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/learning_paths.py",
+                      "size": 1956,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "lessons.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/lessons.py",
+                      "size": 561,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "parsing.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/parsing.py",
+                      "size": 1938,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "project.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/project.py",
+                      "size": 15391,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "tokens.py",
+                      "type": "file",
+                      "path": "backend/app/api/routes/tokens.py",
+                      "size": 940,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    }
+                  ]
+                },
+                {
+                  "name": "__init__.py",
+                  "type": "file",
+                  "path": "backend/app/api/__init__.py",
+                  "size": 0,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "router.py",
+                  "type": "file",
+                  "path": "backend/app/api/router.py",
+                  "size": 2057,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                }
+              ]
+            },
+            {
+              "name": "core",
+              "type": "folder",
+              "path": "backend/app/core",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file",
+                  "path": "backend/app/core/__init__.py",
+                  "size": 0,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "ai_router.py",
+                  "type": "file",
+                  "path": "backend/app/core/ai_router.py",
+                  "size": 3010,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "config.py",
+                  "type": "file",
+                  "path": "backend/app/core/config.py",
+                  "size": 9675,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "errors.py",
+                  "type": "file",
+                  "path": "backend/app/core/errors.py",
+                  "size": 2515,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "responses.py",
+                  "type": "file",
+                  "path": "backend/app/core/responses.py",
+                  "size": 231,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                }
+              ]
+            },
+            {
+              "name": "db",
+              "type": "folder",
+              "path": "backend/app/db",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file",
+                  "path": "backend/app/db/__init__.py",
+                  "size": 551,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "base.py",
+                  "type": "file",
+                  "path": "backend/app/db/base.py",
+                  "size": 88,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "connection.py",
+                  "type": "file",
+                  "path": "backend/app/db/connection.py",
+                  "size": 2517,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "models.py",
+                  "type": "file",
+                  "path": "backend/app/db/models.py",
+                  "size": 11275,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "seed.py",
+                  "type": "file",
+                  "path": "backend/app/db/seed.py",
+                  "size": 12962,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "session.py",
+                  "type": "file",
+                  "path": "backend/app/db/session.py",
+                  "size": 648,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                }
+              ]
+            },
+            {
+              "name": "engine",
+              "type": "folder",
+              "path": "backend/app/engine",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "ai_nlp",
+                  "type": "folder",
+                  "path": "backend/app/engine/ai_nlp",
+                  "icon": "folder",
+                  "color": "#F59E0B",
+                  "language": null,
+                  "children": [
+                    {
+                      "name": "__init__.py",
+                      "type": "file",
+                      "path": "backend/app/engine/ai_nlp/__init__.py",
+                      "size": 87,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "ai_nlp_service.py",
+                      "type": "file",
+                      "path": "backend/app/engine/ai_nlp/ai_nlp_service.py",
+                      "size": 1083,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    }
+                  ]
+                },
+                {
+                  "name": "explanation_engine",
+                  "type": "folder",
+                  "path": "backend/app/engine/explanation_engine",
+                  "icon": "folder",
+                  "color": "#F59E0B",
+                  "language": null,
+                  "children": [
+                    {
+                      "name": "__init__.py",
+                      "type": "file",
+                      "path": "backend/app/engine/explanation_engine/__init__.py",
+                      "size": 115,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "explanation_engine.py",
+                      "type": "file",
+                      "path": "backend/app/engine/explanation_engine/explanation_engine.py",
+                      "size": 549,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    }
+                  ]
+                },
+                {
+                  "name": "graph_builder",
+                  "type": "folder",
+                  "path": "backend/app/engine/graph_builder",
+                  "icon": "folder",
+                  "color": "#F59E0B",
+                  "language": null,
+                  "children": [
+                    {
+                      "name": "__init__.py",
+                      "type": "file",
+                      "path": "backend/app/engine/graph_builder/__init__.py",
+                      "size": 107,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "graph_builder.py",
+                      "type": "file",
+                      "path": "backend/app/engine/graph_builder/graph_builder.py",
+                      "size": 5301,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    }
+                  ]
+                },
+                {
+                  "name": "parser",
+                  "type": "folder",
+                  "path": "backend/app/engine/parser",
+                  "icon": "folder",
+                  "color": "#F59E0B",
+                  "language": null,
+                  "children": [
+                    {
+                      "name": "__init__.py",
+                      "type": "file",
+                      "path": "backend/app/engine/parser/__init__.py",
+                      "size": 85,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    },
+                    {
+                      "name": "ast_parser.py",
+                      "type": "file",
+                      "path": "backend/app/engine/parser/ast_parser.py",
+                      "size": 2717,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    }
+                  ]
+                },
+                {
+                  "name": "__init__.py",
+                  "type": "file",
+                  "path": "backend/app/engine/__init__.py",
+                  "size": 100,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "orchestrator.py",
+                  "type": "file",
+                  "path": "backend/app/engine/orchestrator.py",
+                  "size": 1710,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                }
+              ]
+            },
+            {
+              "name": "schemas",
+              "type": "folder",
+              "path": "backend/app/schemas",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/__init__.py",
+                  "size": 0,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "ai_explanation.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/ai_explanation.py",
+                  "size": 885,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "auth.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/auth.py",
+                  "size": 699,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "base.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/base.py",
+                  "size": 84,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "call_graph.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/call_graph.py",
+                  "size": 1143,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "common.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/common.py",
+                  "size": 219,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "dependency_graph.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/dependency_graph.py",
+                  "size": 697,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "explainability_traces.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/explainability_traces.py",
+                  "size": 1410,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "github_analysis.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/github_analysis.py",
+                  "size": 1172,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "graph_analysis.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/graph_analysis.py",
+                  "size": 854,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "learning_path.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/learning_path.py",
+                  "size": 805,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "parsing.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/parsing.py",
+                  "size": 1359,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "project_ast.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/project_ast.py",
+                  "size": 873,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "project_summaries.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/project_summaries.py",
+                  "size": 668,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "quality_analysis.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/quality_analysis.py",
+                  "size": 493,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "risk_scoring.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/risk_scoring.py",
+                  "size": 562,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "tokens.py",
+                  "type": "file",
+                  "path": "backend/app/schemas/tokens.py",
+                  "size": 608,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                }
+              ]
+            },
+            {
+              "name": "services",
+              "type": "folder",
+              "path": "backend/app/services",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "__init__.py",
+                  "type": "file",
+                  "path": "backend/app/services/__init__.py",
+                  "size": 0,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "ai_explanation.py",
+                  "type": "file",
+                  "path": "backend/app/services/ai_explanation.py",
+                  "size": 10213,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "ast_parser.py",
+                  "type": "file",
+                  "path": "backend/app/services/ast_parser.py",
+                  "size": 25104,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "auth_service.py",
+                  "type": "file",
+                  "path": "backend/app/services/auth_service.py",
+                  "size": 5521,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "cache_service.py",
+                  "type": "file",
+                  "path": "backend/app/services/cache_service.py",
+                  "size": 7991,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "call_graph_service.py",
+                  "type": "file",
+                  "path": "backend/app/services/call_graph_service.py",
+                  "size": 9523,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "dependency_graph_service.py",
+                  "type": "file",
+                  "path": "backend/app/services/dependency_graph_service.py",
+                  "size": 6543,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "explainability_trace_service.py",
+                  "type": "file",
+                  "path": "backend/app/services/explainability_trace_service.py",
+                  "size": 13706,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "explainer.py",
+                  "type": "file",
+                  "path": "backend/app/services/explainer.py",
+                  "size": 4504,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "gap_detector.py",
+                  "type": "file",
+                  "path": "backend/app/services/gap_detector.py",
+                  "size": 15714,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "github_analysis.py",
+                  "type": "file",
+                  "path": "backend/app/services/github_analysis.py",
+                  "size": 1912,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "graph_analysis_service.py",
+                  "type": "file",
+                  "path": "backend/app/services/graph_analysis_service.py",
+                  "size": 5729,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "graph_builder.py",
+                  "type": "file",
+                  "path": "backend/app/services/graph_builder.py",
+                  "size": 15417,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "learning_paths.py",
+                  "type": "file",
+                  "path": "backend/app/services/learning_paths.py",
+                  "size": 4643,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "lessons.py",
+                  "type": "file",
+                  "path": "backend/app/services/lessons.py",
+                  "size": 3476,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "llm_service.py",
+                  "type": "file",
+                  "path": "backend/app/services/llm_service.py",
+                  "size": 18406,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "parser.py",
+                  "type": "file",
+                  "path": "backend/app/services/parser.py",
+                  "size": 13014,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "parser_service.py",
+                  "type": "file",
+                  "path": "backend/app/services/parser_service.py",
+                  "size": 16280,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "priority_engine.py",
+                  "type": "file",
+                  "path": "backend/app/services/priority_engine.py",
+                  "size": 11972,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "project_summary_service.py",
+                  "type": "file",
+                  "path": "backend/app/services/project_summary_service.py",
+                  "size": 13187,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "quality_analysis_service.py",
+                  "type": "file",
+                  "path": "backend/app/services/quality_analysis_service.py",
+                  "size": 6154,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "repository_loader.py",
+                  "type": "file",
+                  "path": "backend/app/services/repository_loader.py",
+                  "size": 19107,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "repository_tree.py",
+                  "type": "file",
+                  "path": "backend/app/services/repository_tree.py",
+                  "size": 12215,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "risk_analyzer.py",
+                  "type": "file",
+                  "path": "backend/app/services/risk_analyzer.py",
+                  "size": 12695,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "risk_scoring_service.py",
+                  "type": "file",
+                  "path": "backend/app/services/risk_scoring_service.py",
+                  "size": 3275,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "token_service.py",
+                  "type": "file",
+                  "path": "backend/app/services/token_service.py",
+                  "size": 4851,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "understanding.py",
+                  "type": "file",
+                  "path": "backend/app/services/understanding.py",
+                  "size": 15226,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                }
+              ]
+            },
+            {
+              "name": "__init__.py",
+              "type": "file",
+              "path": "backend/app/__init__.py",
+              "size": 0,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            },
+            {
+              "name": "main.py",
+              "type": "file",
+              "path": "backend/app/main.py",
+              "size": 2568,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            }
+          ]
+        },
+        {
+          "name": "docs",
+          "type": "folder",
+          "path": "backend/docs",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "POSTGRESQL_MIGRATION_PATH.md",
+              "type": "file",
+              "path": "backend/docs/POSTGRESQL_MIGRATION_PATH.md",
+              "size": 1185,
+              "extension": ".md",
+              "icon": "file-text",
+              "color": "#083FA1",
+              "language": "Markdown"
+            }
+          ]
+        },
+        {
+          "name": "migrations",
+          "type": "folder",
+          "path": "backend/migrations",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "versions",
+              "type": "folder",
+              "path": "backend/migrations/versions",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "0001_sqlalchemy_baseline.py",
+                  "type": "file",
+                  "path": "backend/migrations/versions/0001_sqlalchemy_baseline.py",
+                  "size": 10558,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "0002_seed_idempotency_indexes.py",
+                  "type": "file",
+                  "path": "backend/migrations/versions/0002_seed_idempotency_indexes.py",
+                  "size": 1170,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                },
+                {
+                  "name": "0003_cache_entries.py",
+                  "type": "file",
+                  "path": "backend/migrations/versions/0003_cache_entries.py",
+                  "size": 1506,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                }
+              ]
+            },
+            {
+              "name": "0001_initial_schema.sql",
+              "type": "file",
+              "path": "backend/migrations/0001_initial_schema.sql",
+              "size": 4923,
+              "extension": ".sql",
+              "icon": "database",
+              "color": "#E38C00",
+              "language": "SQL"
+            },
+            {
+              "name": "env.py",
+              "type": "file",
+              "path": "backend/migrations/env.py",
+              "size": 1557,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            },
+            {
+              "name": "README.md",
+              "type": "file",
+              "path": "backend/migrations/README.md",
+              "size": 825,
+              "extension": ".md",
+              "icon": "file-text",
+              "color": "#083FA1",
+              "language": "Markdown"
+            },
+            {
+              "name": "script.py.mako",
+              "type": "file",
+              "path": "backend/migrations/script.py.mako",
+              "size": 572,
+              "extension": ".mako",
+              "icon": "file",
+              "color": "#94A3B8",
+              "language": null
+            }
+          ]
+        },
+        {
+          "name": "projects",
+          "type": "folder",
+          "path": "backend/projects",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "github",
+              "type": "folder",
+              "path": "backend/projects/github",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "AmeerSheikh02",
+                  "type": "folder",
+                  "path": "backend/projects/github/AmeerSheikh02",
+                  "icon": "folder",
+                  "color": "#F59E0B",
+                  "language": null,
+                  "children": [
+                    {
+                      "name": "AuditLab",
+                      "type": "folder",
+                      "path": "backend/projects/github/AmeerSheikh02/AuditLab",
+                      "icon": "folder",
+                      "color": "#F59E0B",
+                      "language": null,
+                      "children": [
+                        {
+                          "name": "src",
+                          "type": "folder",
+                          "path": "backend/projects/github/AmeerSheikh02/AuditLab/src",
+                          "icon": "folder",
+                          "color": "#F59E0B",
+                          "language": null,
+                          "children": [
+                            {
+                              "name": "assets",
+                              "type": "folder",
+                              "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/assets",
+                              "icon": "folder",
+                              "color": "#F59E0B",
+                              "language": null,
+                              "children": [
+                                {
+                                  "name": "images",
+                                  "type": "folder",
+                                  "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/assets/images",
+                                  "icon": "folder",
+                                  "color": "#F59E0B",
+                                  "language": null,
+                                  "children": [
+                                    {
+                                      "name": "pie-chart.svg",
+                                      "type": "file",
+                                      "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/assets/images/pie-chart.svg",
+                                      "size": 530,
+                                      "extension": ".svg",
+                                      "icon": "image",
+                                      "color": "#FFB13B",
+                                      "language": null
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "name": "renderer",
+                              "type": "folder",
+                              "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/renderer",
+                              "icon": "folder",
+                              "color": "#F59E0B",
+                              "language": null,
+                              "children": [
+                                {
+                                  "name": "pages",
+                                  "type": "folder",
+                                  "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/renderer/pages",
+                                  "icon": "folder",
+                                  "color": "#F59E0B",
+                                  "language": null,
+                                  "children": [
+                                    {
+                                      "name": "index.html",
+                                      "type": "file",
+                                      "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/renderer/pages/index.html",
+                                      "size": 4295,
+                                      "extension": ".html",
+                                      "icon": "file-code",
+                                      "color": "#E34F26",
+                                      "language": "HTML"
+                                    },
+                                    {
+                                      "name": "next.html",
+                                      "type": "file",
+                                      "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/renderer/pages/next.html",
+                                      "size": 1076,
+                                      "extension": ".html",
+                                      "icon": "file-code",
+                                      "color": "#E34F26",
+                                      "language": "HTML"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "name": "scripts",
+                                  "type": "folder",
+                                  "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/renderer/scripts",
+                                  "icon": "folder",
+                                  "color": "#F59E0B",
+                                  "language": null,
+                                  "children": [
+                                    {
+                                      "name": "next.js",
+                                      "type": "file",
+                                      "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/renderer/scripts/next.js",
+                                      "size": 318,
+                                      "extension": ".js",
+                                      "icon": "file-code",
+                                      "color": "#F7DF1E",
+                                      "language": "JavaScript"
+                                    },
+                                    {
+                                      "name": "script.js",
+                                      "type": "file",
+                                      "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/renderer/scripts/script.js",
+                                      "size": 4105,
+                                      "extension": ".js",
+                                      "icon": "file-code",
+                                      "color": "#F7DF1E",
+                                      "language": "JavaScript"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "name": "styles",
+                                  "type": "folder",
+                                  "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/renderer/styles",
+                                  "icon": "folder",
+                                  "color": "#F59E0B",
+                                  "language": null,
+                                  "children": [
+                                    {
+                                      "name": "index.css",
+                                      "type": "file",
+                                      "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/renderer/styles/index.css",
+                                      "size": 6775,
+                                      "extension": ".css",
+                                      "icon": "palette",
+                                      "color": "#1572B6",
+                                      "language": "CSS"
+                                    },
+                                    {
+                                      "name": "index2.css",
+                                      "type": "file",
+                                      "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/renderer/styles/index2.css",
+                                      "size": 1972,
+                                      "extension": ".css",
+                                      "icon": "palette",
+                                      "color": "#1572B6",
+                                      "language": "CSS"
+                                    },
+                                    {
+                                      "name": "next.css",
+                                      "type": "file",
+                                      "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/renderer/styles/next.css",
+                                      "size": 2763,
+                                      "extension": ".css",
+                                      "icon": "palette",
+                                      "color": "#1572B6",
+                                      "language": "CSS"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "name": "index2.css.map",
+                              "type": "file",
+                              "path": "backend/projects/github/AmeerSheikh02/AuditLab/src/index2.css.map",
+                              "size": 942,
+                              "extension": ".map",
+                              "icon": "file",
+                              "color": "#94A3B8",
+                              "language": null
+                            }
+                          ]
+                        },
+                        {
+                          "name": "tests",
+                          "type": "folder",
+                          "path": "backend/projects/github/AmeerSheikh02/AuditLab/tests",
+                          "icon": "folder",
+                          "color": "#F59E0B",
+                          "language": null,
+                          "children": [
+                            {
+                              "name": "fixtures",
+                              "type": "folder",
+                              "path": "backend/projects/github/AmeerSheikh02/AuditLab/tests/fixtures",
+                              "icon": "folder",
+                              "color": "#F59E0B",
+                              "language": null,
+                              "children": [
+                                {
+                                  "name": "file1.txt",
+                                  "type": "file",
+                                  "path": "backend/projects/github/AmeerSheikh02/AuditLab/tests/fixtures/file1.txt",
+                                  "size": 1148,
+                                  "extension": ".txt",
+                                  "icon": "file-text",
+                                  "color": "#94A3B8",
+                                  "language": null
+                                },
+                                {
+                                  "name": "file2.txt",
+                                  "type": "file",
+                                  "path": "backend/projects/github/AmeerSheikh02/AuditLab/tests/fixtures/file2.txt",
+                                  "size": 573,
+                                  "extension": ".txt",
+                                  "icon": "file-text",
+                                  "color": "#94A3B8",
+                                  "language": null
+                                },
+                                {
+                                  "name": "result.txt",
+                                  "type": "file",
+                                  "path": "backend/projects/github/AmeerSheikh02/AuditLab/tests/fixtures/result.txt",
+                                  "size": 384,
+                                  "extension": ".txt",
+                                  "icon": "file-text",
+                                  "color": "#94A3B8",
+                                  "language": null
+                                }
+                              ]
+                            },
+                            {
+                              "name": "results",
+                              "type": "folder",
+                              "path": "backend/projects/github/AmeerSheikh02/AuditLab/tests/results",
+                              "icon": "folder",
+                              "color": "#F59E0B",
+                              "language": null,
+                              "children": [
+                                {
+                                  "name": "result.txt",
+                                  "type": "file",
+                                  "path": "backend/projects/github/AmeerSheikh02/AuditLab/tests/results/result.txt",
+                                  "size": 430,
+                                  "extension": ".txt",
+                                  "icon": "file-text",
+                                  "color": "#94A3B8",
+                                  "language": null
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "name": ".gitignore",
+                          "type": "file",
+                          "path": "backend/projects/github/AmeerSheikh02/AuditLab/.gitignore",
+                          "size": 2291,
+                          "extension": "",
+                          "icon": "file",
+                          "color": "#94A3B8",
+                          "language": null
+                        },
+                        {
+                          "name": "main.js",
+                          "type": "file",
+                          "path": "backend/projects/github/AmeerSheikh02/AuditLab/main.js",
+                          "size": 577,
+                          "extension": ".js",
+                          "icon": "file-code",
+                          "color": "#F7DF1E",
+                          "language": "JavaScript"
+                        },
+                        {
+                          "name": "package-lock.json",
+                          "type": "file",
+                          "path": "backend/projects/github/AmeerSheikh02/AuditLab/package-lock.json",
+                          "size": 34123,
+                          "extension": ".json",
+                          "icon": "file-json",
+                          "color": "#F5A623",
+                          "language": "JSON"
+                        },
+                        {
+                          "name": "package.json",
+                          "type": "file",
+                          "path": "backend/projects/github/AmeerSheikh02/AuditLab/package.json",
+                          "size": 708,
+                          "extension": ".json",
+                          "icon": "file-json",
+                          "color": "#F5A623",
+                          "language": "JSON"
+                        },
+                        {
+                          "name": "README.md",
+                          "type": "file",
+                          "path": "backend/projects/github/AmeerSheikh02/AuditLab/README.md",
+                          "size": 2091,
+                          "extension": ".md",
+                          "icon": "file-text",
+                          "color": "#083FA1",
+                          "language": "Markdown"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Reponium_backend.egg-info",
+          "type": "folder",
+          "path": "backend/Reponium_backend.egg-info",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "dependency_links.txt",
+              "type": "file",
+              "path": "backend/Reponium_backend.egg-info/dependency_links.txt",
+              "size": 1,
+              "extension": ".txt",
+              "icon": "file-text",
+              "color": "#94A3B8",
+              "language": null
+            },
+            {
+              "name": "PKG-INFO",
+              "type": "file",
+              "path": "backend/Reponium_backend.egg-info/PKG-INFO",
+              "size": 7284,
+              "extension": "",
+              "icon": "file",
+              "color": "#94A3B8",
+              "language": null
+            },
+            {
+              "name": "requires.txt",
+              "type": "file",
+              "path": "backend/Reponium_backend.egg-info/requires.txt",
+              "size": 268,
+              "extension": ".txt",
+              "icon": "file-text",
+              "color": "#94A3B8",
+              "language": null
+            },
+            {
+              "name": "SOURCES.txt",
+              "type": "file",
+              "path": "backend/Reponium_backend.egg-info/SOURCES.txt",
+              "size": 521,
+              "extension": ".txt",
+              "icon": "file-text",
+              "color": "#94A3B8",
+              "language": null
+            },
+            {
+              "name": "top_level.txt",
+              "type": "file",
+              "path": "backend/Reponium_backend.egg-info/top_level.txt",
+              "size": 4,
+              "extension": ".txt",
+              "icon": "file-text",
+              "color": "#94A3B8",
+              "language": null
+            }
+          ]
+        },
+        {
+          "name": "repoorover_backend.egg-info",
+          "type": "folder",
+          "path": "backend/repoorover_backend.egg-info",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "dependency_links.txt",
+              "type": "file",
+              "path": "backend/repoorover_backend.egg-info/dependency_links.txt",
+              "size": 2,
+              "extension": ".txt",
+              "icon": "file-text",
+              "color": "#94A3B8",
+              "language": null
+            },
+            {
+              "name": "PKG-INFO",
+              "type": "file",
+              "path": "backend/repoorover_backend.egg-info/PKG-INFO",
+              "size": 488,
+              "extension": "",
+              "icon": "file",
+              "color": "#94A3B8",
+              "language": null
+            },
+            {
+              "name": "requires.txt",
+              "type": "file",
+              "path": "backend/repoorover_backend.egg-info/requires.txt",
+              "size": 93,
+              "extension": ".txt",
+              "icon": "file-text",
+              "color": "#94A3B8",
+              "language": null
+            },
+            {
+              "name": "SOURCES.txt",
+              "type": "file",
+              "path": "backend/repoorover_backend.egg-info/SOURCES.txt",
+              "size": 259,
+              "extension": ".txt",
+              "icon": "file-text",
+              "color": "#94A3B8",
+              "language": null
+            },
+            {
+              "name": "top_level.txt",
+              "type": "file",
+              "path": "backend/repoorover_backend.egg-info/top_level.txt",
+              "size": 5,
+              "extension": ".txt",
+              "icon": "file-text",
+              "color": "#94A3B8",
+              "language": null
+            }
+          ]
+        },
+        {
+          "name": "scripts",
+          "type": "folder",
+          "path": "backend/scripts",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "file_ops_smoke_test.py",
+              "type": "file",
+              "path": "backend/scripts/file_ops_smoke_test.py",
+              "size": 5750,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            },
+            {
+              "name": "ollama_repo_summary_smoke.py",
+              "type": "file",
+              "path": "backend/scripts/ollama_repo_summary_smoke.py",
+              "size": 1716,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            }
+          ]
+        },
+        {
+          "name": "test-fixtures",
+          "type": "folder",
+          "path": "backend/test-fixtures",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "safe_zip_src",
+              "type": "folder",
+              "path": "backend/test-fixtures/safe_zip_src",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "project",
+                  "type": "folder",
+                  "path": "backend/test-fixtures/safe_zip_src/project",
+                  "icon": "folder",
+                  "color": "#F59E0B",
+                  "language": null,
+                  "children": [
+                    {
+                      "name": "src",
+                      "type": "folder",
+                      "path": "backend/test-fixtures/safe_zip_src/project/src",
+                      "icon": "folder",
+                      "color": "#F59E0B",
+                      "language": null,
+                      "children": [
+                        {
+                          "name": "utils",
+                          "type": "folder",
+                          "path": "backend/test-fixtures/safe_zip_src/project/src/utils",
+                          "icon": "folder",
+                          "color": "#F59E0B",
+                          "language": null,
+                          "children": [
+                            {
+                              "name": "helper.py",
+                              "type": "file",
+                              "path": "backend/test-fixtures/safe_zip_src/project/src/utils/helper.py",
+                              "size": 34,
+                              "extension": ".py",
+                              "icon": "file-code",
+                              "color": "#3572A5",
+                              "language": "Python"
+                            }
+                          ]
+                        },
+                        {
+                          "name": "main.py",
+                          "type": "file",
+                          "path": "backend/test-fixtures/safe_zip_src/project/src/main.py",
+                          "size": 30,
+                          "extension": ".py",
+                          "icon": "file-code",
+                          "color": "#3572A5",
+                          "language": "Python"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "README.md",
+                      "type": "file",
+                      "path": "backend/test-fixtures/safe_zip_src/project/README.md",
+                      "size": 21,
+                      "extension": ".md",
+                      "icon": "file-text",
+                      "color": "#083FA1",
+                      "language": "Markdown"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "walk_test_src",
+              "type": "folder",
+              "path": "backend/test-fixtures/walk_test_src",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "pkg",
+                  "type": "folder",
+                  "path": "backend/test-fixtures/walk_test_src/pkg",
+                  "icon": "folder",
+                  "color": "#F59E0B",
+                  "language": null,
+                  "children": [
+                    {
+                      "name": "sub",
+                      "type": "folder",
+                      "path": "backend/test-fixtures/walk_test_src/pkg/sub",
+                      "icon": "folder",
+                      "color": "#F59E0B",
+                      "language": null,
+                      "children": [
+                        {
+                          "name": "b.py",
+                          "type": "file",
+                          "path": "backend/test-fixtures/walk_test_src/pkg/sub/b.py",
+                          "size": 32,
+                          "extension": ".py",
+                          "icon": "file-code",
+                          "color": "#3572A5",
+                          "language": "Python"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "a.py",
+                  "type": "file",
+                  "path": "backend/test-fixtures/walk_test_src/a.py",
+                  "size": 20,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                }
+              ]
+            },
+            {
+              "name": "sample_safe.zip",
+              "type": "file",
+              "path": "backend/test-fixtures/sample_safe.zip",
+              "size": 416,
+              "extension": ".zip",
+              "icon": "file",
+              "color": "#94A3B8",
+              "language": null
+            },
+            {
+              "name": "sample_unsafe.zip",
+              "type": "file",
+              "path": "backend/test-fixtures/sample_unsafe.zip",
+              "size": 287,
+              "extension": ".zip",
+              "icon": "file",
+              "color": "#94A3B8",
+              "language": null
+            },
+            {
+              "name": "walk_test_nested.zip",
+              "type": "file",
+              "path": "backend/test-fixtures/walk_test_nested.zip",
+              "size": 259,
+              "extension": ".zip",
+              "icon": "file",
+              "color": "#94A3B8",
+              "language": null
+            }
+          ]
+        },
+        {
+          "name": "tests",
+          "type": "folder",
+          "path": "backend/tests",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "conftest.py",
+              "type": "file",
+              "path": "backend/tests/conftest.py",
+              "size": 313,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            },
+            {
+              "name": "test_ai_project_summaries_route.py",
+              "type": "file",
+              "path": "backend/tests/test_ai_project_summaries_route.py",
+              "size": 3748,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            },
+            {
+              "name": "test_ast_parser_fallback.py",
+              "type": "file",
+              "path": "backend/tests/test_ast_parser_fallback.py",
+              "size": 6136,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            },
+            {
+              "name": "test_cache_service.py",
+              "type": "file",
+              "path": "backend/tests/test_cache_service.py",
+              "size": 7858,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            },
+            {
+              "name": "test_graph_primitives.py",
+              "type": "file",
+              "path": "backend/tests/test_graph_primitives.py",
+              "size": 14041,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            },
+            {
+              "name": "test_llm_health_route.py",
+              "type": "file",
+              "path": "backend/tests/test_llm_health_route.py",
+              "size": 2642,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            },
+            {
+              "name": "test_ollama_repo_summary.py",
+              "type": "file",
+              "path": "backend/tests/test_ollama_repo_summary.py",
+              "size": 5459,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            },
+            {
+              "name": "test_parsing_primitives.py",
+              "type": "file",
+              "path": "backend/tests/test_parsing_primitives.py",
+              "size": 13158,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            },
+            {
+              "name": "test_project_summary_service.py",
+              "type": "file",
+              "path": "backend/tests/test_project_summary_service.py",
+              "size": 4706,
+              "extension": ".py",
+              "icon": "file-code",
+              "color": "#3572A5",
+              "language": "Python"
+            }
+          ]
+        },
+        {
+          "name": "tmp_safe_repo",
+          "type": "folder",
+          "path": "backend/tmp_safe_repo",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "project",
+              "type": "folder",
+              "path": "backend/tmp_safe_repo/project",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "utils",
+                  "type": "folder",
+                  "path": "backend/tmp_safe_repo/project/utils",
+                  "icon": "folder",
+                  "color": "#F59E0B",
+                  "language": null,
+                  "children": [
+                    {
+                      "name": "helper.py",
+                      "type": "file",
+                      "path": "backend/tmp_safe_repo/project/utils/helper.py",
+                      "size": 24,
+                      "extension": ".py",
+                      "icon": "file-code",
+                      "color": "#3572A5",
+                      "language": "Python"
+                    }
+                  ]
+                },
+                {
+                  "name": "main.py",
+                  "type": "file",
+                  "path": "backend/tmp_safe_repo/project/main.py",
+                  "size": 13,
+                  "extension": ".py",
+                  "icon": "file-code",
+                  "color": "#3572A5",
+                  "language": "Python"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": ".env",
+          "type": "file",
+          "path": "backend/.env",
+          "size": 98,
+          "extension": "",
+          "icon": "file",
+          "color": "#94A3B8",
+          "language": null
+        },
+        {
+          "name": ".env.example",
+          "type": "file",
+          "path": "backend/.env.example",
+          "size": 1562,
+          "extension": ".example",
+          "icon": "file",
+          "color": "#94A3B8",
+          "language": null
+        },
+        {
+          "name": ".env.supabase.example",
+          "type": "file",
+          "path": "backend/.env.supabase.example",
+          "size": 526,
+          "extension": ".example",
+          "icon": "file",
+          "color": "#94A3B8",
+          "language": null
+        },
+        {
+          "name": "alembic.ini",
+          "type": "file",
+          "path": "backend/alembic.ini",
+          "size": 634,
+          "extension": ".ini",
+          "icon": "file",
+          "color": "#94A3B8",
+          "language": null
+        },
+        {
+          "name": "main.py",
+          "type": "file",
+          "path": "backend/main.py",
+          "size": 993,
+          "extension": ".py",
+          "icon": "file-code",
+          "color": "#3572A5",
+          "language": "Python"
+        },
+        {
+          "name": "Procfile",
+          "type": "file",
+          "path": "backend/Procfile",
+          "size": 53,
+          "extension": "",
+          "icon": "file",
+          "color": "#94A3B8",
+          "language": null
+        },
+        {
+          "name": "pyproject.toml",
+          "type": "file",
+          "path": "backend/pyproject.toml",
+          "size": 659,
+          "extension": ".toml",
+          "icon": "file-json",
+          "color": "#9C4221",
+          "language": "TOML"
+        },
+        {
+          "name": "README.md",
+          "type": "file",
+          "path": "backend/README.md",
+          "size": 6639,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "Reponium.db",
+          "type": "file",
+          "path": "backend/Reponium.db",
+          "size": 126976,
+          "extension": ".db",
+          "icon": "file",
+          "color": "#94A3B8",
+          "language": null
+        },
+        {
+          "name": "requirements.txt",
+          "type": "file",
+          "path": "backend/requirements.txt",
+          "size": 420,
+          "extension": ".txt",
+          "icon": "file-text",
+          "color": "#94A3B8",
+          "language": null
+        },
+        {
+          "name": "test_ollama.py",
+          "type": "file",
+          "path": "backend/test_ollama.py",
+          "size": 448,
+          "extension": ".py",
+          "icon": "file-code",
+          "color": "#3572A5",
+          "language": "Python"
+        },
+        {
+          "name": "tmp_path_normalization_response.json",
+          "type": "file",
+          "path": "backend/tmp_path_normalization_response.json",
+          "size": 50,
+          "extension": ".json",
+          "icon": "file-json",
+          "color": "#F5A623",
+          "language": "JSON"
+        },
+        {
+          "name": "tmp_safe_repo.zip",
+          "type": "file",
+          "path": "backend/tmp_safe_repo.zip",
+          "size": 288,
+          "extension": ".zip",
+          "icon": "file",
+          "color": "#94A3B8",
+          "language": null
+        },
+        {
+          "name": "tmp_safe_zip_response.json",
+          "type": "file",
+          "path": "backend/tmp_safe_zip_response.json",
+          "size": 715,
+          "extension": ".json",
+          "icon": "file-json",
+          "color": "#F5A623",
+          "language": "JSON"
+        },
+        {
+          "name": "tmp_unsafe_repo.zip",
+          "type": "file",
+          "path": "backend/tmp_unsafe_repo.zip",
+          "size": 132,
+          "extension": ".zip",
+          "icon": "file",
+          "color": "#94A3B8",
+          "language": null
+        },
+        {
+          "name": "tmp_unsafe_zip_response.json",
+          "type": "file",
+          "path": "backend/tmp_unsafe_zip_response.json",
+          "size": 67,
+          "extension": ".json",
+          "icon": "file-json",
+          "color": "#F5A623",
+          "language": "JSON"
+        },
+        {
+          "name": "tmp_upload_exe.json",
+          "type": "file",
+          "path": "backend/tmp_upload_exe.json",
+          "size": 83,
+          "extension": ".json",
+          "icon": "file-json",
+          "color": "#F5A623",
+          "language": "JSON"
+        },
+        {
+          "name": "tmp_upload_ok.json",
+          "type": "file",
+          "path": "backend/tmp_upload_ok.json",
+          "size": 170,
+          "extension": ".json",
+          "icon": "file-json",
+          "color": "#F5A623",
+          "language": "JSON"
+        },
+        {
+          "name": "tmp_upload_unsafe_path.json",
+          "type": "file",
+          "path": "backend/tmp_upload_unsafe_path.json",
+          "size": 50,
+          "extension": ".json",
+          "icon": "file-json",
+          "color": "#F5A623",
+          "language": "JSON"
+        },
+        {
+          "name": "tmp_walk_code_analysis_response.json",
+          "type": "file",
+          "path": "backend/tmp_walk_code_analysis_response.json",
+          "size": 57,
+          "extension": ".json",
+          "icon": "file-json",
+          "color": "#F5A623",
+          "language": "JSON"
+        },
+        {
+          "name": "tmp_walk_zip_response.json",
+          "type": "file",
+          "path": "backend/tmp_walk_zip_response.json",
+          "size": 718,
+          "extension": ".json",
+          "icon": "file-json",
+          "color": "#F5A623",
+          "language": "JSON"
+        }
+      ]
+    },
+    {
+      "name": "docs",
+      "type": "folder",
+      "path": "docs",
+      "icon": "folder",
+      "color": "#F59E0B",
+      "language": null,
+      "children": [
+        {
+          "name": "Features",
+          "type": "folder",
+          "path": "docs/Features",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "Core System Components",
+              "type": "folder",
+              "path": "docs/Features/Core System Components",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "AI_NLP_Engine.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/AI_NLP_Engine.md",
+                  "size": 979,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "API_Layer.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/API_Layer.md",
+                  "size": 555,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Dashboard_UI.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/Dashboard_UI.md",
+                  "size": 764,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Database_Layer.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/Database_Layer.md",
+                  "size": 530,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Gap_Detection_Engine.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/Gap_Detection_Engine.md",
+                  "size": 666,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Graph_Engine.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/Graph_Engine.md",
+                  "size": 585,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Parsing_Engine.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/Parsing_Engine.md",
+                  "size": 520,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Performance_Layer.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/Performance_Layer.md",
+                  "size": 421,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Priority_Engine.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/Priority_Engine.md",
+                  "size": 441,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Project_Input_System.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/Project_Input_System.md",
+                  "size": 554,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Risk_Analysis_Engine.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/Risk_Analysis_Engine.md",
+                  "size": 483,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Understanding_Engine.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/Understanding_Engine.md",
+                  "size": 501,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Visualization_Engine.md",
+                  "type": "file",
+                  "path": "docs/Features/Core System Components/Visualization_Engine.md",
+                  "size": 459,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                }
+              ]
+            },
+            {
+              "name": "Research & Innovation",
+              "type": "folder",
+              "path": "docs/Features/Research & Innovation",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "AI_Assisted_Software_Engineering.md",
+                  "type": "file",
+                  "path": "docs/Features/Research & Innovation/AI_Assisted_Software_Engineering.md",
+                  "size": 477,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Hybrid_AI_Graph_Model.md",
+                  "type": "file",
+                  "path": "docs/Features/Research & Innovation/Hybrid_AI_Graph_Model.md",
+                  "size": 522,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Learning_Oriented_Explainable_AI.md",
+                  "type": "file",
+                  "path": "docs/Features/Research & Innovation/Learning_Oriented_Explainable_AI.md",
+                  "size": 560,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Project_Level_Reasoning_Engine.md",
+                  "type": "file",
+                  "path": "docs/Features/Research & Innovation/Project_Level_Reasoning_Engine.md",
+                  "size": 460,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Repository_Local_Project_Analysis.md",
+                  "type": "file",
+                  "path": "docs/Features/Research & Innovation/Repository_Local_Project_Analysis.md",
+                  "size": 501,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Scalable_Extensible_Architecture.md",
+                  "type": "file",
+                  "path": "docs/Features/Research & Innovation/Scalable_Extensible_Architecture.md",
+                  "size": 466,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                }
+              ]
+            },
+            {
+              "name": "System Capabilities",
+              "type": "folder",
+              "path": "docs/Features/System Capabilities",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "Decision_Support_System.md",
+                  "type": "file",
+                  "path": "docs/Features/System Capabilities/Decision_Support_System.md",
+                  "size": 413,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Design_Quality_Evaluation.md",
+                  "type": "file",
+                  "path": "docs/Features/System Capabilities/Design_Quality_Evaluation.md",
+                  "size": 466,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Execution_Flow_Analysis.md",
+                  "type": "file",
+                  "path": "docs/Features/System Capabilities/Execution_Flow_Analysis.md",
+                  "size": 464,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Explainable_AI_XAI.md",
+                  "type": "file",
+                  "path": "docs/Features/System Capabilities/Explainable_AI_XAI.md",
+                  "size": 444,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Intelligent_Code_Analysis.md",
+                  "type": "file",
+                  "path": "docs/Features/System Capabilities/Intelligent_Code_Analysis.md",
+                  "size": 470,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Interactive_Visualization_System.md",
+                  "type": "file",
+                  "path": "docs/Features/System Capabilities/Interactive_Visualization_System.md",
+                  "size": 422,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Learning_Oriented_AI.md",
+                  "type": "file",
+                  "path": "docs/Features/System Capabilities/Learning_Oriented_AI.md",
+                  "size": 440,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Project_Level_Understanding.md",
+                  "type": "file",
+                  "path": "docs/Features/System Capabilities/Project_Level_Understanding.md",
+                  "size": 470,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Risk_Prediction_System.md",
+                  "type": "file",
+                  "path": "docs/Features/System Capabilities/Risk_Prediction_System.md",
+                  "size": 429,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                },
+                {
+                  "name": "Scalable_Web_Application.md",
+                  "type": "file",
+                  "path": "docs/Features/System Capabilities/Scalable_Web_Application.md",
+                  "size": 415,
+                  "extension": ".md",
+                  "icon": "file-text",
+                  "color": "#083FA1",
+                  "language": "Markdown"
+                }
+              ]
+            },
+            {
+              "name": "All_Features.md",
+              "type": "file",
+              "path": "docs/Features/All_Features.md",
+              "size": 4473,
+              "extension": ".md",
+              "icon": "file-text",
+              "color": "#083FA1",
+              "language": "Markdown"
+            }
+          ]
+        },
+        {
+          "name": "BACKEND_API_CONTRACT_V1.md",
+          "type": "file",
+          "path": "docs/BACKEND_API_CONTRACT_V1.md",
+          "size": 15536,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "BACKEND_INVENTORY.md",
+          "type": "file",
+          "path": "docs/BACKEND_INVENTORY.md",
+          "size": 3265,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "BACKEND_MIGRATION_MAP.md",
+          "type": "file",
+          "path": "docs/BACKEND_MIGRATION_MAP.md",
+          "size": 7530,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "CACHING_GUIDE.md",
+          "type": "file",
+          "path": "docs/CACHING_GUIDE.md",
+          "size": 14085,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "CLEANUP_INVENTORY.md",
+          "type": "file",
+          "path": "docs/CLEANUP_INVENTORY.md",
+          "size": 2171,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "DATABASE_INVENTORY.md",
+          "type": "file",
+          "path": "docs/DATABASE_INVENTORY.md",
+          "size": 2402,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "DATABASE_OPTIMIZATION.md",
+          "type": "file",
+          "path": "docs/DATABASE_OPTIMIZATION.md",
+          "size": 18458,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "DEPENDENCY_INVENTORY.md",
+          "type": "file",
+          "path": "docs/DEPENDENCY_INVENTORY.md",
+          "size": 3702,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "DEPLOYMENT_CRITICAL_BLOCKERS.md",
+          "type": "file",
+          "path": "docs/DEPLOYMENT_CRITICAL_BLOCKERS.md",
+          "size": 2154,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "DEPLOYMENT_RUNBOOK.md",
+          "type": "file",
+          "path": "docs/DEPLOYMENT_RUNBOOK.md",
+          "size": 1650,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "FEATURE_RECALL_BASELINE.md",
+          "type": "file",
+          "path": "docs/FEATURE_RECALL_BASELINE.md",
+          "size": 4253,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "FINAL_TECH_STACK.md",
+          "type": "file",
+          "path": "docs/FINAL_TECH_STACK.md",
+          "size": 748,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "FRONTEND_INVENTORY.md",
+          "type": "file",
+          "path": "docs/FRONTEND_INVENTORY.md",
+          "size": 2822,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "FRONTEND_MIGRATION_MAP.md",
+          "type": "file",
+          "path": "docs/FRONTEND_MIGRATION_MAP.md",
+          "size": 4573,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "MIGRATION_20_PART_PLAN.md",
+          "type": "file",
+          "path": "docs/MIGRATION_20_PART_PLAN.md",
+          "size": 16222,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "MIGRATION_30_PART_PLAN.md",
+          "type": "file",
+          "path": "docs/MIGRATION_30_PART_PLAN.md",
+          "size": 5535,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "MIGRATION_BOUNDARIES.md",
+          "type": "file",
+          "path": "docs/MIGRATION_BOUNDARIES.md",
+          "size": 2274,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "MIGRATION_CHECKLIST.md",
+          "type": "file",
+          "path": "docs/MIGRATION_CHECKLIST.md",
+          "size": 4970,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "OAUTH_SETUP.md",
+          "type": "file",
+          "path": "docs/OAUTH_SETUP.md",
+          "size": 7737,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "OPENCODE_MIGRATION_INSTRUCTIONS.md",
+          "type": "file",
+          "path": "docs/OPENCODE_MIGRATION_INSTRUCTIONS.md",
+          "size": 5299,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART10_GITHUB_INGESTION_POLICY.md",
+          "type": "file",
+          "path": "docs/PART10_GITHUB_INGESTION_POLICY.md",
+          "size": 2562,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART11_LOCAL_ZIP_INGESTION.md",
+          "type": "file",
+          "path": "docs/PART11_LOCAL_ZIP_INGESTION.md",
+          "size": 1724,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART12_TREE_SITTER_AST_PIPELINE.md",
+          "type": "file",
+          "path": "docs/PART12_TREE_SITTER_AST_PIPELINE.md",
+          "size": 1831,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART13_TOKEN_AST_EVIDENCE_MAPPING.md",
+          "type": "file",
+          "path": "docs/PART13_TOKEN_AST_EVIDENCE_MAPPING.md",
+          "size": 1650,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART14_DEPENDENCY_GRAPH_NETWORKX.md",
+          "type": "file",
+          "path": "docs/PART14_DEPENDENCY_GRAPH_NETWORKX.md",
+          "size": 1549,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART15_CALL_GRAPH_ANALYTICS.md",
+          "type": "file",
+          "path": "docs/PART15_CALL_GRAPH_ANALYTICS.md",
+          "size": 1673,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART16_AI_NLP_PIPELINE.md",
+          "type": "file",
+          "path": "docs/PART16_AI_NLP_PIPELINE.md",
+          "size": 1860,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART17_EXPLANATION_EVIDENCE_PIPELINE.md",
+          "type": "file",
+          "path": "docs/PART17_EXPLANATION_EVIDENCE_PIPELINE.md",
+          "size": 1882,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART18_FRONTEND_DATA_LAYER_FASTAPI.md",
+          "type": "file",
+          "path": "docs/PART18_FRONTEND_DATA_LAYER_FASTAPI.md",
+          "size": 1619,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART19_VISUALIZATION_LAYER.md",
+          "type": "file",
+          "path": "docs/PART19_VISUALIZATION_LAYER.md",
+          "size": 1577,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART20_PRODUCTION_HARDENING.md",
+          "type": "file",
+          "path": "docs/PART20_PRODUCTION_HARDENING.md",
+          "size": 1621,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART4_NEXT_RUNTIME_REMOVAL.md",
+          "type": "file",
+          "path": "docs/PART4_NEXT_RUNTIME_REMOVAL.md",
+          "size": 1897,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART7_FASTAPI_STANDARDIZATION.md",
+          "type": "file",
+          "path": "docs/PART7_FASTAPI_STANDARDIZATION.md",
+          "size": 2713,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART8_SQLITE_ALEMBIC_BASELINE.md",
+          "type": "file",
+          "path": "docs/PART8_SQLITE_ALEMBIC_BASELINE.md",
+          "size": 2817,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        },
+        {
+          "name": "PART9_POSTGRESQL_READINESS.md",
+          "type": "file",
+          "path": "docs/PART9_POSTGRESQL_READINESS.md",
+          "size": 2801,
+          "extension": ".md",
+          "icon": "file-text",
+          "color": "#083FA1",
+          "language": "Markdown"
+        }
+      ]
+    },
+    {
+      "name": "drizzle",
+      "type": "folder",
+      "path": "drizzle",
+      "icon": "folder",
+      "color": "#F59E0B",
+      "language": null,
+      "children": [
+        {
+          "name": "meta",
+          "type": "folder",
+          "path": "drizzle/meta",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "0000_snapshot.json",
+              "type": "file",
+              "path": "drizzle/meta/0000_snapshot.json",
+              "size": 8791,
+              "extension": ".json",
+              "icon": "file-json",
+              "color": "#F5A623",
+              "language": "JSON"
+            },
+            {
+              "name": "0001_snapshot.json",
+              "type": "file",
+              "path": "drizzle/meta/0001_snapshot.json",
+              "size": 28820,
+              "extension": ".json",
+              "icon": "file-json",
+              "color": "#F5A623",
+              "language": "JSON"
+            },
+            {
+              "name": "_journal.json",
+              "type": "file",
+              "path": "drizzle/meta/_journal.json",
+              "size": 358,
+              "extension": ".json",
+              "icon": "file-json",
+              "color": "#F5A623",
+              "language": "JSON"
+            }
+          ]
+        },
+        {
+          "name": "0000_silly_iceman.sql",
+          "type": "file",
+          "path": "drizzle/0000_silly_iceman.sql",
+          "size": 1515,
+          "extension": ".sql",
+          "icon": "database",
+          "color": "#E38C00",
+          "language": "SQL"
+        },
+        {
+          "name": "0001_wet_leech.sql",
+          "type": "file",
+          "path": "drizzle/0001_wet_leech.sql",
+          "size": 5040,
+          "extension": ".sql",
+          "icon": "database",
+          "color": "#E38C00",
+          "language": "SQL"
+        },
+        {
+          "name": "0002_add_performance_indexes.sql",
+          "type": "file",
+          "path": "drizzle/0002_add_performance_indexes.sql",
+          "size": 4079,
+          "extension": ".sql",
+          "icon": "database",
+          "color": "#E38C00",
+          "language": "SQL"
+        },
+        {
+          "name": "schema.ts",
+          "type": "file",
+          "path": "drizzle/schema.ts",
+          "size": 230,
+          "extension": ".ts",
+          "icon": "file-code",
+          "color": "#3178C6",
+          "language": "TypeScript"
+        }
+      ]
+    },
+    {
+      "name": "public",
+      "type": "folder",
+      "path": "public",
+      "icon": "folder",
+      "color": "#F59E0B",
+      "language": null,
+      "children": [
+        {
+          "name": "favicon.svg",
+          "type": "file",
+          "path": "public/favicon.svg",
+          "size": 303,
+          "extension": ".svg",
+          "icon": "image",
+          "color": "#FFB13B",
+          "language": null
+        }
+      ]
+    },
+    {
+      "name": "src",
+      "type": "folder",
+      "path": "src",
+      "icon": "folder",
+      "color": "#F59E0B",
+      "language": null,
+      "children": [
+        {
+          "name": "components",
+          "type": "folder",
+          "path": "src/components",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "analysis",
+              "type": "folder",
+              "path": "src/components/analysis",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "mermaid-diagram.tsx",
+                  "type": "file",
+                  "path": "src/components/analysis/mermaid-diagram.tsx",
+                  "size": 2136,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "metric-charts.tsx",
+                  "type": "file",
+                  "path": "src/components/analysis/metric-charts.tsx",
+                  "size": 3269,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                }
+              ]
+            },
+            {
+              "name": "ui",
+              "type": "folder",
+              "path": "src/components/ui",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "accordion.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/accordion.tsx",
+                  "size": 2119,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "alert-dialog.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/alert-dialog.tsx",
+                  "size": 4021,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "alert.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/alert.tsx",
+                  "size": 1680,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "aspect-ratio.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/aspect-ratio.tsx",
+                  "size": 291,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "avatar.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/avatar.tsx",
+                  "size": 1150,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "background-boxes.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/background-boxes.tsx",
+                  "size": 2234,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "badge.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/badge.tsx",
+                  "size": 1677,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "breadcrumb.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/breadcrumb.tsx",
+                  "size": 2466,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "button-group.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/button-group.tsx",
+                  "size": 2292,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "button.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/button.tsx",
+                  "size": 2182,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "calendar.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/calendar.tsx",
+                  "size": 7873,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "card.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/card.tsx",
+                  "size": 2081,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "carousel.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/carousel.tsx",
+                  "size": 5797,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "chart.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/chart.tsx",
+                  "size": 10134,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "checkbox.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/checkbox.tsx",
+                  "size": 1258,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "collapsible.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/collapsible.tsx",
+                  "size": 833,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "command.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/command.tsx",
+                  "size": 5002,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "ComponentSeparator.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/ComponentSeparator.tsx",
+                  "size": 1712,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "container-scroll-animation.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/container-scroll-animation.tsx",
+                  "size": 2635,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "context-menu.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/context-menu.tsx",
+                  "size": 8474,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "dialog.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/dialog.tsx",
+                  "size": 4125,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "drawer.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/drawer.tsx",
+                  "size": 4390,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "dropdown-menu.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/dropdown-menu.tsx",
+                  "size": 8541,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "empty.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/empty.tsx",
+                  "size": 2500,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "field.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/field.tsx",
+                  "size": 6290,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "form.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/form.tsx",
+                  "size": 3926,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "hover-card.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/hover-card.tsx",
+                  "size": 1574,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "input-group.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/input-group.tsx",
+                  "size": 5235,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "input-otp.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/input-otp.tsx",
+                  "size": 2331,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "input.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/input.tsx",
+                  "size": 988,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "item.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/item.tsx",
+                  "size": 4687,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "kbd.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/kbd.tsx",
+                  "size": 890,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "label.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/label.tsx",
+                  "size": 635,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "menubar.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/menubar.tsx",
+                  "size": 8670,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "navigation-menu.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/navigation-menu.tsx",
+                  "size": 6832,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "navigation.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/navigation.tsx",
+                  "size": 1922,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "pagination.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/pagination.tsx",
+                  "size": 2839,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "popover.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/popover.tsx",
+                  "size": 1683,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "progress.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/progress.tsx",
+                  "size": 771,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "radio-group.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/radio-group.tsx",
+                  "size": 1511,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "resizable.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/resizable.tsx",
+                  "size": 2084,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "scroll-area.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/scroll-area.tsx",
+                  "size": 1703,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "select.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/select.tsx",
+                  "size": 6438,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "separator.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/separator.tsx",
+                  "size": 727,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "sheet.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/sheet.tsx",
+                  "size": 4229,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "sidebar.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/sidebar.tsx",
+                  "size": 22230,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "skeleton.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/skeleton.tsx",
+                  "size": 289,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "slider.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/slider.tsx",
+                  "size": 2064,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "sonner.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/sonner.tsx",
+                  "size": 589,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "spinner.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/spinner.tsx",
+                  "size": 347,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "switch.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/switch.tsx",
+                  "size": 1208,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "table.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/table.tsx",
+                  "size": 2564,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "tabs.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/tabs.tsx",
+                  "size": 2035,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "textarea.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/textarea.tsx",
+                  "size": 777,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "toggle-group.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/toggle-group.tsx",
+                  "size": 1998,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "toggle.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/toggle.tsx",
+                  "size": 1617,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "tooltip.tsx",
+                  "type": "file",
+                  "path": "src/components/ui/tooltip.tsx",
+                  "size": 1950,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                }
+              ]
+            },
+            {
+              "name": "ErrorReporter.tsx",
+              "type": "file",
+              "path": "src/components/ErrorReporter.tsx",
+              "size": 3315,
+              "extension": ".tsx",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            },
+            {
+              "name": "navigation.tsx",
+              "type": "file",
+              "path": "src/components/navigation.tsx",
+              "size": 8616,
+              "extension": ".tsx",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            },
+            {
+              "name": "theme-provider.tsx",
+              "type": "file",
+              "path": "src/components/theme-provider.tsx",
+              "size": 309,
+              "extension": ".tsx",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            },
+            {
+              "name": "theme-toggle.tsx",
+              "type": "file",
+              "path": "src/components/theme-toggle.tsx",
+              "size": 1476,
+              "extension": ".tsx",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            }
+          ]
+        },
+        {
+          "name": "db",
+          "type": "folder",
+          "path": "src/db",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "seeds",
+              "type": "folder",
+              "path": "src/db/seeds",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "achievements.ts",
+                  "type": "file",
+                  "path": "src/db/seeds/achievements.ts",
+                  "size": 3387,
+                  "extension": ".ts",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "learning_paths.ts",
+                  "type": "file",
+                  "path": "src/db/seeds/learning_paths.ts",
+                  "size": 1531,
+                  "extension": ".ts",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "lessons.ts",
+                  "type": "file",
+                  "path": "src/db/seeds/lessons.ts",
+                  "size": 16949,
+                  "extension": ".ts",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "quizzes.ts",
+                  "type": "file",
+                  "path": "src/db/seeds/quizzes.ts",
+                  "size": 42628,
+                  "extension": ".ts",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                }
+              ]
+            },
+            {
+              "name": "index.ts",
+              "type": "file",
+              "path": "src/db/index.ts",
+              "size": 626,
+              "extension": ".ts",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            },
+            {
+              "name": "optimization.ts",
+              "type": "file",
+              "path": "src/db/optimization.ts",
+              "size": 15631,
+              "extension": ".ts",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            },
+            {
+              "name": "queries.optimized.ts",
+              "type": "file",
+              "path": "src/db/queries.optimized.ts",
+              "size": 12034,
+              "extension": ".ts",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            },
+            {
+              "name": "schema.optimized.ts",
+              "type": "file",
+              "path": "src/db/schema.optimized.ts",
+              "size": 10321,
+              "extension": ".ts",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            },
+            {
+              "name": "schema.ts",
+              "type": "file",
+              "path": "src/db/schema.ts",
+              "size": 6842,
+              "extension": ".ts",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            }
+          ]
+        },
+        {
+          "name": "hooks",
+          "type": "folder",
+          "path": "src/hooks",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "use-mobile.ts",
+              "type": "file",
+              "path": "src/hooks/use-mobile.ts",
+              "size": 584,
+              "extension": ".ts",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            }
+          ]
+        },
+        {
+          "name": "lib",
+          "type": "folder",
+          "path": "src/lib",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "hooks",
+              "type": "folder",
+              "path": "src/lib/hooks",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "use-mobile.tsx",
+                  "type": "file",
+                  "path": "src/lib/hooks/use-mobile.tsx",
+                  "size": 606,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                }
+              ]
+            },
+            {
+              "name": "analysis-memory.ts",
+              "type": "file",
+              "path": "src/lib/analysis-memory.ts",
+              "size": 381,
+              "extension": ".ts",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            },
+            {
+              "name": "analysis-sections.ts",
+              "type": "file",
+              "path": "src/lib/analysis-sections.ts",
+              "size": 1072,
+              "extension": ".ts",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            },
+            {
+              "name": "auth-client.ts",
+              "type": "file",
+              "path": "src/lib/auth-client.ts",
+              "size": 7119,
+              "extension": ".ts",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            },
+            {
+              "name": "backend.ts",
+              "type": "file",
+              "path": "src/lib/backend.ts",
+              "size": 8199,
+              "extension": ".ts",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            },
+            {
+              "name": "utils.ts",
+              "type": "file",
+              "path": "src/lib/utils.ts",
+              "size": 172,
+              "extension": ".ts",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            }
+          ]
+        },
+        {
+          "name": "pages",
+          "type": "folder",
+          "path": "src/pages",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "achievements",
+              "type": "folder",
+              "path": "src/pages/achievements",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "page.tsx",
+                  "type": "file",
+                  "path": "src/pages/achievements/page.tsx",
+                  "size": 7427,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                }
+              ]
+            },
+            {
+              "name": "ai-tutor",
+              "type": "folder",
+              "path": "src/pages/ai-tutor",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "page-client.tsx",
+                  "type": "file",
+                  "path": "src/pages/ai-tutor/page-client.tsx",
+                  "size": 9195,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                }
+              ]
+            },
+            {
+              "name": "analyze",
+              "type": "folder",
+              "path": "src/pages/analyze",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "page-client.tsx",
+                  "type": "file",
+                  "path": "src/pages/analyze/page-client.tsx",
+                  "size": 23010,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                }
+              ]
+            },
+            {
+              "name": "dashboard",
+              "type": "folder",
+              "path": "src/pages/dashboard",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "page-client.tsx",
+                  "type": "file",
+                  "path": "src/pages/dashboard/page-client.tsx",
+                  "size": 23071,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                }
+              ]
+            },
+            {
+              "name": "lessons",
+              "type": "folder",
+              "path": "src/pages/lessons",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "[id]",
+                  "type": "folder",
+                  "path": "src/pages/lessons/[id]",
+                  "icon": "folder",
+                  "color": "#F59E0B",
+                  "language": null,
+                  "children": [
+                    {
+                      "name": "page.tsx",
+                      "type": "file",
+                      "path": "src/pages/lessons/[id]/page.tsx",
+                      "size": 2078,
+                      "extension": ".tsx",
+                      "icon": "file-code",
+                      "color": "#3178C6",
+                      "language": "TypeScript"
+                    }
+                  ]
+                },
+                {
+                  "name": "page.tsx",
+                  "type": "file",
+                  "path": "src/pages/lessons/page.tsx",
+                  "size": 2108,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                }
+              ]
+            },
+            {
+              "name": "login",
+              "type": "folder",
+              "path": "src/pages/login",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "page-client.tsx",
+                  "type": "file",
+                  "path": "src/pages/login/page-client.tsx",
+                  "size": 9606,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                },
+                {
+                  "name": "page.tsx",
+                  "type": "file",
+                  "path": "src/pages/login/page.tsx",
+                  "size": 274,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                }
+              ]
+            },
+            {
+              "name": "profile",
+              "type": "folder",
+              "path": "src/pages/profile",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "page.tsx",
+                  "type": "file",
+                  "path": "src/pages/profile/page.tsx",
+                  "size": 12439,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                }
+              ]
+            },
+            {
+              "name": "register",
+              "type": "folder",
+              "path": "src/pages/register",
+              "icon": "folder",
+              "color": "#F59E0B",
+              "language": null,
+              "children": [
+                {
+                  "name": "page.tsx",
+                  "type": "file",
+                  "path": "src/pages/register/page.tsx",
+                  "size": 10589,
+                  "extension": ".tsx",
+                  "icon": "file-code",
+                  "color": "#3178C6",
+                  "language": "TypeScript"
+                }
+              ]
+            },
+            {
+              "name": "globals.css",
+              "type": "file",
+              "path": "src/pages/globals.css",
+              "size": 4422,
+              "extension": ".css",
+              "icon": "palette",
+              "color": "#1572B6",
+              "language": "CSS"
+            },
+            {
+              "name": "page-client.tsx",
+              "type": "file",
+              "path": "src/pages/page-client.tsx",
+              "size": 1512,
+              "extension": ".tsx",
+              "icon": "file-code",
+              "color": "#3178C6",
+              "language": "TypeScript"
+            }
+          ]
+        },
+        {
+          "name": "visual-edits",
+          "type": "folder",
+          "path": "src/visual-edits",
+          "icon": "folder",
+          "color": "#F59E0B",
+          "language": null,
+          "children": [
+            {
+              "name": "component-tagger-loader.js",
+              "type": "file",
+              "path": "src/visual-edits/component-tagger-loader.js",
+              "size": 179,
+              "extension": ".js",
+              "icon": "file-code",
+              "color": "#F7DF1E",
+              "language": "JavaScript"
+            }
+          ]
+        },
+        {
+          "name": "App.tsx",
+          "type": "file",
+          "path": "src/App.tsx",
+          "size": 1738,
+          "extension": ".tsx",
+          "icon": "file-code",
+          "color": "#3178C6",
+          "language": "TypeScript"
+        },
+        {
+          "name": "global.d.ts",
+          "type": "file",
+          "path": "src/global.d.ts",
+          "size": 25,
+          "extension": ".ts",
+          "icon": "file-code",
+          "color": "#3178C6",
+          "language": "TypeScript"
+        },
+        {
+          "name": "lucide-react.d.ts",
+          "type": "file",
+          "path": "src/lucide-react.d.ts",
+          "size": 32,
+          "extension": ".ts",
+          "icon": "file-code",
+          "color": "#3178C6",
+          "language": "TypeScript"
+        },
+        {
+          "name": "main.tsx",
+          "type": "file",
+          "path": "src/main.tsx",
+          "size": 343,
+          "extension": ".tsx",
+          "icon": "file-code",
+          "color": "#3178C6",
+          "language": "TypeScript"
+        }
+      ]
+    },
+    {
+      "name": ".env",
+      "type": "file",
+      "path": ".env",
+      "size": 92,
+      "extension": "",
+      "icon": "file",
+      "color": "#94A3B8",
+      "language": null
+    },
+    {
+      "name": ".env.example",
+      "type": "file",
+      "path": ".env.example",
+      "size": 278,
+      "extension": ".example",
+      "icon": "file",
+      "color": "#94A3B8",
+      "language": null
+    },
+    {
+      "name": ".gitignore",
+      "type": "file",
+      "path": ".gitignore",
+      "size": 2393,
+      "extension": "",
+      "icon": "file",
+      "color": "#94A3B8",
+      "language": null
+    },
+    {
+      "name": "bun.lock",
+      "type": "file",
+      "path": "bun.lock",
+      "size": 251547,
+      "extension": ".lock",
+      "icon": "file",
+      "color": "#94A3B8",
+      "language": null
+    },
+    {
+      "name": "components.json",
+      "type": "file",
+      "path": "components.json",
+      "size": 471,
+      "extension": ".json",
+      "icon": "file-json",
+      "color": "#F5A623",
+      "language": "JSON"
+    },
+    {
+      "name": "drizzle.config.ts",
+      "type": "file",
+      "path": "drizzle.config.ts",
+      "size": 358,
+      "extension": ".ts",
+      "icon": "file-code",
+      "color": "#3178C6",
+      "language": "TypeScript"
+    },
+    {
+      "name": "eslint.config.mjs",
+      "type": "file",
+      "path": "eslint.config.mjs",
+      "size": 526,
+      "extension": ".mjs",
+      "icon": "file",
+      "color": "#94A3B8",
+      "language": null
+    },
+    {
+      "name": "GRAPH_PRIMITIVES_CHECKLIST.md",
+      "type": "file",
+      "path": "GRAPH_PRIMITIVES_CHECKLIST.md",
+      "size": 5145,
+      "extension": ".md",
+      "icon": "file-text",
+      "color": "#083FA1",
+      "language": "Markdown"
+    },
+    {
+      "name": "GRAPH_PRIMITIVES_TEST_RESULTS.md",
+      "type": "file",
+      "path": "GRAPH_PRIMITIVES_TEST_RESULTS.md",
+      "size": 9719,
+      "extension": ".md",
+      "icon": "file-text",
+      "color": "#083FA1",
+      "language": "Markdown"
+    },
+    {
+      "name": "index.html",
+      "type": "file",
+      "path": "index.html",
+      "size": 373,
+      "extension": ".html",
+      "icon": "file-code",
+      "color": "#E34F26",
+      "language": "HTML"
+    },
+    {
+      "name": "index.tsx",
+      "type": "file",
+      "path": "index.tsx",
+      "size": 396,
+      "extension": ".tsx",
+      "icon": "file-code",
+      "color": "#3178C6",
+      "language": "TypeScript"
+    },
+    {
+      "name": "package-lock.json",
+      "type": "file",
+      "path": "package-lock.json",
+      "size": 643792,
+      "extension": ".json",
+      "icon": "file-json",
+      "color": "#F5A623",
+      "language": "JSON"
+    },
+    {
+      "name": "package.json",
+      "type": "file",
+      "path": "package.json",
+      "size": 4500,
+      "extension": ".json",
+      "icon": "file-json",
+      "color": "#F5A623",
+      "language": "JSON"
+    },
+    {
+      "name": "postcss.config.mjs",
+      "type": "file",
+      "path": "postcss.config.mjs",
+      "size": 128,
+      "extension": ".mjs",
+      "icon": "file",
+      "color": "#94A3B8",
+      "language": null
+    },
+    {
+      "name": "README.md",
+      "type": "file",
+      "path": "README.md",
+      "size": 4097,
+      "extension": ".md",
+      "icon": "file-text",
+      "color": "#083FA1",
+      "language": "Markdown"
+    },
+    {
+      "name": "render.yaml",
+      "type": "file",
+      "path": "render.yaml",
+      "size": 498,
+      "extension": ".yaml",
+      "icon": "file-json",
+      "color": "#CB171E",
+      "language": "YAML"
+    },
+    {
+      "name": "repo_structure.json",
+      "type": "file",
+      "path": "repo_structure.json",
+      "size": 152092,
+      "extension": ".json",
+      "icon": "file-json",
+      "color": "#F5A623",
+      "language": "JSON"
+    },
+    {
+      "name": "TODO.md",
+      "type": "file",
+      "path": "TODO.md",
+      "size": 1604,
+      "extension": ".md",
+      "icon": "file-text",
+      "color": "#083FA1",
+      "language": "Markdown"
+    },
+    {
+      "name": "tsconfig.json",
+      "type": "file",
+      "path": "tsconfig.json",
+      "size": 626,
+      "extension": ".json",
+      "icon": "file-json",
+      "color": "#F5A623",
+      "language": "JSON"
+    },
+    {
+      "name": "vercel.json",
+      "type": "file",
+      "path": "vercel.json",
+      "size": 104,
+      "extension": ".json",
+      "icon": "file-json",
+      "color": "#F5A623",
+      "language": "JSON"
+    },
+    {
+      "name": "vite.config.ts",
+      "type": "file",
+      "path": "vite.config.ts",
+      "size": 438,
+      "extension": ".ts",
+      "icon": "file-code",
+      "color": "#3178C6",
+      "language": "TypeScript"
+    }
+  ],
+  "errors": []
+}
