@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
+import { getSocialLoginUrl } from "@/lib/backend";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,14 +29,14 @@ export default function LoginPageClient() {
   const registered = searchParams.get("registered") === "true";
   const redirectUrl = searchParams.get("redirect") || "/dashboard";
 
-  const handleGoogleLogin = async () => {
+  const onGoogleLogin = () => {
     setGoogleLoading(true);
-    window.location.href = "http://127.0.0.1:8000/api/auth/social/google/login";
+    window.location.href = getSocialLoginUrl("google");
   };
 
-  const handleGithubLogin = async () => {
+  const onGithubLogin = () => {
     setGithubLoading(true);
-    window.location.href = "http://127.0.0.1:8000/api/auth/social/github/login";
+    window.location.href = getSocialLoginUrl("github");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
