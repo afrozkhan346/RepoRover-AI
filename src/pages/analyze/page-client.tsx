@@ -1,7 +1,7 @@
 
 import axios from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   cloneProjectFromGithub,
@@ -27,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { canRenderOnAnalyze } from "@/lib/analysis-sections";
 import { useSession } from "@/lib/auth-client";
 import { clearInMemoryAnalysisBundle, setInMemoryAnalysisBundle } from "@/lib/analysis-memory";
+import { RepositoryTree } from "@/components/analysis/repository-tree";
 import {
   Activity,
   Brain,
@@ -39,6 +40,7 @@ import {
   Sparkles,
   TriangleAlert,
   Wand2,
+  Check,
 } from "lucide-react";
 
 type AnalysisBundle = {
@@ -75,6 +77,7 @@ function filterUploadFiles(files: File[]): File[] {
 }
 
 export default function AnalyzePageClient() {
+  const navigate = useNavigate();
   const { data: session, isPending: isSessionPending } = useSession();
   const folderInputRef = useRef<HTMLInputElement | null>(null);
   const [githubUrl, setGithubUrl] = useState("");
@@ -88,7 +91,6 @@ export default function AnalyzePageClient() {
   const [isUploadingProject, setIsUploadingProject] = useState(false);
   const [bundle, setBundle] = useState<AnalysisBundle | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [level, setLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
 
   const storageKey = useMemo(() => {
     const userId = session?.user?.id;
@@ -128,15 +130,6 @@ export default function AnalyzePageClient() {
     }
   }, [isSessionPending, storageKey]);
 
-  const explanationByLevel = useMemo(
-    () => ({
-      beginner: bundle?.project.project_summary || "No beginner explanation available.",
-      intermediate: bundle?.project.architecture_summary || "No intermediate explanation available.",
-      advanced: bundle?.project.execution_flow_summary || "No advanced explanation available.",
-    }),
-    [bundle],
-  );
-
   const usedLanguages = useMemo(
     () =>
       Object.entries(bundle?.project.metrics.language_breakdown || {}).sort(
@@ -173,8 +166,18 @@ export default function AnalyzePageClient() {
       filePaths.add(bundle.traces.focus_file);
     }
 
-    return Array.from(filePaths).sort((left, right) => left.localeCompare(right)).slice(0, 24);
+    return Array.from(filePaths)
+      .sort((left, right) => left.localeCompare(right))
+      .slice(0, 24);
   }, [bundle]);
+
+  const summaryPoints = useMemo(() => {
+    if (!bundle?.project.project_summary) return [];
+    return bundle.project.project_summary
+      .split("\n")
+      .map((line) => line.trim().replace(/^([-*•]|\d+\.)\s*/, ""))
+      .filter((line) => line.length > 0);
+  }, [bundle?.project.project_summary]);
 
   const deriveProjectNameFromPath = (projectPath: string) => {
     const normalized = projectPath.replace(/\\/g, "/").replace(/\/+$/, "");
@@ -182,7 +185,21 @@ export default function AnalyzePageClient() {
     return segments.length ? segments[segments.length - 1] : "";
   };
 
+  const isGuestAllowed = () => {
+    if (session?.user) return true;
+    const count = parseInt(window.localStorage.getItem("guest_analysis_count") || "0", 10);
+    if (count >= 1) {
+      toast.error("You've used your free analysis. Please sign in to continue!");
+      navigate("/register");
+      return false;
+    }
+    window.localStorage.setItem("guest_analysis_count", (count + 1).toString());
+    return true;
+  };
+
   const handleAnalyze = async () => {
+    if (!isGuestAllowed()) return;
+
     if (!localPath.trim() && !githubUrl.trim()) {
       toast.error("Upload a project folder or enter a GitHub URL first.");
       return;
@@ -264,6 +281,8 @@ export default function AnalyzePageClient() {
   };
 
   const analyzeCode = async () => {
+    if (!isGuestAllowed()) return;
+
     const inferredName = deriveProjectNameFromPath(localPath);
     const projectName = codeProjectName.trim() || inferredName;
 
@@ -297,7 +316,7 @@ export default function AnalyzePageClient() {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_35%),linear-gradient(180deg,_rgba(2,6,23,0.04),_transparent_40%)]">
       <Navigation />
       <main className="container mx-auto px-4 py-8 lg:py-12 space-y-8" data-view-mode="minimal">
-        <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] items-start">
           <Card className="border-border/70 bg-card/95 shadow-sm">
             <CardHeader className="space-y-4">
               <Badge className="w-fit gap-2 rounded-full px-3 py-1 text-xs uppercase tracking-[0.2em]">
@@ -419,9 +438,6 @@ export default function AnalyzePageClient() {
                   label="Analyzable files"
                   value={bundle?.project.metrics.analyzable_files ?? bundle?.project.metrics.files_scanned ?? 0}
                 />
-                <StatTile icon={GitBranch} label="Graph nodes" value={bundle?.graph.metrics.node_count ?? 0} />
-                <StatTile icon={TriangleAlert} label="Risk score" value={bundle?.risk.risk_score ?? 0} />
-                <StatTile icon={Brain} label="Reliability" value={bundle?.risk.reliability_score ?? 0} />
               </CardContent>
               </Card>
             ) : null}
@@ -438,25 +454,7 @@ export default function AnalyzePageClient() {
               </CardContent>
               </Card>
             ) : null}
-            {canRenderOnAnalyze("file-tree") ? (
-              <Card className="border-border/70 bg-card/90 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">File tree</CardTitle>
-                <CardDescription>Paths discovered from explainability and quality findings.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {fileTreeEntries.length ? (
-                  fileTreeEntries.map((path) => (
-                    <div key={path} className="rounded-md border bg-background/80 px-2 py-1 font-mono text-xs">
-                      {path}
-                    </div>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">No file paths detected yet.</span>
-                )}
-              </CardContent>
-              </Card>
-            ) : null}
+
             {canRenderOnAnalyze("used-languages") ? (
               <Card className="border-border/70 bg-card/90 shadow-sm">
               <CardHeader>
@@ -481,55 +479,57 @@ export default function AnalyzePageClient() {
 
         {bundle ? (
           <section className="space-y-6">
-            {canRenderOnAnalyze("repo-summary") ? (
-              <Card className="border-border/70 bg-card/95 shadow-sm">
-              <CardHeader>
-                <CardTitle>Repo / Project summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm text-muted-foreground">
-                <p className="text-foreground">{bundle.project.project_summary}</p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-lg border p-4">Modules: {bundle.project.key_modules.length}</div>
-                  <div className="rounded-lg border p-4">Dependencies: {bundle.project.key_dependencies.length}</div>
-                </div>
-              </CardContent>
-              </Card>
-            ) : null}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <RepositoryTree bundle={bundle} />
+              {canRenderOnAnalyze("repo-summary") ? (
+                <Card className="border-border/70 bg-card/95 shadow-md border-l-4 border-l-primary/70 h-full flex flex-col">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      Summary
+                    </CardTitle>
+                    <CardDescription>Substantial project overview generated by the backend.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1 flex flex-col min-h-0 p-0">
+                    <div className="flex-1 overflow-y-auto space-y-6 text-sm px-6 py-4 max-h-[420px]">
+                      <ul className="space-y-6">
+                        {summaryPoints.length > 0 ? (
+                          summaryPoints.map((point, i) => (
+                            <li key={i} className="flex gap-4 leading-relaxed">
+                              <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary/40" />
+                              <span className="text-muted-foreground/90">{point}</span>
+                            </li>
+                          ))
+                        ) : (
+                          <li className="flex gap-3 leading-relaxed">
+                            <Check className="h-4 w-4 mt-1 shrink-0 text-primary" />
+                            <span className="text-muted-foreground">{bundle.project.project_summary}</span>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 mt-auto p-4 border-t bg-muted/5">
+                      <div className="flex items-center justify-between rounded-lg border bg-background px-3 py-2 transition-all hover:bg-muted/10">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Modules
+                        </span>
+                        <span className="text-sm font-bold">{bundle.project.key_modules.length}</span>
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg border bg-background px-3 py-2 transition-all hover:bg-muted/10">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Deps
+                        </span>
+                        <span className="text-sm font-bold">{bundle.project.key_dependencies.length}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div />
+              )}
+            </div>
 
-            {canRenderOnAnalyze("code-explanation") ? (
-              <Card className="border-border/70 bg-card/95 shadow-sm">
-              <CardHeader>
-                <CardTitle>Code explanation section</CardTitle>
-                <CardDescription>Switch explanation depth for beginner, intermediate, and advanced audiences.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant={level === "beginner" ? "default" : "outline"}
-                    onClick={() => setLevel("beginner")}
-                  >
-                    Beginner
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={level === "intermediate" ? "default" : "outline"}
-                    onClick={() => setLevel("intermediate")}
-                  >
-                    Intermediate
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={level === "advanced" ? "default" : "outline"}
-                    onClick={() => setLevel("advanced")}
-                  >
-                    Advanced
-                  </Button>
-                </div>
-                <p className="rounded-xl border bg-muted/20 p-4 text-sm leading-6 text-foreground">{explanationByLevel[level]}</p>
-              </CardContent>
-              </Card>
-            ) : null}
+
           </section>
         ) : (
           <Card className="border-dashed border-border/70 bg-card/70 shadow-none">

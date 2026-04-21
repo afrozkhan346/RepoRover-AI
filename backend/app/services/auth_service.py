@@ -20,6 +20,7 @@ SESSION_DAYS = 30
 class AuthResult:
     token: str
     user: User
+    is_new: bool = False
 
 
 @dataclass(frozen=True)
@@ -167,6 +168,62 @@ def authenticate_user(db: Session, email: str, password: str) -> AuthResult:
 
     token = _create_session(db, user)
     return AuthResult(token=token, user=_build_user_payload(user))
+
+
+def handle_social_login(db: Session, provider_id: str, account_id: str, email: str, name: str, image: str | None) -> AuthResult:
+    normalized_email = _normalize_email(email)
+    now = _now()
+
+    account = db.query(Account).filter(Account.provider_id == provider_id, Account.account_id == account_id).first()
+    
+    if account:
+        user = db.query(User).filter(User.id == account.user_id).first()
+        if user:
+            if not user.image and image:
+                user.image = image
+                db.commit()
+            token = _create_session(db, user)
+            return AuthResult(token=token, user=_build_user_payload(user), is_new=False)
+            
+    is_new_user = False
+    
+    user = db.query(User).filter(User.email == normalized_email).first()
+    if not user:
+        user = User(
+            id=uuid4().hex,
+            name=name.strip() or normalized_email.split('@')[0],
+            email=normalized_email,
+            email_verified=True,
+            image=image,
+            created_at=now,
+            updated_at=now,
+        )
+        db.add(user)
+        db.flush()
+        is_new_user = True
+
+    new_account = Account(
+        id=uuid4().hex,
+        account_id=account_id,
+        provider_id=provider_id,
+        user_id=user.id,
+        access_token=None,
+        refresh_token=None,
+        id_token=None,
+        access_token_expires_at=None,
+        refresh_token_expires_at=None,
+        scope=None,
+        password=None,
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(new_account)
+    db.commit()
+    db.refresh(user)
+
+    token = _create_session(db, user)
+    return AuthResult(token=token, user=_build_user_payload(user), is_new=is_new_user)
+
 
 
 def get_user_by_session_token(db: Session, token: str) -> AuthSessionResult:

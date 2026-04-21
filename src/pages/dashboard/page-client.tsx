@@ -11,7 +11,7 @@ import { canRenderOnDashboard } from "@/lib/analysis-sections";
 import { useSession } from "@/lib/auth-client";
 import { clearInMemoryAnalysisBundle, getInMemoryAnalysisBundle } from "@/lib/analysis-memory";
 import { analyzeRepoStructure, type AnalyzeRepoResponse, type RepositoryTreeNode } from "@/lib/backend";
-import { Activity, ArrowRight, FileText, Folder, GitBranch, LayoutDashboard, Loader2, Sparkles, TriangleAlert } from "lucide-react";
+import { Activity, ArrowRight, FileText, Folder, GitBranch, LayoutDashboard, Loader2, Sparkles, TriangleAlert, Check } from "lucide-react";
 
 type SavedBundle = any;
 
@@ -274,6 +274,14 @@ export default function DashboardPageClient() {
     };
   }, [bundle?.localPath]);
 
+  const summaryPoints = useMemo(() => {
+    if (!bundle?.project?.project_summary) return [];
+    return bundle.project.project_summary
+      .split("\n")
+      .map((line: string) => line.trim().replace(/^([-*•]|\d+\.)\s*/, ""))
+      .filter((line: string) => line.length > 0);
+  }, [bundle?.project?.project_summary]);
+
   const mermaidDefinition = useMemo(
     () => buildMermaidDefinition(bundle?.project?.flow_path || bundle?.graph?.traversal?.bfs_order || []),
     [bundle],
@@ -416,67 +424,9 @@ export default function DashboardPageClient() {
           </Card>
         ) : (
           <section className="space-y-6">
-            {canRenderOnDashboard("risks") || canRenderOnDashboard("priority") ? (
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {canRenderOnDashboard("risks") ? (
-                  <Card className="border-border/70 bg-card/95 shadow-sm">
-                    <CardHeader>
-                      <CardTitle>Repository tree</CardTitle>
-                      <CardDescription>Visual file/folder tree generated from the hierarchical repository structure.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="max-h-[420px] overflow-auto rounded-none border-0 bg-transparent p-0">
-                      {isTreeLoading ? (
-                        <div className="flex items-center gap-2 px-6 py-4 text-sm text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Scanning repository tree (optimized for large repos)...
-                        </div>
-                      ) : treeError ? (
-                        <div className="space-y-2 px-6 py-4">
-                          <p className="text-sm text-destructive">{treeError}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Showing fallback tree from saved analysis evidence when available.
-                          </p>
-                        </div>
-                      ) : null}
+            {canRenderOnDashboard("priority") ? (
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-1">
 
-                      {!isTreeLoading && visualTreeLines.length ? (
-                        <div className="space-y-1 border-t px-6 py-4 font-mono text-xs">
-                          {repoTreeResponse?.truncated ? (
-                            <div className="mb-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-amber-700">
-                              Tree output truncated due to max node limit.
-                            </div>
-                          ) : null}
-                          {(repoTreeResponse?.errors?.length ?? 0) > 0 ? (
-                            <div className="mb-2 rounded-md border border-muted-foreground/30 bg-muted/30 px-2 py-1 text-muted-foreground">
-                              Non-fatal scan warnings: {repoTreeResponse?.errors.length}
-                            </div>
-                          ) : null}
-                          {visualTreeLines.map((line) => {
-                            const isFolder = line.node.type === "folder";
-                            const displayName = isFolder ? `${line.node.name}/` : line.node.name;
-
-                            return (
-                              <div
-                                key={`${line.node.path}:${line.prefix}:${line.branch}`}
-                                className="flex items-center gap-1 whitespace-pre text-foreground/90"
-                              >
-                                <span className="text-muted-foreground">{line.prefix}{line.branch}</span>
-                                {isFolder ? (
-                                  <Folder className="h-3.5 w-3.5" style={{ color: line.node.color || "#F59E0B" }} />
-                                ) : (
-                                  <FileText className="h-3.5 w-3.5" style={{ color: line.node.color || "#0EA5E9" }} />
-                                )}
-                                <span>{displayName}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : !isTreeLoading ? (
-                        <div className="px-6 py-4 text-sm text-muted-foreground">No repository tree data available yet.</div>
-                      ) : null}
-                    </CardContent>
-                  </Card>
-                ) : null}
 
                 {canRenderOnDashboard("priority") ? (
                   <Card className="border-border/70 bg-card/95 shadow-sm">
@@ -564,15 +514,38 @@ export default function DashboardPageClient() {
             {canRenderOnDashboard("backend-summaries") || canRenderOnDashboard("flow-path") ? (
               <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
                 {canRenderOnDashboard("backend-summaries") ? (
-                  <Card className="border-border/70 bg-card/95 shadow-sm">
+                  <Card className="border-border/70 bg-card/95 shadow-sm border-l-4 border-l-primary/70">
                     <CardHeader>
-                      <CardTitle>Backend summaries</CardTitle>
-                      <CardDescription>Project summary, architecture summary, and execution flow.</CardDescription>
+                      <CardTitle className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                        Backend summaries
+                      </CardTitle>
+                      <CardDescription>Substantial project overview, architecture, and flow.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
-                      <p className="text-foreground">{bundle.project.project_summary}</p>
-                      <p>{bundle.project.architecture_summary}</p>
-                      <p>{bundle.project.execution_flow_summary}</p>
+                    <CardContent className="space-y-6 text-sm">
+                      <div className="space-y-4">
+                        <ul className="space-y-3">
+                          {summaryPoints.length > 0 ? (
+                            summaryPoints.map((point: string, i: number) => (
+                              <li key={i} className="flex gap-3 leading-relaxed">
+                                <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary/40" />
+                                <span className="text-muted-foreground">{point}</span>
+                              </li>
+                            ))
+                          ) : (
+                            <li className="flex gap-3 leading-relaxed">
+                              <Check className="h-4 w-4 mt-1 shrink-0 text-primary" />
+                              <span className="text-muted-foreground">{bundle.project.project_summary}</span>
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                      <div className="space-y-4 border-t pt-4">
+                        <p className="font-medium text-foreground">Architecture Summary</p>
+                        <p className="leading-6 text-muted-foreground">{bundle.project.architecture_summary}</p>
+                        <p className="font-medium text-foreground">Execution Flow</p>
+                        <p className="leading-6 text-muted-foreground">{bundle.project.execution_flow_summary}</p>
+                      </div>
                       <div className="flex flex-wrap gap-2 pt-2">
                         {(bundle.project.key_dependencies || []).slice(0, 6).map((dependency: string) => (
                           <Badge key={dependency} variant="secondary">

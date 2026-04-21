@@ -113,10 +113,7 @@ export function Navigation() {
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     <span>Dashboard</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/lessons")}>
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    <span>My Lessons</span>
-                  </DropdownMenuItem>
+                  
                   <DropdownMenuItem onClick={() => navigate("/analyze")}>
                     <Github className="mr-2 h-4 w-4" />
                     <span>Analyze Repos</span>

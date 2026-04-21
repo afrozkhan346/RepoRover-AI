@@ -30,14 +30,12 @@ export default function LoginPageClient() {
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
-    toast.error("Google sign-in is not available yet in the FastAPI auth flow.");
-    setGoogleLoading(false);
+    window.location.href = "http://127.0.0.1:8000/api/auth/social/google/login";
   };
 
   const handleGithubLogin = async () => {
     setGithubLoading(true);
-    toast.error("GitHub sign-in is not available yet in the FastAPI auth flow.");
-    setGithubLoading(false);
+    window.location.href = "http://127.0.0.1:8000/api/auth/social/github/login";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -20,7 +20,6 @@ if load_dotenv is not None:
 
 
 def _provider() -> str:
-    # Prefer AI_PROVIDER and keep LLM_PROVIDER as compatibility fallback.
     return (os.getenv("AI_PROVIDER") or os.getenv("LLM_PROVIDER") or "groq").strip().lower()
 
 
@@ -457,11 +456,13 @@ def generate_repo_summaries(
     user_prompt = (
         "Produce JSON only with keys: project_summary, architecture_summary, execution_flow_summary.\n"
         "Constraints:\n"
-        "- Each field must be 2-4 sentences.\n"
-        "- project_summary must be exactly 3 sentences using this order:\n"
-        "  1) This project is ... (what it is).\n"
-        "  2) It helps ... (who it serves / use-case).\n"
-        "  3) Technically ... (high-level implementation with metrics only as support).\n"
+        "- architecture_summary and execution_flow_summary must be 4-6 descriptive sentences.\n"
+        "- project_summary must be an EXTREMELY substantial, exhaustive, and lengthy list of 10-15 detailed bullet points.\n"
+        "- EACH point in project_summary MUST be a substantial paragraph (3-5 sentences) providing deep, technical, and specific insight.\n"
+        "- Dive specifically into the purpose and internal orchestration of these key modules: {key_modules[:5]}.\n"
+        "- Discuss the implications of using these dependencies: {key_dependencies[:5]}.\n"
+        "- The total length of the project_summary should be at least 800-1200 words. DO NOT BE CONCISE.\n"
+        "- Start each point with a '*' character on a NEW LINE.\n"
         "- Do not start project_summary with file counts or raw metrics.\n"
         "- architecture_summary should focus on structure, modules, and dependencies.\n"
         "- execution_flow_summary should describe runtime behavior or user flow.\n"
@@ -481,7 +482,7 @@ def generate_repo_summaries(
         f"Execution flow preview: {flow_path[:12]}\n"
     )
 
-    raw = generate_text(system_prompt=system_prompt, user_prompt=user_prompt, temperature=0.2, max_tokens=850)
+    raw = generate_text(system_prompt=system_prompt, user_prompt=user_prompt, temperature=0.4, max_tokens=2000)
     if not raw:
         return None
 
