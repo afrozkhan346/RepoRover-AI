@@ -16,6 +16,7 @@ import {
   type ProjectSummariesResponse,
   type QualityAnalysisResponse,
   type RiskScoringResponse,
+  BACKEND_API_BASE,
 } from "@/lib/backend";
 import { Navigation } from "@/components/navigation";
 import { Button } from "@/components/ui/button";
@@ -299,7 +300,7 @@ export default function AnalyzePageClient() {
     setError(null);
 
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/project/code-analysis/${encodeURIComponent(projectName)}`);
+      const res = await axios.get(`${BACKEND_API_BASE}/project/code-analysis/${encodeURIComponent(projectName)}`);
 
       console.log(res.data);
       toast.success("Code analysis loaded. Check the console.");

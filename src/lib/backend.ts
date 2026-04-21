@@ -4,9 +4,18 @@ const explicitBackendUrl =
   (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_BACKEND_URL);
 
 // In local Vite dev, default to a relative API path so requests flow through the dev proxy.
-const resolvedBackendUrl = explicitBackendUrl || (viteEnv?.DEV ? "/api" : "http://127.0.0.1:8000/api");
+const resolvedBackendUrl = explicitBackendUrl || (viteEnv?.DEV ? "/api" : "");
 
 export const BACKEND_API_BASE = resolvedBackendUrl.replace(/\/$/, "");
+
+/**
+ * Generates the full URL for social login redirects.
+ * Prioritizes the backend base URL, falling back to localhost for local development.
+ */
+export function getSocialLoginUrl(provider: "google" | "github"): string {
+  const base = BACKEND_API_BASE || (viteEnv?.DEV ? "http://localhost:8000/api" : "");
+  return `${base}/auth/social/${provider}/login`;
+}
 
 export type ApiErrorPayload = {
   detail: string;

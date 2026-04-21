@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authClient } from "@/lib/auth-client";
+import { getSocialLoginUrl } from "@/lib/backend";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,16 +36,14 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
 
-  const handleGoogleSignup = async () => {
+  const handleGoogleLogin = () => {
     setGoogleLoading(true);
-    window.location.href = "http://127.0.0.1:8000/api/auth/social/google/login";
-
+    window.location.href = getSocialLoginUrl("google");
   };
 
-  const handleGithubSignup = async () => {
+  const handleGithubLogin = () => {
     setGithubLoading(true);
-    window.location.href = "http://127.0.0.1:8000/api/auth/social/github/login";
-
+    window.location.href = getSocialLoginUrl("github");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,194 +78,115 @@ export default function RegisterPage() {
       navigate("/login?registered=true");
     } catch (error) {
       toast.error("An unexpected error occurred. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-2xl border-muted/40">
-        <CardHeader className="space-y-3 text-center pb-4">
-          <div className="flex justify-center">
-            <div className="p-3 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl">
-              <Code2 className="h-10 w-10 text-primary" />
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 dark:bg-slate-950 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <div className="flex justify-center mb-4">
+            <div className="rounded-full bg-primary/10 p-3">
+              <Code2 className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Join Reponium
-          </CardTitle>
-          <CardDescription className="text-base">
-            Start your AI-powered learning journey in seconds
+          <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
+          <CardDescription className="text-center">
+            Choose your preferred signup method
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!showEmailForm ? (
-            <>
-              {/* Social Login Buttons */}
-              <div className="space-y-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full h-12 text-base font-medium hover:bg-accent hover:border-primary/30 transition-all"
-                  onClick={handleGoogleSignup}
-                  disabled={googleLoading || githubLoading}
-                >
-                  {googleLoading ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  ) : (
-                    <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
-                      <path
-                        fill="currentColor"
-                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      />
-                      <path
-                        fill="currentColor"
-                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      />
-                      <path
-                        fill="currentColor"
-                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                      />
-                      <path
-                        fill="currentColor"
-                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                      />
-                    </svg>
-                  )}
-                  Continue with Google
-                </Button>
+          <div className="grid grid-cols-1 gap-3">
+            <Button 
+              variant="outline" 
+              onClick={handleGoogleLogin}
+              disabled={googleLoading || githubLoading || isLoading}
+            >
+              {googleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+              Continue with Google
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleGithubLogin}
+              disabled={googleLoading || githubLoading || isLoading}
+            >
+              {githubLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Github className="mr-2 h-4 w-4" />}
+              Continue with GitHub
+            </Button>
+          </div>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full h-12 text-base font-medium hover:bg-accent hover:border-primary/30 transition-all"
-                  onClick={handleGithubSignup}
-                  disabled={googleLoading || githubLoading}
-                >
-                  {githubLoading ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  ) : (
-                    <Github className="mr-2 h-5 w-5" />
-                  )}
-                  Continue with GitHub
-                </Button>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+            </div>
+          </div>
+
+          {showEmailForm ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
               </div>
-
-              <div className="relative my-6">
-                <Separator />
-                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 text-sm text-muted-foreground">
-                  or
-                </span>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
               </div>
-
-              {/* Email Signup Button */}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-12 text-base font-medium hover:bg-accent hover:border-primary/30 transition-all"
-                onClick={() => setShowEmailForm(true)}
-              >
-                <Mail className="mr-2 h-5 w-5" />
-                Continue with Email
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Sign Up
               </Button>
-            </>
+            </form>
           ) : (
-            <>
-              {/* Email Form */}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                    disabled={isLoading}
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                    disabled={isLoading}
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                    disabled={isLoading}
-                    autoComplete="off"
-                    className="h-11"
-                  />
-                  <p className="text-xs text-muted-foreground">Must be at least 8 characters</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    required
-                    disabled={isLoading}
-                    autoComplete="off"
-                    className="h-11"
-                  />
-                </div>
-
-                <Button type="submit" className="w-full h-11 text-base" disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Creating account...
-                    </>
-                  ) : (
-                    "Create Account"
-                  )}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full"
-                  onClick={() => setShowEmailForm(false)}
-                  disabled={isLoading}
-                >
-                  ← Back to social login
-                </Button>
-              </form>
-            </>
+            <Button variant="ghost" className="w-full" onClick={() => setShowEmailForm(true)}>
+              Sign up with email
+            </Button>
           )}
 
-          <div className="mt-6 text-center text-sm">
-            <span className="text-muted-foreground">Already have an account? </span>
-            <Link to="/login" className="text-primary hover:underline font-semibold">
+          <div className="text-center text-sm">
+            Already have an account?{" "}
+            <Link to="/login" className="font-medium text-primary hover:underline">
               Sign in
             </Link>
           </div>
-
-          <p className="text-xs text-center text-muted-foreground mt-4">
-            By continuing, you agree to our Terms of Service and Privacy Policy
-          </p>
         </CardContent>
       </Card>
     </div>
