@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 
 type AnalysisBundle = {
+  localPath: string;
   project: ProjectSummariesResponse;
   quality: QualityAnalysisResponse;
   risk: RiskScoringResponse;
@@ -214,7 +215,7 @@ export default function AnalyzePageClient() {
         fetchExplainabilityTraces(analysisPath, focusFile.trim() || undefined, graphType, 1000),
       ]);
 
-      const nextBundle: AnalysisBundle = { project, quality, risk, graph, traces };
+      const nextBundle: AnalysisBundle = { localPath: analysisPath, project, quality, risk, graph, traces };
       setBundle(nextBundle);
       setInMemoryAnalysisBundle(nextBundle);
       if (storageKey) {
@@ -300,7 +301,7 @@ export default function AnalyzePageClient() {
           <Card className="border-border/70 bg-card/95 shadow-sm">
             <CardHeader className="space-y-4">
               <Badge className="w-fit gap-2 rounded-full px-3 py-1 text-xs uppercase tracking-[0.2em]">
-                <Sparkles className="h-3.5 w-3.5" /> FastAPI analysis workspace
+                <Sparkles className="h-3.5 w-3.5" /> Analysis workspace
               </Badge>
               <div className="space-y-2">
                 <CardTitle className="text-3xl md:text-4xl">Repository intelligence, rendered live.</CardTitle>
@@ -382,7 +383,7 @@ export default function AnalyzePageClient() {
               <div className="flex flex-wrap gap-3 md:col-span-2">
                 <Button onClick={handleAnalyze} disabled={isLoading} className="gap-2">
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
-                  {isLoading ? "Analyzing..." : "Run FastAPI analysis"}
+                  {isLoading ? "Analyzing..." : "Run Analysis"}
                 </Button>
                 <Button onClick={analyzeCode} disabled={isAnalyzingCode} variant="secondary" className="gap-2">
                   {isAnalyzingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : <Code2 className="h-4 w-4" />}

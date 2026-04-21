@@ -183,6 +183,35 @@ export type ProjectCloneResponse = {
   project_path: string;
 };
 
+export type RepositoryTreeNode = {
+  name: string;
+  type: "file" | "folder";
+  path: string;
+  icon: string;
+  color: string;
+  language: string | null;
+  size?: number;
+  extension?: string;
+  children?: RepositoryTreeNode[];
+};
+
+export type AnalyzeRepoRequest = {
+  local_path: string;
+  ignored_dirs?: string[];
+  max_nodes?: number;
+  max_depth?: number;
+  include_errors?: boolean;
+};
+
+export type AnalyzeRepoResponse = {
+  hierarchy: RepositoryTreeNode;
+  truncated: boolean;
+  errors: Array<{
+    path: string;
+    error: string;
+  }>;
+};
+
 export async function fetchProjectSummaries(localPath: string, maxFiles = 1000) {
   return backendFetch<ProjectSummariesResponse>("/ai/project-summaries", {
     method: "POST",
@@ -288,4 +317,11 @@ export async function cloneProjectFromGithub(repoUrl: string) {
   }
 
   return (await response.json()) as ProjectCloneResponse;
+}
+
+export async function analyzeRepoStructure(payload: AnalyzeRepoRequest) {
+  return backendFetch<AnalyzeRepoResponse>("/analyze-repo", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

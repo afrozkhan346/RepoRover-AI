@@ -13,6 +13,7 @@ from app.api.routes.tokens import router as tokens_router
 from app.api.routes.dependency_graph import router as dependency_graph_router
 from app.api.routes.call_graph import router as call_graph_router
 from app.api.routes.graph_analysis import router as graph_analysis_router
+from app.api.routes.repository_structure import router as repository_structure_router
 
 api_router = APIRouter()
 api_router.include_router(achievements_router, prefix="/achievements", tags=["achievements"])
@@ -28,3 +29,4 @@ api_router.include_router(project_router, prefix="/project", tags=["project"])
 api_router.include_router(dependency_graph_router, prefix="/dependency-graph", tags=["dependency-graph"])
 api_router.include_router(call_graph_router, prefix="/call-graph", tags=["call-graph"])
 api_router.include_router(graph_analysis_router, prefix="/graph-analysis", tags=["graph-analysis"])
+api_router.include_router(repository_structure_router, tags=["repository-structure"])
